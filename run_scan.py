@@ -1,155 +1,288 @@
-import yfinance as yf
-import pandas as pd
-import numpy as np
+"""
+Trading OS v12 Professional
+Strict Institutional Scanner
+
+Part 1 of 2
+"""
+
 import datetime
-import math
-import time
-from scipy.stats import norm
-from concurrent.futures import ThreadPoolExecutor
+import pandas as pd
 
-# ==========================================
-# Trading OS v12
-# Institutional Strict Scanner
-# ==========================================
+from core.downloader import (
+    get_fno_symbols,
+    download_all,
+)
 
-LOOKBACK = "6mo"
-INTERVAL = "1d"
+from core.scoring import score_stock
 
-EMA_FAST = 20
-EMA_SLOW = 50
-EMA_LONG = 200
+from core.market import (
+    get_market_status,
+)
 
-RSI_PERIOD = 14
+from core.utils import (
+    banner,
+    export_markdown,
+    logger,
+)
+
+
+# ==========================================================
+# Configuration
+# ==========================================================
 
 TOP_RESULTS = 25
 
-MAX_THREADS = 8
+LOOKBACK = "6mo"
+
+INTERVAL = "1d"
 
 
-# ==========================================
-# Session
-# ==========================================
+# ==========================================================
+# Trading Session
+# ==========================================================
 
 def get_session():
 
-    ist = datetime.datetime.utcnow() + datetime.timedelta(hours=5, minutes=30)
+    ist = (
+        datetime.datetime.utcnow()
+        + datetime.timedelta(hours=5, minutes=30)
+    )
 
     if ist.hour < 12:
-        return "🌅 MORNING STRICT SCAN", "Intraday"
 
-    return "🌙 PRE-CLOSE STRICT SCAN", "BTST"
-
-
-# ==========================================
-# Indicators
-# ==========================================
-
-def ema(series, period):
-    return series.ewm(span=period, adjust=False).mean()
-
-
-def rsi(close, period=14):
-
-    delta = close.diff()
-
-    gain = delta.clip(lower=0)
-
-    loss = -delta.clip(upper=0)
-
-    avg_gain = gain.rolling(period).mean()
-
-    avg_loss = loss.rolling(period).mean()
-
-    rs = avg_gain / avg_loss
-
-    return 100 - (100 / (1 + rs))
-
-
-def macd(close):
-
-    e12 = ema(close, 12)
-
-    e26 = ema(close, 26)
-
-    m = e12 - e26
-
-    s = m.ewm(span=9, adjust=False).mean()
-
-    return m, s
-
-
-def atr(df, period=14):
-
-    hl = df.High - df.Low
-
-    hc = abs(df.High - df.Close.shift())
-
-    lc = abs(df.Low - df.Close.shift())
-
-    tr = pd.concat([hl, hc, lc], axis=1).max(axis=1)
-
-    return tr.ewm(alpha=1/period).mean()
-
-
-# ==========================================
-# VWAP
-# ==========================================
-
-def vwap(df):
-
-    tp = (df.High + df.Low + df.Close) / 3
-
-    return (tp * df.Volume).cumsum() / df.Volume.cumsum()
-
-
-# ==========================================
-# Relative Volume
-# ==========================================
-
-def relative_volume(df):
-
-    return df.Volume.iloc[-1] / df.Volume.tail(50).mean()
-
-
-# ==========================================
-# Download
-# ==========================================
-
-def download(symbol):
-
-    try:
-
-        df = yf.download(
-            symbol,
-            period=LOOKBACK,
-            interval=INTERVAL,
-            progress=False,
-            auto_adjust=True,
-            threads=False
+        return (
+            "🌅 MORNING STRICT SCAN",
+            "Intraday"
         )
 
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
-
-        return symbol, df.dropna()
-
-    except:
-
-        return symbol, pd.DataFrame()
+    return (
+        "🌙 PRE-CLOSE STRICT SCAN",
+        "BTST"
+    )
 
 
-def download_all(symbols):
+# ==========================================================
+# Scan Engine
+# ==========================================================
 
-    data = {}
+def run_scan():
 
-    with ThreadPoolExecutor(max_workers=MAX_THREADS) as ex:
+    title, session = get_session()
 
-        futures = [ex.submit(download, s) for s in symbols]
+    logger.info("Loading Market Regime...")
 
-        for f in futures:
+    market = get_market_status()
 
-            s, d = f.result()
+    logger.info("Downloading NSE F&O Universe...")
 
-            data[s] = d
+    symbols = get_fno_symbols()
 
-    return data
+    logger.info(
+        f"{len(symbols)} Symbols Found"
+    )
+
+    database = download_all(
+
+        symbols,
+
+        period=LOOKBACK,
+
+        interval=INTERVAL
+
+    )
+
+    logger.info(
+
+        f"{len(database)} Charts Downloaded"
+
+    )
+
+    results = []
+
+    for symbol, df in database.items():
+
+        try:
+
+            stock = score_stock(df)
+
+            if stock is None:
+
+                continue
+
+            stock["Symbol"] = symbol.replace(
+                ".NS",
+                ""
+            )
+
+            results.append(stock)
+
+        except Exception as e:
+
+            logger.warning(
+
+                f"{symbol} : {e}"
+
+            )
+
+            continue
+
+    if len(results) == 0:
+
+        logger.warning(
+
+            "No qualifying stocks found."
+
+        )
+
+        return
+
+    report = (
+        pd.DataFrame(results)
+        .sort_values(
+            by=[
+                "Score",
+                "RVOL",
+                "RSI"
+            ],
+            ascending=False
+        )
+        .head(TOP_RESULTS)
+        .reset_index(drop=True)
+    )
+
+    markdown = ""
+
+    markdown += banner(
+        "TRADING OS v12 PROFESSIONAL"
+    )
+
+    markdown += f"# {title}\n\n"
+
+    markdown += "## Market Status\n\n"
+
+    markdown += (
+        f"- NIFTY : {market['NIFTY']}\n"
+    )
+
+    markdown += (
+        f"- BANKNIFTY : {market['BANKNIFTY']}\n"
+    )
+
+    markdown += (
+        f"- MODE : {market['MODE']}\n\n"
+    )
+
+    markdown += "---\n\n"
+
+    markdown += (
+        "## Top Institutional Picks\n\n"
+    )
+        for _, row in report.iterrows():
+
+        markdown += (
+            f"### {row['Symbol']} ({row['Grade']})\n\n"
+        )
+
+        markdown += (
+            f"- Institutional Score : **{row['Score']}**\n"
+        )
+
+        markdown += (
+            f"- Trade Type : **{row['Trade']}**\n"
+        )
+
+        markdown += (
+            f"- Entry : ₹{row['Entry']}\n"
+        )
+
+        markdown += (
+            f"- Stop Loss : ₹{row['SL']}\n"
+        )
+
+        markdown += (
+            f"- Target 1 : ₹{row['T1']}\n"
+        )
+
+        markdown += (
+            f"- Target 2 : ₹{row['T2']}\n"
+        )
+
+        markdown += (
+            f"- Target 3 : ₹{row['T3']}\n"
+        )
+
+        markdown += (
+            f"- RSI : {row['RSI']}\n"
+        )
+
+        markdown += (
+            f"- Relative Volume : {row['RVOL']}\n"
+        )
+
+        markdown += (
+            f"- Lorentz Score : {row['Lorentz']}\n"
+        )
+
+        markdown += (
+            f"- EMA20 : {row['EMA20']}\n"
+        )
+
+        markdown += (
+            f"- EMA50 : {row['EMA50']}\n"
+        )
+
+        markdown += (
+            f"- EMA200 : {row['EMA200']}\n"
+        )
+
+        markdown += (
+            f"- VWAP : {row['VWAP']}\n\n"
+        )
+
+        markdown += "---\n\n"
+
+    filename = (
+        "strict_scan.md"
+    )
+
+    export_markdown(
+        markdown,
+        filename
+    )
+
+    print(
+        "\n"
+        + "=" * 60
+    )
+
+    print(
+        "TRADING OS v12 PROFESSIONAL"
+    )
+
+    print(
+        title
+    )
+
+    print(
+        "=" * 60
+    )
+
+    print(report)
+
+    print(
+        "\nReport Saved : reports/"
+        + filename
+    )
+
+    logger.info(
+        "Strict scan completed successfully."
+    )
+
+
+# ==========================================================
+# Main
+# ==========================================================
+
+if __name__ == "__main__":
+
+    run_scan()
