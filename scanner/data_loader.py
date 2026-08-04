@@ -3,86 +3,178 @@ import pandas as pd
 import time
 
 
-# ==========================================
-# Download Market Data
-# ==========================================
+# ==========================================================
+# Download complete NSE F&O list
+# ==========================================================
 
-def download_all(tickers,
-                 period="6mo",
-                 interval="1d",
-                 chunk_size=100):
+def get_fno_symbols():
 
-    market_data = {}
+    url = "https://archives.nseindia.com/content/fo/fo_mktlots.csv"
 
-    for i in range(0, len(tickers), chunk_size):
+    try:
 
-        chunk = tickers[i:i + chunk_size]
+        df = pd.read_csv(url)
+
+        df.columns = [c.strip() for c in df.columns]
+
+        return sorted(
+            list(
+                set(
+                    [
+                        f"{s.strip().upper()}.NS"
+                        for s in df["SYMBOL"]
+                    ]
+                )
+            )
+        )
+
+    except:
+
+        return [
+            "RELIANCE.NS",
+            "SBIN.NS",
+            "HDFCBANK.NS",
+            "ICICIBANK.NS",
+            "INFY.NS",
+            "TCS.NS"
+        ]
+
+
+# ==========================================================
+# Download NSE500
+# ==========================================================
+
+def get_nse500():
+
+    url = "https://archives.nseindia.com/content/indices/ind_nifty500list.csv"
+
+    try:
+
+        df = pd.read_csv(url)
+
+        return [
+            s.strip().upper()+".NS"
+            for s in df["Symbol"]
+        ]
+
+    except:
+
+        return get_fno_symbols()
+
+
+# ==========================================================
+# Batch Downloader
+# ==========================================================
+
+def download_all(
+        tickers,
+        period="6mo",
+        interval="1d",
+        chunk=75):
+
+    database = {}
+
+    total = len(tickers)
+
+    for start in range(0,total,chunk):
+
+        batch = tickers[start:start+chunk]
 
         try:
 
             data = yf.download(
-                tickers=chunk,
+                tickers=batch,
                 period=period,
                 interval=interval,
                 group_by="ticker",
-                auto_adjust=False,
+                auto_adjust=True,
+                threads=True,
                 progress=False,
-                threads=True
+                prepost=False
             )
 
-            if len(chunk) == 1:
+            if len(batch)==1:
 
-                market_data[chunk[0]] = data.dropna()
+                database[batch[0]] = data.dropna()
 
             else:
 
-                for ticker in chunk:
+                for ticker in batch:
 
                     try:
 
                         df = data[ticker].dropna()
 
-                        if len(df) > 50:
+                        if len(df)>50:
 
-                            market_data[ticker] = df
+                            database[ticker]=df
 
                     except:
-
                         pass
 
         except:
-
             pass
 
-        time.sleep(0.05)
+        time.sleep(0.10)
 
-    return market_data
+    return database
 
 
-# ==========================================
-# Remove Weak Stocks
-# ==========================================
+# ==========================================================
+# Download Index
+# ==========================================================
 
-def clean_market_data(data_dict):
+def download_index(symbol):
 
-    cleaned = {}
+    try:
 
-    for symbol, df in data_dict.items():
+        df = yf.download(
+            symbol,
+            period="3mo",
+            interval="1d",
+            progress=False,
+            auto_adjust=True
+        )
 
-        try:
+        return df.dropna()
 
-            if len(df) < 220:
+    except:
 
-                continue
+        return pd.DataFrame()
 
-            if df["Volume"].rolling(20).mean().iloc[-1] < 100000:
 
-                continue
+# ==========================================================
+# Download One Stock
+# ==========================================================
 
-            cleaned[symbol] = df
+def download_stock(symbol):
 
-        except:
+    try:
 
-            pass
+        df = yf.download(
+            symbol,
+            period="6mo",
+            interval="1d",
+            progress=False,
+            auto_adjust=True
+        )
 
-    return cleaned
+        return df.dropna()
+
+    except:
+
+        return pd.DataFrame()
+
+
+# ==========================================================
+# Download Watchlist
+# ==========================================================
+
+def download_watchlist(watchlist):
+
+    return download_all(
+        watchlist,
+        period="6mo",
+        interval="1d",
+        chunk=25
+    )
