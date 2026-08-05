@@ -1,139 +1,145 @@
 """
-core/risk.py
-
-Risk Management Engine
 Trading OS v12 Professional
+Risk Management Engine
 """
 
 from dataclasses import dataclass
-import math
 
+
+# ==========================================================
+# Risk Model
+# ==========================================================
 
 @dataclass
-class RiskConfig:
-    capital: float = 100000.0
-    risk_percent: float = 1.0
-    brokerage_per_trade: float = 0.0
-    slippage_percent: float = 0.05
+class RiskModel:
+
+    capital: float = 100000
+
+    risk_percent: float = 2.0
 
 
-class RiskEngine:
+# ==========================================================
+# Risk Amount
+# ==========================================================
 
-    def __init__(self, config: RiskConfig):
-        self.config = config
+def risk_amount(model: RiskModel):
 
-    @property
-    def max_risk_amount(self):
-        return self.config.capital * self.config.risk_percent / 100.0
+    return model.capital * model.risk_percent / 100
 
-    def position_size(self, entry, stoploss):
 
-        risk_per_share = abs(entry - stoploss)
+# ==========================================================
+# Position Size
+# ==========================================================
 
-        if risk_per_share <= 0:
-            return 0
+def position_size(
+    entry,
+    stoploss,
+    model: RiskModel
+):
 
-        qty = math.floor(self.max_risk_amount / risk_per_share)
+    risk = risk_amount(model)
 
-        return max(qty, 0)
+    per_share = abs(entry - stoploss)
 
-    def expected_profit(self, entry, target, qty):
+    if per_share <= 0:
 
-        return round((target - entry) * qty, 2)
+        return 0
 
-    def expected_loss(self, entry, stoploss, qty):
+    qty = int(risk / per_share)
 
-        return round((entry - stoploss) * qty, 2)
+    return max(qty, 0)
 
-    def risk_reward(self, entry, stoploss, target):
 
-        risk = abs(entry - stoploss)
+# ==========================================================
+# Capital Required
+# ==========================================================
 
-        reward = abs(target - entry)
+def capital_required(
+    entry,
+    quantity
+):
 
-        if risk == 0:
-            return 0
+    return round(entry * quantity, 2)
 
-        return round(reward / risk, 2)
 
-    def trade_summary(
-        self,
+# ==========================================================
+# Risk Reward
+# ==========================================================
+
+def risk_reward(
+    entry,
+    stoploss,
+    target
+):
+
+    risk = abs(entry - stoploss)
+
+    reward = abs(target - entry)
+
+    if risk <= 0:
+
+        return 0
+
+    return round(reward / risk, 2)
+
+
+# ==========================================================
+# Trade Plan
+# ==========================================================
+
+def build_trade_plan(
+    entry,
+    sl,
+    t1,
+    model=None
+):
+
+    if model is None:
+
+        model = RiskModel()
+
+    qty = position_size(
+
         entry,
-        stoploss,
-        target
-    ):
 
-        qty = self.position_size(entry, stoploss)
+        sl,
 
-        rr = self.risk_reward(
-            entry,
-            stoploss,
-            target
-        )
-
-        profit = self.expected_profit(
-            entry,
-            target,
-            qty
-        )
-
-        loss = self.expected_loss(
-            entry,
-            stoploss,
-            qty
-        )
-
-        return {
-
-            "Capital": self.config.capital,
-
-            "RiskPercent": self.config.risk_percent,
-
-            "MaxRisk": round(
-                self.max_risk_amount,
-                2
-            ),
-
-            "Quantity": qty,
-
-            "Entry": round(entry,2),
-
-            "StopLoss": round(stoploss,2),
-
-            "Target": round(target,2),
-
-            "RiskReward": rr,
-
-            "ExpectedProfit": profit,
-
-            "ExpectedLoss": loss
-
-        }
-
-
-def default_risk_engine():
-
-    cfg = RiskConfig()
-
-    return RiskEngine(cfg)
-
-
-if __name__ == "__main__":
-
-    engine = default_risk_engine()
-
-    trade = engine.trade_summary(
-
-        entry=520.50,
-
-        stoploss=505.20,
-
-        target=551.00
+        model
 
     )
 
-    print("\n===== RISK SUMMARY =====")
+    capital = capital_required(
 
-    for k, v in trade.items():
+        entry,
 
-        print(f"{k:20}: {v}")
+        qty
+
+    )
+
+    rr = risk_reward(
+
+        entry,
+
+        sl,
+
+        t1
+
+    )
+
+    return {
+
+        "Quantity": qty,
+
+        "Capital": capital,
+
+        "RiskAmount": round(
+
+            risk_amount(model),
+
+            2
+
+        ),
+
+        "RR": rr
+
+    }
