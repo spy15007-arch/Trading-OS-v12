@@ -1,91 +1,143 @@
 """
-core/market.py
-
-Market regime detection for Trading OS v12
+Trading OS v12 Professional
+Market Regime Engine
 """
 
 import yfinance as yf
-import pandas as pd
+
+from core.indicators import (
+    ema,
+    rsi,
+)
 
 
-def ema(series, length):
-    return series.ewm(span=length, adjust=False).mean()
+# ==========================================================
+# Download Index
+# ==========================================================
 
+def download_index(symbol):
 
-def get_index_data(symbol):
-    """
-    Download last 6 months of index data.
-    """
     try:
+
         df = yf.download(
             symbol,
             period="6mo",
             interval="1d",
             progress=False,
             auto_adjust=True,
+            threads=False
         )
-
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
 
         return df.dropna()
 
-    except Exception:
-        return pd.DataFrame()
+    except:
+
+        return None
 
 
-def trend_from_df(df):
+# ==========================================================
+# Analyse Index
+# ==========================================================
 
-    if df.empty or len(df) < 200:
-        return "UNKNOWN"
+def analyse(df):
+
+    if df is None or len(df) < 220:
+
+        return None
 
     close = float(df.Close.iloc[-1])
 
-    ema20 = ema(df.Close, 20).iloc[-1]
-    ema50 = ema(df.Close, 50).iloc[-1]
-    ema200 = ema(df.Close, 200).iloc[-1]
+    ema20 = float(ema(df.Close, 20).iloc[-1])
 
-    if close > ema20 > ema50 > ema200:
-        return "BULLISH"
+    ema50 = float(ema(df.Close, 50).iloc[-1])
 
-    if close < ema20 < ema50 < ema200:
-        return "BEARISH"
+    ema200 = float(ema(df.Close, 200).iloc[-1])
 
-    return "SIDEWAYS"
+    rsi_now = float(rsi(df.Close).iloc[-1])
 
+    score = 0
 
-def get_market_status():
-    """
-    Returns overall market regime.
-    """
+    if close > ema20:
+        score += 1
 
-    nifty = get_index_data("^NSEI")
-    bank = get_index_data("^NSEBANK")
+    if ema20 > ema50:
+        score += 1
 
-    nifty_trend = trend_from_df(nifty)
-    bank_trend = trend_from_df(bank)
+    if ema50 > ema200:
+        score += 2
 
-    if nifty_trend == "BULLISH" and bank_trend == "BULLISH":
-        mode = "AGGRESSIVE"
-
-    elif nifty_trend == "BEARISH" and bank_trend == "BEARISH":
-        mode = "DEFENSIVE"
-
-    else:
-        mode = "NEUTRAL"
+    if rsi_now > 60:
+        score += 1
 
     return {
-        "NIFTY": nifty_trend,
-        "BANKNIFTY": bank_trend,
-        "MODE": mode,
+
+        "close": round(close, 2),
+
+        "ema20": round(ema20, 2),
+
+        "ema50": round(ema50, 2),
+
+        "ema200": round(ema200, 2),
+
+        "rsi": round(rsi_now, 1),
+
+        "score": score
+
     }
 
 
-if __name__ == "__main__":
+# ==========================================================
+# Market Status
+# ==========================================================
 
-    market = get_market_status()
+def get_market_status():
 
-    print("\n===== MARKET STATUS =====")
-    print(f"NIFTY      : {market['NIFTY']}")
-    print(f"BANKNIFTY  : {market['BANKNIFTY']}")
-    print(f"MODE        : {market['MODE']}")
+    nifty = analyse(
+        download_index("^NSEI")
+    )
+
+    bank = analyse(
+        download_index("^NSEBANK")
+    )
+
+    if nifty is None or bank is None:
+
+        return {
+
+            "MODE": "UNKNOWN",
+
+            "NIFTY": "NA",
+
+            "BANKNIFTY": "NA"
+
+        }
+
+    total = nifty["score"] + bank["score"]
+
+    if total >= 8:
+
+        mode = "🟢 BULLISH"
+
+    elif total >= 5:
+
+        mode = "🟡 NEUTRAL"
+
+    else:
+
+        mode = "🔴 DEFENSIVE"
+
+    return {
+
+        "MODE": mode,
+
+        "NIFTY": nifty["close"],
+
+        "BANKNIFTY": bank["close"],
+
+        "NIFTY_RSI": nifty["rsi"],
+
+        "BANK_RSI": bank["rsi"],
+
+        "TOTAL_SCORE": total
+
+    }
