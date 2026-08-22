@@ -177,7 +177,8 @@ def run_scan():
     markdown += (
         "## Top Institutional Picks\n\n"
     )
-        for _, row in report.iterrows():
+
+    for _, row in report.iterrows():
 
         markdown += (
             f"### {row['Symbol']} ({row['Grade']})\n\n"
