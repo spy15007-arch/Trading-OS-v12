@@ -4,8 +4,10 @@ Utility Functions
 """
 
 from pathlib import Path
-import logging
+
 import datetime
+import logging
+
 
 # ==========================================================
 # Logging
@@ -13,18 +15,24 @@ import datetime
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s"
+    format=(
+        "%(asctime)s | "
+        "%(levelname)s | "
+        "%(message)s"
+    )
 )
 
-logger = logging.getLogger("TradingOS")
+logger = logging.getLogger(
+    "TradingOS"
+)
 
 
 # ==========================================================
 # Banner
 # ==========================================================
 
-def banner(title: str) -> str:
-    """Returns a markdown banner."""
+def banner(title):
+
     return (
         "# ==========================================\n"
         f"# {title}\n"
@@ -33,59 +41,100 @@ def banner(title: str) -> str:
 
 
 # ==========================================================
-# Timestamp
+# IST Timestamp
 # ==========================================================
 
-def timestamp() -> str:
-    """Returns current IST timestamp."""
-    ist = datetime.datetime.utcnow() + datetime.timedelta(hours=5, minutes=30)
-    return ist.strftime("%d-%b-%Y %H:%M IST")
+def timestamp():
+
+    utc_now = datetime.datetime.now(
+        datetime.timezone.utc
+    )
+
+    ist = (
+        utc_now +
+        datetime.timedelta(
+            hours=5,
+            minutes=30
+        )
+    )
+
+    return ist.strftime(
+        "%d-%b-%Y %H:%M IST"
+    )
 
 
 # ==========================================================
-# Ensure reports folder exists
+# Reports Folder
 # ==========================================================
 
-def ensure_reports_folder() -> Path:
+def ensure_reports_folder():
+
     folder = Path("reports")
-    folder.mkdir(parents=True, exist_ok=True)
+
+    folder.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
     return folder
 
 
 # ==========================================================
-# Save Markdown Report
+# Markdown Export
 # ==========================================================
 
-def export_markdown(content: str, filename: str) -> Path:
-    """
-    Save markdown report into reports folder.
-    """
+def export_markdown(
+    content,
+    filename
+):
 
     folder = ensure_reports_folder()
 
-    filepath = folder / filename
+    filepath = (
+        folder /
+        filename
+    )
 
-    with open(filepath, "w", encoding="utf-8") as f:
-        f.write(content)
+    with open(
+        filepath,
+        "w",
+        encoding="utf-8"
+    ) as file:
 
-    logger.info(f"Report saved : {filepath}")
+        file.write(content)
+
+    logger.info(
+        f"Report saved : {filepath}"
+    )
 
     return filepath
 
 
 # ==========================================================
-# Console Divider
+# Divider
 # ==========================================================
 
-def divider(char: str = "-", width: int = 60) -> str:
+def divider(
+    char="-",
+    width=60
+):
+
     return char * width
 
 
 # ==========================================================
-# Pretty Print Heading
+# Heading
 # ==========================================================
 
-def heading(text: str):
-    print("\n" + divider("="))
+def heading(text):
+
+    print(
+        "\n" +
+        divider("=")
+    )
+
     print(text)
-    print(divider("="))
+
+    print(
+        divider("=")
+    )
