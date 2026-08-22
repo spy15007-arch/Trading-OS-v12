@@ -15,7 +15,7 @@ from .indicators import (
     vwap,
     relative_volume,
     closing_strength,
-    trend_strength
+    trend_strength,
 )
 
 
@@ -26,113 +26,268 @@ from .indicators import (
 def lorentzian_distance(
     current_rsi,
     current_rvol,
-    ideal_rsi=68,
-    ideal_rvol=2.0
+    ideal_rsi=68.0,
+    ideal_rvol=2.0,
 ):
+    """
+    Measures distance from an ideal momentum profile.
 
-    d1 = math.log(
-        1 + abs(
-            current_rsi -
-            ideal_rsi
+    Lower score = closer to the target RSI/RVOL profile.
+    """
+
+    try:
+        d1 = math.log(
+            1.0 +
+            abs(
+                float(current_rsi) -
+                ideal_rsi
+            )
         )
-    )
 
-    d2 = math.log(
-        1 + abs(
-            current_rvol -
-            ideal_rvol
+        d2 = math.log(
+            1.0 +
+            abs(
+                float(current_rvol) -
+                ideal_rvol
+            )
         )
-    )
 
-    return round(
-        d1 + d2,
-        2
-    )
+        return round(
+            d1 + d2,
+            2
+        )
+
+    except Exception:
+        return 999.0
 
 
 # ==========================================================
-# Score Stock
+# Safe Float
+# ==========================================================
+
+def _safe_float(value, default=None):
+
+    try:
+
+        result = float(value)
+
+        if not np.isfinite(result):
+            return default
+
+        return result
+
+    except Exception:
+
+        return default
+
+
+# ==========================================================
+# Institutional Score Engine
 # ==========================================================
 
 def score_stock(df):
 
-    if df is None or len(df) < 220:
+    """
+    Score one OHLCV dataframe.
+
+    Returns a dictionary containing:
+        Score
+        Grade
+        Trade
+        Entry
+        SL
+        T1/T2/T3
+        RSI
+        RVOL
+        EMA20/50/200
+        VWAP
+        ATR
+        Lorentz
+    """
+
+    # ------------------------------------------------------
+    # Basic validation
+    # ------------------------------------------------------
+
+    if df is None or df.empty:
         return None
+
+    if len(df) < 220:
+        return None
+
+    required_columns = [
+        "Open",
+        "High",
+        "Low",
+        "Close",
+        "Volume",
+    ]
+
+    for column in required_columns:
+
+        if column not in df.columns:
+            return None
 
     try:
 
-        close = float(
+        # ==================================================
+        # PRICE
+        # ==================================================
+
+        close = _safe_float(
             df["Close"].iloc[-1]
         )
 
-        ema20 = float(
-            ema(
-                df["Close"],
-                20
-            ).iloc[-1]
+        if close is None:
+            return None
+
+        # ==================================================
+        # MOVING AVERAGES
+        # ==================================================
+
+        ema20_series = ema(
+            df["Close"],
+            20
         )
 
-        ema50 = float(
-            ema(
-                df["Close"],
-                50
-            ).iloc[-1]
+        ema50_series = ema(
+            df["Close"],
+            50
         )
 
-        ema200 = float(
-            ema(
-                df["Close"],
-                200
-            ).iloc[-1]
+        ema200_series = ema(
+            df["Close"],
+            200
         )
 
-        rsi_now = float(
-            rsi(
-                df["Close"]
-            ).iloc[-1]
+        ema20 = _safe_float(
+            ema20_series.iloc[-1]
         )
 
-        macd_line, signal_line, hist = macd(
+        ema50 = _safe_float(
+            ema50_series.iloc[-1]
+        )
+
+        ema200 = _safe_float(
+            ema200_series.iloc[-1]
+        )
+
+        if (
+            ema20 is None or
+            ema50 is None or
+            ema200 is None
+        ):
+            return None
+
+        # ==================================================
+        # RSI
+        # ==================================================
+
+        rsi_series = rsi(
             df["Close"]
         )
 
-        atr_now = float(
-            atr(df).iloc[-1]
+        rsi_now = _safe_float(
+            rsi_series.iloc[-1]
         )
 
-        vwap_now = float(
-            vwap(df).iloc[-1]
+        if rsi_now is None:
+            return None
+
+        # ==================================================
+        # MACD
+        # ==================================================
+
+        macd_line, signal_line, histogram = macd(
+            df["Close"]
         )
 
-        rel_vol = float(
+        macd_now = _safe_float(
+            macd_line.iloc[-1]
+        )
+
+        signal_now = _safe_float(
+            signal_line.iloc[-1]
+        )
+
+        hist_now = _safe_float(
+            histogram.iloc[-1]
+        )
+
+        if (
+            macd_now is None or
+            signal_now is None or
+            hist_now is None
+        ):
+            return None
+
+        # ==================================================
+        # ATR
+        # ==================================================
+
+        atr_series = atr(
+            df
+        )
+
+        atr_now = _safe_float(
+            atr_series.iloc[-1]
+        )
+
+        if (
+            atr_now is None or
+            atr_now <= 0
+        ):
+            return None
+
+        # ==================================================
+        # VWAP
+        # ==================================================
+
+        vwap_series = vwap(
+            df
+        )
+
+        vwap_now = _safe_float(
+            vwap_series.iloc[-1]
+        )
+
+        if vwap_now is None:
+            return None
+
+        # ==================================================
+        # RELATIVE VOLUME
+        # ==================================================
+
+        rel_vol = _safe_float(
             relative_volume(df)
         )
 
-        candle_strength = float(
-            closing_strength(df)
+        if rel_vol is None:
+            return None
+
+        # ==================================================
+        # CLOSING STRENGTH
+        # ==================================================
+
+        candle_strength = _safe_float(
+            closing_strength(df),
+            0.0
         )
+
+        if candle_strength is None:
+            candle_strength = 0.0
+
+        # ==================================================
+        # TREND STRENGTH
+        # ==================================================
 
         trend = int(
             trend_strength(df)
         )
 
-        if not np.isfinite(
-            atr_now
-        ) or atr_now <= 0:
-
-            return None
-
-        if not np.isfinite(
-            vwap_now
-        ):
-
-            return None
-
-        if not np.isfinite(
-            rel_vol
-        ):
-
-            return None
+        # ==================================================
+        # START SCORE
+        # ==================================================
 
         score = 0
 
@@ -169,15 +324,10 @@ def score_stock(df):
         # MACD
         # ==================================================
 
-        if (
-            macd_line.iloc[-1] >
-            signal_line.iloc[-1]
-        ):
-
+        if macd_now > signal_now:
             score += 2
 
-        if hist.iloc[-1] > 0:
-
+        if hist_now > 0:
             score += 1
 
         # ==================================================
@@ -191,7 +341,7 @@ def score_stock(df):
         # RELATIVE VOLUME
         # ==================================================
 
-        if rel_vol >= 2:
+        if rel_vol >= 2.0:
 
             score += 3
 
@@ -207,11 +357,11 @@ def score_stock(df):
         # CANDLE QUALITY
         # ==================================================
 
-        if candle_strength > 0.80:
+        if candle_strength >= 0.80:
 
             score += 2
 
-        elif candle_strength > 0.65:
+        elif candle_strength >= 0.65:
 
             score += 1
 
@@ -222,7 +372,7 @@ def score_stock(df):
         score += trend
 
         # ==================================================
-        # LORENTZIAN MODEL
+        # LORENTZIAN MOMENTUM MODEL
         # ==================================================
 
         lorentz = lorentzian_distance(
@@ -274,8 +424,8 @@ def score_stock(df):
             trade = "⚡ Intraday"
 
         elif (
-            candle_strength >= 0.70 and
-            rel_vol >= 1.30
+            rel_vol >= 1.30 and
+            candle_strength >= 0.70
         ):
 
             trade = "🌙 BTST"
@@ -285,7 +435,7 @@ def score_stock(df):
             trade = "📈 Swing"
 
         # ==================================================
-        # ATR TRADE PLAN
+        # ATR-BASED TRADE PLAN
         # ==================================================
 
         entry = round(
@@ -295,25 +445,25 @@ def score_stock(df):
 
         sl = round(
             close -
-            1.5 * atr_now,
+            (1.5 * atr_now),
             2
         )
 
         t1 = round(
             close +
-            1.5 * atr_now,
+            (1.5 * atr_now),
             2
         )
 
         t2 = round(
             close +
-            3.0 * atr_now,
+            (3.0 * atr_now),
             2
         )
 
         t3 = round(
             close +
-            4.5 * atr_now,
+            (4.5 * atr_now),
             2
         )
 
@@ -335,7 +485,7 @@ def score_stock(df):
 
             "Entry": entry,
 
-            "Score": score,
+            "Score": int(score),
 
             "Grade": grade,
 
@@ -384,7 +534,7 @@ def score_stock(df):
 
             "T2": t2,
 
-            "T3": t3
+            "T3": t3,
         }
 
     except Exception:
