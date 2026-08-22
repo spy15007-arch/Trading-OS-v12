@@ -154,7 +154,7 @@ def get_fno_symbols():
 # NSE 500
 # ==========================================================
 
-def get_nse500():
+def get_nse750():
 
     url = (
         "https://archives.nseindia.com/"
