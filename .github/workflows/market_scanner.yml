@@ -128,7 +128,22 @@ jobs:
       # =====================================================
       # RUN STRICT SCANNER
       # =====================================================
-
+      - name: Verify Core Package
+        run: |
+          echo "=== scanner directory ==="
+          find scanner -maxdepth 2 -type f | sort
+          
+          echo ""
+          echo "=== indicators.py ==="
+          ls -l scanner/core/indicators.py
+          
+          echo ""
+          echo "=== core init ==="
+          ls -l scanner/core/__init__.py
+          
+          echo ""
+          echo "=== Python import test ==="
+          python -c "import scanner.core.indicators; print('CORE INDICATORS IMPORT OK')"
       - name: Run Strict Scanner
         run: |
           python run_scan.py
