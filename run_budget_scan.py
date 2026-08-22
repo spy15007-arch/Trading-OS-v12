@@ -26,7 +26,7 @@ from scanner.core.utils import (
 
 TOP_RESULTS = 25
 
-MAX_PRICE = 500
+MAX_PRICE = 1000
 
 
 # ==========================================================
