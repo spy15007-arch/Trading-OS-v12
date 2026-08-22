@@ -124,10 +124,6 @@ jobs:
 
           PY
 
-
-      # =====================================================
-      # RUN STRICT SCANNER
-      # =====================================================
       - name: Verify Core Package
         run: |
           echo "=== scanner directory ==="
@@ -144,6 +140,10 @@ jobs:
           echo ""
           echo "=== Python import test ==="
           python -c "import scanner.core.indicators; print('CORE INDICATORS IMPORT OK')"
+      # =====================================================
+      # RUN STRICT SCANNER
+      # =====================================================
+     
       - name: Run Strict Scanner
         run: |
           python run_scan.py
