@@ -1,13 +1,10 @@
 name: Trading OS v12 Scanner
 
 on:
-
   workflow_dispatch:
 
   schedule:
-
     - cron: '45 3 * * 1-5'
-
     - cron: '45 9 * * 1-5'
 
 
@@ -18,71 +15,161 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-
       contents: write
-
 
     steps:
 
       - name: Checkout Repository
-
         uses: actions/checkout@v4
 
 
       - name: Setup Python
-
         uses: actions/setup-python@v5
-
         with:
-
           python-version: "3.11"
 
 
       - name: Install Dependencies
-
         run: |
-
           python -m pip install --upgrade pip
-
           pip install -r requirements.txt
 
 
-      - name: Run Strict Scanner
+      # =====================================================
+      # VERIFY PROJECT STRUCTURE
+      # =====================================================
 
+      - name: Inspect Scanner Core
+        run: |
+          echo "===== Repository ====="
+          pwd
+          echo ""
+
+          echo "===== scanner ====="
+          ls -la scanner
+          echo ""
+
+          echo "===== scanner/core ====="
+          ls -la scanner/core
+          echo ""
+
+          echo "===== Python files ====="
+          find scanner/core -maxdepth 1 -type f -print | sort
+
+
+      # =====================================================
+      # NORMALISE INDICATORS FILE NAME
+      # =====================================================
+
+      - name: Normalise indicators filename
+        shell: bash
         run: |
 
+          if [ -f "scanner/core/Indicators.py" ] && [ ! -f "scanner/core/indicators.py" ]; then
+
+            echo "Found Indicators.py"
+            echo "Renaming to indicators.py"
+
+            mv scanner/core/Indicators.py scanner/core/indicators.py
+
+          fi
+
+
+          if [ -f "scanner/core/INDICATORS.py" ] && [ ! -f "scanner/core/indicators.py" ]; then
+
+            echo "Found INDICATORS.py"
+            echo "Renaming to indicators.py"
+
+            mv scanner/core/INDICATORS.py scanner/core/indicators.py
+
+          fi
+
+
+          echo "===== Final scanner/core ====="
+
+          ls -la scanner/core
+
+
+      # =====================================================
+      # PYTHON IMPORT TEST
+      # =====================================================
+
+      - name: Test Python Imports
+        run: |
+
+          python - <<'PY'
+
+          import scanner
+
+          import scanner.core
+
+          import scanner.core.indicators
+
+          import scanner.core.downloader
+
+          import scanner.core.market
+
+          import scanner.core.scoring
+
+          import scanner.core.risk
+
+          import scanner.core.report
+
+          import scanner.core.utils
+
+          print("")
+          print("==========================================")
+          print("ALL CORE IMPORTS PASSED")
+          print("==========================================")
+
+          PY
+
+
+      # =====================================================
+      # RUN STRICT SCANNER
+      # =====================================================
+
+      - name: Run Strict Scanner
+        run: |
           python run_scan.py
 
 
+      # =====================================================
+      # RUN AGGRESSIVE SCANNER
+      # =====================================================
+
       - name: Run Aggressive Scanner
-
         run: |
-
           python run_aggressive_scan.py
 
 
+      # =====================================================
+      # RUN BUDGET SCANNER
+      # =====================================================
+
       - name: Run Budget Scanner
-
         run: |
-
           python run_budget_scan.py
 
 
+      # =====================================================
+      # TELEGRAM
+      # =====================================================
+
       - name: Send Telegram Reports
-
         env:
-
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
         run: |
-
           python telegram_push.py
 
 
-      - name: Commit Reports
+      # =====================================================
+      # COMMIT REPORTS
+      # =====================================================
 
+      - name: Commit Reports
         run: |
 
           git config user.name "github-actions"
