@@ -13,7 +13,7 @@ from dataclasses import dataclass
 @dataclass
 class RiskModel:
 
-    capital: float = 100000
+    capital: float = 100000.0
 
     risk_percent: float = 2.0
 
@@ -22,9 +22,15 @@ class RiskModel:
 # Risk Amount
 # ==========================================================
 
-def risk_amount(model: RiskModel):
+def risk_amount(
+    model
+):
 
-    return model.capital * model.risk_percent / 100
+    return (
+        model.capital *
+        model.risk_percent /
+        100
+    )
 
 
 # ==========================================================
@@ -34,20 +40,29 @@ def risk_amount(model: RiskModel):
 def position_size(
     entry,
     stoploss,
-    model: RiskModel
+    model
 ):
 
-    risk = risk_amount(model)
+    risk = risk_amount(
+        model
+    )
 
-    per_share = abs(entry - stoploss)
+    per_share = abs(
+        entry -
+        stoploss
+    )
 
     if per_share <= 0:
 
         return 0
 
-    qty = int(risk / per_share)
-
-    return max(qty, 0)
+    return max(
+        int(
+            risk /
+            per_share
+        ),
+        0
+    )
 
 
 # ==========================================================
@@ -59,7 +74,11 @@ def capital_required(
     quantity
 ):
 
-    return round(entry * quantity, 2)
+    return round(
+        entry *
+        quantity,
+        2
+    )
 
 
 # ==========================================================
@@ -72,15 +91,24 @@ def risk_reward(
     target
 ):
 
-    risk = abs(entry - stoploss)
+    risk = abs(
+        entry -
+        stoploss
+    )
 
-    reward = abs(target - entry)
+    reward = abs(
+        target -
+        entry
+    )
 
     if risk <= 0:
-
         return 0
 
-    return round(reward / risk, 2)
+    return round(
+        reward /
+        risk,
+        2
+    )
 
 
 # ==========================================================
@@ -98,48 +126,33 @@ def build_trade_plan(
 
         model = RiskModel()
 
-    qty = position_size(
-
+    quantity = position_size(
         entry,
-
         sl,
-
         model
-
     )
 
     capital = capital_required(
-
         entry,
-
-        qty
-
+        quantity
     )
 
     rr = risk_reward(
-
         entry,
-
         sl,
-
         t1
-
     )
 
     return {
 
-        "Quantity": qty,
+        "Quantity": quantity,
 
         "Capital": capital,
 
         "RiskAmount": round(
-
             risk_amount(model),
-
             2
-
         ),
 
         "RR": rr
-
     }
