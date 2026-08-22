@@ -2,7 +2,7 @@
 # 🌅 MORNING STRICT SCAN
 # ==========================================
 
-Generated : **23-Aug-2026 00:16 IST**
+Generated : **23-Aug-2026 01:39 IST**
 
 ## Market Summary
 
