@@ -5,8 +5,26 @@ Strict Institutional Scanner
 Part 1 of 2
 """
 
+import os
+import sys
 import datetime
 import pandas as pd
+
+
+# ==========================================================
+# Add scanner directory to Python path
+# ==========================================================
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SCANNER_DIR = os.path.join(BASE_DIR, "scanner")
+
+if SCANNER_DIR not in sys.path:
+    sys.path.insert(0, SCANNER_DIR)
+
+
+# ==========================================================
+# Core Imports
+# ==========================================================
 
 from core.downloader import (
     get_fno_symbols,
