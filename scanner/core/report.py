@@ -5,9 +5,9 @@ Report Builder
 
 import pandas as pd
 
-from core.utils import (
+from .utils import (
     banner,
-    timestamp,
+    timestamp
 )
 
 
@@ -21,11 +21,20 @@ def market_summary(market):
 
     text += "## Market Summary\n\n"
 
-    text += f"- NIFTY : **{market['NIFTY']}**\n"
+    text += (
+        f"- NIFTY : "
+        f"**{market.get('NIFTY', 'NA')}**\n"
+    )
 
-    text += f"- BANKNIFTY : **{market['BANKNIFTY']}**\n"
+    text += (
+        f"- BANKNIFTY : "
+        f"**{market.get('BANKNIFTY', 'NA')}**\n"
+    )
 
-    text += f"- Market Mode : **{market['MODE']}**\n"
+    text += (
+        f"- Market Mode : "
+        f"**{market.get('MODE', 'UNKNOWN')}**\n"
+    )
 
     text += "\n---\n\n"
 
@@ -33,7 +42,7 @@ def market_summary(market):
 
 
 # ==========================================================
-# Build Scan Report
+# Build Report
 # ==========================================================
 
 def build_report(
@@ -44,51 +53,82 @@ def build_report(
 
     md = ""
 
-    md += banner(report_title)
+    md += banner(
+        report_title
+    )
 
-    md += f"Generated : **{timestamp()}**\n\n"
+    md += (
+        f"Generated : "
+        f"**{timestamp()}**\n\n"
+    )
 
-    md += market_summary(market)
+    md += market_summary(
+        market
+    )
 
     if dataframe.empty:
 
-        md += "## No qualifying stocks found.\n"
+        md += (
+            "## No qualifying "
+            "stocks found.\n"
+        )
 
         return md
 
-    md += "## Top Institutional Picks\n\n"
+    md += (
+        "## Top Institutional Picks\n\n"
+    )
 
     for _, row in dataframe.iterrows():
 
-        md += f"### {row['Symbol']} ({row['Grade']})\n\n"
+        md += (
+            f"### {row.get('Symbol', 'UNKNOWN')} "
+            f"({row.get('Grade', 'N/A')})\n\n"
+        )
 
-        md += f"- Institutional Score : **{row['Score']}**\n"
+        fields = [
+            ("Score", "Institutional Score"),
+            ("Trade", "Trade Type"),
+            ("Entry", "Entry"),
+            ("SL", "Stop Loss"),
+            ("T1", "Target 1"),
+            ("T2", "Target 2"),
+            ("T3", "Target 3"),
+            ("RSI", "RSI"),
+            ("RVOL", "Relative Volume"),
+            ("Lorentz", "Lorentz Score"),
+            ("EMA20", "EMA20"),
+            ("EMA50", "EMA50"),
+            ("EMA200", "EMA200"),
+            ("VWAP", "VWAP")
+        ]
 
-        md += f"- Trade Type : {row['Trade']}\n"
+        for key, label in fields:
 
-        md += f"- Entry : ₹{row['Entry']}\n"
+            value = row.get(
+                key,
+                "N/A"
+            )
 
-        md += f"- Stop Loss : ₹{row['SL']}\n"
+            if key in [
+                "Entry",
+                "SL",
+                "T1",
+                "T2",
+                "T3"
+            ]:
 
-        md += f"- Target 1 : ₹{row['T1']}\n"
+                md += (
+                    f"- {label} : "
+                    f"₹{value}\n"
+                )
 
-        md += f"- Target 2 : ₹{row['T2']}\n"
+            else:
 
-        md += f"- Target 3 : ₹{row['T3']}\n"
-
-        md += f"- RSI : {row['RSI']}\n"
-
-        md += f"- Relative Volume : {row['RVOL']}\n"
-
-        md += f"- Lorentz Score : {row['Lorentz']}\n"
-
-        md += f"- EMA20 : {row['EMA20']}\n"
-
-        md += f"- EMA50 : {row['EMA50']}\n"
-
-        md += f"- EMA200 : {row['EMA200']}\n"
-
-        md += f"- VWAP : {row['VWAP']}\n"
+                md += (
+                    f"- {label} : "
+                    f"**{value}**\n"
+                )
 
         md += "\n---\n\n"
 
@@ -96,7 +136,7 @@ def build_report(
 
 
 # ==========================================================
-# Convert Results to DataFrame
+# Results DataFrame
 # ==========================================================
 
 def results_dataframe(results):
@@ -105,30 +145,27 @@ def results_dataframe(results):
 
         return pd.DataFrame()
 
-    df = pd.DataFrame(results)
+    df = pd.DataFrame(
+        results
+    )
 
-    df = df.sort_values(
-
-        by=[
-
+    sort_columns = [
+        col
+        for col in [
             "Score",
-
             "RVOL",
-
             "RSI"
+        ]
+        if col in df.columns
+    ]
 
-        ],
+    if sort_columns:
 
-        ascending=False
+        df = df.sort_values(
+            by=sort_columns,
+            ascending=False
+        )
 
+    return df.reset_index(
+        drop=True
     )
-
-    df.reset_index(
-
-        drop=True,
-
-        inplace=True
-
-    )
-
-    return df
