@@ -1,12 +1,12 @@
 """
 Trading OS v12 Professional
-Budget Scanner (< ₹500)
+Budget Scanner (< ₹600)
 """
 
 import pandas as pd
 
 from scanner.core.downloader import (
-    get_nse1800,
+    get_nse750,
     download_all
 )
 
@@ -26,7 +26,7 @@ from scanner.core.utils import (
 
 TOP_RESULTS = 25
 
-MAX_PRICE = 700
+MAX_PRICE = 600
 
 
 # ==========================================================
@@ -41,12 +41,12 @@ def run_budget():
 
     market = get_market_status()
 
-    symbols = get_nse1800()
+    symbols = get_nse750()
 
     if not symbols:
 
         logger.error(
-            "No NSE1800 symbols available."
+            "No NSE750 symbols available."
         )
 
         return False
@@ -116,7 +116,7 @@ def run_budget():
     )
 
     markdown = (
-        "# 💰 Budget Scanner (< ₹500)\n\n"
+        "# 💰 Budget Scanner (< ₹600)\n\n"
     )
 
     markdown += (
