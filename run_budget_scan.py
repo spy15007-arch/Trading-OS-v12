@@ -6,7 +6,7 @@ Budget Scanner (< ₹500)
 import pandas as pd
 
 from scanner.core.downloader import (
-    get_nse500,
+    get_nse1800,
     download_all
 )
 
@@ -41,12 +41,12 @@ def run_budget():
 
     market = get_market_status()
 
-    symbols = get_nse500()
+    symbols = get_nse1800()
 
     if not symbols:
 
         logger.error(
-            "No NSE500 symbols available."
+            "No NSE1800 symbols available."
         )
 
         return False
