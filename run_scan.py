@@ -2,28 +2,57 @@
 Trading OS v12 Professional
 Strict Institutional Scanner
 
-Part 1 of 2
+FIXED:
+- Supports scanner/core project structure
+- Correct Python import path
+- Uses core.downloader
+- Uses core.scoring
+- Uses core.market
+- Uses core.utils
 """
 
 import os
 import sys
 import datetime
+
 import pandas as pd
 
 
 # ==========================================================
-# Add scanner directory to Python path
+# PROJECT PATH FIX
+# ==========================================================
+# Repository structure:
+#
+# Trading-OS-v12/
+# ├── run_scan.py
+# └── scanner/
+#     └── core/
+#
+# The existing core modules internally import:
+#     from core.indicators import ...
+#
+# Therefore the scanner directory must be added to
+# Python's module search path.
 # ==========================================================
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SCANNER_DIR = os.path.join(BASE_DIR, "scanner")
+ROOT_DIR = os.path.dirname(
+    os.path.abspath(__file__)
+)
+
+SCANNER_DIR = os.path.join(
+    ROOT_DIR,
+    "scanner"
+)
 
 if SCANNER_DIR not in sys.path:
-    sys.path.insert(0, SCANNER_DIR)
+    sys.path.insert(
+        0,
+        SCANNER_DIR
+    )
 
 
 # ==========================================================
-# Core Imports
+# CORE IMPORTS
 # ==========================================================
 
 from core.downloader import (
@@ -31,7 +60,9 @@ from core.downloader import (
     download_all,
 )
 
-from core.scoring import score_stock
+from core.scoring import (
+    score_stock,
+)
 
 from core.market import (
     get_market_status,
@@ -45,7 +76,7 @@ from core.utils import (
 
 
 # ==========================================================
-# Configuration
+# CONFIGURATION
 # ==========================================================
 
 TOP_RESULTS = 25
@@ -56,14 +87,19 @@ INTERVAL = "1d"
 
 
 # ==========================================================
-# Trading Session
+# TRADING SESSION
 # ==========================================================
 
 def get_session():
 
-    ist = (
-        datetime.datetime.utcnow()
-        + datetime.timedelta(hours=5, minutes=30)
+    # Current UTC converted to IST
+    utc_now = datetime.datetime.now(
+        datetime.timezone.utc
+    )
+
+    ist = utc_now + datetime.timedelta(
+        hours=5,
+        minutes=30
     )
 
     if ist.hour < 12:
@@ -80,218 +116,512 @@ def get_session():
 
 
 # ==========================================================
-# Scan Engine
+# SCAN ENGINE
 # ==========================================================
 
 def run_scan():
 
     title, session = get_session()
 
-    logger.info("Loading Market Regime...")
+    logger.info(
+        "=============================================="
+    )
 
-    market = get_market_status()
+    logger.info(
+        "TRADING OS v12 PROFESSIONAL"
+    )
 
-    logger.info("Downloading NSE F&O Universe...")
+    logger.info(
+        "STRICT INSTITUTIONAL SCANNER"
+    )
 
-    symbols = get_fno_symbols()
+    logger.info(
+        "=============================================="
+    )
+
+    logger.info(
+        f"Session: {session}"
+    )
+
+
+    # ======================================================
+    # MARKET REGIME
+    # ======================================================
+
+    logger.info(
+        "Loading Market Regime..."
+    )
+
+    try:
+
+        market = get_market_status()
+
+    except Exception as e:
+
+        logger.error(
+            f"Market Regime Error: {e}"
+        )
+
+        market = {
+            "MODE": "UNKNOWN",
+            "NIFTY": "NA",
+            "BANKNIFTY": "NA",
+            "NIFTY_RSI": "NA",
+            "BANK_RSI": "NA",
+            "TOTAL_SCORE": "NA",
+        }
+
+
+    # ======================================================
+    # F&O UNIVERSE
+    # ======================================================
+
+    logger.info(
+        "Downloading NSE F&O Universe..."
+    )
+
+    try:
+
+        symbols = get_fno_symbols()
+
+    except Exception as e:
+
+        logger.error(
+            f"F&O Universe Error: {e}"
+        )
+
+        return
+
+
+    if not symbols:
+
+        logger.warning(
+            "No F&O symbols found."
+        )
+
+        return
+
 
     logger.info(
         f"{len(symbols)} Symbols Found"
     )
 
-    database = download_all(
 
-        symbols,
-
-        period=LOOKBACK,
-
-        interval=INTERVAL
-
-    )
+    # ======================================================
+    # DOWNLOAD MARKET DATA
+    # ======================================================
 
     logger.info(
-
-        f"{len(database)} Charts Downloaded"
-
+        "Downloading historical market data..."
     )
 
+    try:
+
+        database = download_all(
+            symbols,
+            period=LOOKBACK,
+            interval=INTERVAL
+        )
+
+    except Exception as e:
+
+        logger.error(
+            f"Market data download failed: {e}"
+        )
+
+        return
+
+
+    if not database:
+
+        logger.warning(
+            "No market data downloaded."
+        )
+
+        return
+
+
+    logger.info(
+        f"{len(database)} Charts Downloaded"
+    )
+
+
+    # ======================================================
+    # SCORE STOCKS
+    # ======================================================
+
     results = []
+
+    logger.info(
+        "Running institutional scoring engine..."
+    )
+
 
     for symbol, df in database.items():
 
         try:
 
+            if df is None or df.empty:
+
+                continue
+
+
             stock = score_stock(df)
+
 
             if stock is None:
 
                 continue
+
 
             stock["Symbol"] = symbol.replace(
                 ".NS",
                 ""
             )
 
-            results.append(stock)
+
+            results.append(
+                stock
+            )
+
 
         except Exception as e:
 
             logger.warning(
-
                 f"{symbol} : {e}"
-
             )
 
             continue
 
+
+    # ======================================================
+    # NO RESULTS
+    # ======================================================
+
     if len(results) == 0:
 
         logger.warning(
-
             "No qualifying stocks found."
-
         )
 
         return
 
-    report = (
-        pd.DataFrame(results)
-        .sort_values(
-            by=[
-                "Score",
-                "RVOL",
-                "RSI"
-            ],
+
+    # ======================================================
+    # CREATE REPORT DATAFRAME
+    # ======================================================
+
+    report = pd.DataFrame(
+        results
+    )
+
+
+    # ------------------------------------------------------
+    # Make sure sorting columns exist
+    # ------------------------------------------------------
+
+    sort_columns = []
+
+    for column in [
+        "Score",
+        "RVOL",
+        "RSI"
+    ]:
+
+        if column in report.columns:
+
+            sort_columns.append(
+                column
+            )
+
+
+    if sort_columns:
+
+        report = report.sort_values(
+            by=sort_columns,
             ascending=False
         )
+
+
+    report = (
+        report
         .head(TOP_RESULTS)
         .reset_index(drop=True)
     )
 
+
+    # ======================================================
+    # BUILD MARKDOWN REPORT
+    # ======================================================
+
     markdown = ""
+
 
     markdown += banner(
         "TRADING OS v12 PROFESSIONAL"
     )
 
-    markdown += f"# {title}\n\n"
-
-    markdown += "## Market Status\n\n"
 
     markdown += (
-        f"- NIFTY : {market['NIFTY']}\n"
+        f"# {title}\n\n"
     )
+
 
     markdown += (
-        f"- BANKNIFTY : {market['BANKNIFTY']}\n"
+        f"**Session:** {session}\n\n"
     )
+
+
+    # ======================================================
+    # MARKET STATUS
+    # ======================================================
 
     markdown += (
-        f"- MODE : {market['MODE']}\n\n"
+        "## Market Status\n\n"
     )
 
-    markdown += "---\n\n"
+
+    markdown += (
+        f"- NIFTY : "
+        f"{market.get('NIFTY', 'NA')}\n"
+    )
+
+
+    markdown += (
+        f"- BANKNIFTY : "
+        f"{market.get('BANKNIFTY', 'NA')}\n"
+    )
+
+
+    markdown += (
+        f"- NIFTY RSI : "
+        f"{market.get('NIFTY_RSI', 'NA')}\n"
+    )
+
+
+    markdown += (
+        f"- BANKNIFTY RSI : "
+        f"{market.get('BANK_RSI', 'NA')}\n"
+    )
+
+
+    markdown += (
+        f"- MARKET MODE : "
+        f"{market.get('MODE', 'UNKNOWN')}\n"
+    )
+
+
+    markdown += (
+        f"- TOTAL MARKET SCORE : "
+        f"{market.get('TOTAL_SCORE', 'NA')}\n\n"
+    )
+
+
+    markdown += (
+        "---\n\n"
+    )
+
+
+    # ======================================================
+    # TOP PICKS
+    # ======================================================
 
     markdown += (
         "## Top Institutional Picks\n\n"
     )
 
+
     for _, row in report.iterrows():
 
-        markdown += (
-            f"### {row['Symbol']} ({row['Grade']})\n\n"
+        symbol = row.get(
+            "Symbol",
+            "UNKNOWN"
         )
 
-        markdown += (
-            f"- Institutional Score : **{row['Score']}**\n"
+        grade = row.get(
+            "Grade",
+            "N/A"
         )
 
-        markdown += (
-            f"- Trade Type : **{row['Trade']}**\n"
-        )
 
         markdown += (
-            f"- Entry : ₹{row['Entry']}\n"
+            f"### {symbol} ({grade})\n\n"
         )
+
+
+        # --------------------------------------------------
+        # Core scoring information
+        # --------------------------------------------------
 
         markdown += (
-            f"- Stop Loss : ₹{row['SL']}\n"
+            f"- Institutional Score : "
+            f"**{row.get('Score', 'N/A')}**\n"
         )
+
 
         markdown += (
-            f"- Target 1 : ₹{row['T1']}\n"
+            f"- Trade Type : "
+            f"**{row.get('Trade', 'N/A')}**\n"
         )
+
 
         markdown += (
-            f"- Target 2 : ₹{row['T2']}\n"
+            f"- Entry : "
+            f"₹{row.get('Entry', 'N/A')}\n"
         )
+
 
         markdown += (
-            f"- Target 3 : ₹{row['T3']}\n"
+            f"- Stop Loss : "
+            f"₹{row.get('SL', 'N/A')}\n"
         )
+
 
         markdown += (
-            f"- RSI : {row['RSI']}\n"
+            f"- Target 1 : "
+            f"₹{row.get('T1', 'N/A')}\n"
         )
+
 
         markdown += (
-            f"- Relative Volume : {row['RVOL']}\n"
+            f"- Target 2 : "
+            f"₹{row.get('T2', 'N/A')}\n"
         )
+
 
         markdown += (
-            f"- Lorentz Score : {row['Lorentz']}\n"
+            f"- Target 3 : "
+            f"₹{row.get('T3', 'N/A')}\n"
         )
+
+
+        # --------------------------------------------------
+        # Technical information
+        # --------------------------------------------------
 
         markdown += (
-            f"- EMA20 : {row['EMA20']}\n"
+            f"- RSI : "
+            f"{row.get('RSI', 'N/A')}\n"
         )
+
 
         markdown += (
-            f"- EMA50 : {row['EMA50']}\n"
+            f"- Relative Volume : "
+            f"{row.get('RVOL', 'N/A')}\n"
         )
+
 
         markdown += (
-            f"- EMA200 : {row['EMA200']}\n"
+            f"- Lorentz Score : "
+            f"{row.get('Lorentz', 'N/A')}\n"
         )
+
 
         markdown += (
-            f"- VWAP : {row['VWAP']}\n\n"
+            f"- EMA20 : "
+            f"{row.get('EMA20', 'N/A')}\n"
         )
 
-        markdown += "---\n\n"
+
+        markdown += (
+            f"- EMA50 : "
+            f"{row.get('EMA50', 'N/A')}\n"
+        )
+
+
+        markdown += (
+            f"- EMA200 : "
+            f"{row.get('EMA200', 'N/A')}\n"
+        )
+
+
+        markdown += (
+            f"- VWAP : "
+            f"{row.get('VWAP', 'N/A')}\n\n"
+        )
+
+
+        markdown += (
+            "---\n\n"
+        )
+
+
+    # ======================================================
+    # SAVE REPORT
+    # ======================================================
 
     filename = (
         "strict_scan.md"
     )
 
-    export_markdown(
-        markdown,
-        filename
-    )
+
+    try:
+
+        export_markdown(
+            markdown,
+            filename
+        )
+
+    except Exception as e:
+
+        logger.error(
+            f"Could not export report: {e}"
+        )
+
+
+    # ======================================================
+    # CONSOLE OUTPUT
+    # ======================================================
 
     print(
         "\n"
-        + "=" * 60
+        + "=" * 70
     )
+
 
     print(
         "TRADING OS v12 PROFESSIONAL"
     )
 
+
     print(
         title
     )
 
+
     print(
-        "=" * 60
+        "=" * 70
     )
 
-    print(report)
+
+    print(
+        "\nMARKET MODE : "
+        + str(
+            market.get(
+                "MODE",
+                "UNKNOWN"
+            )
+        )
+    )
+
+
+    print(
+        "\nTOP INSTITUTIONAL PICKS\n"
+    )
+
+
+    print(
+        report.to_string(
+            index=False
+        )
+    )
+
 
     print(
         "\nReport Saved : reports/"
         + filename
     )
+
 
     logger.info(
         "Strict scan completed successfully."
@@ -299,7 +629,7 @@ def run_scan():
 
 
 # ==========================================================
-# Main
+# MAIN
 # ==========================================================
 
 if __name__ == "__main__":
