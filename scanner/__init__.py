@@ -1,4 +1,4 @@
 """
-Trading OS v12 Professional
-Core Engine Package
+Trading OS v12
+Scanner package
 """
