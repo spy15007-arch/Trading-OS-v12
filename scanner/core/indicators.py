@@ -1,9 +1,6 @@
 """
 Trading OS v12 Professional
-Technical Indicators Engine
-
-This module provides all technical indicators used by
-the institutional scoring and scanner engines.
+Technical Indicators
 """
 
 import numpy as np
@@ -11,116 +8,34 @@ import pandas as pd
 
 
 # ==========================================================
-# INTERNAL HELPERS
+# Helper
 # ==========================================================
 
-def _to_series(value):
-    """
-    Convert pandas Series/DataFrame input into a clean Series.
-
-    Yahoo Finance can sometimes return DataFrames or MultiIndex
-    structures. This helper keeps downstream indicator code
-    consistent.
-    """
+def _series(value):
 
     if isinstance(value, pd.DataFrame):
 
         if value.shape[1] == 1:
-            value = value.iloc[:, 0]
+            return value.iloc[:, 0]
 
-        else:
-            value = value.squeeze()
+        raise ValueError(
+            "Expected Series but received DataFrame"
+        )
 
-            if isinstance(value, pd.DataFrame):
-                value = value.iloc[:, 0]
-
-    return pd.to_numeric(
-        value,
-        errors="coerce"
-    )
-
-
-def _clean_frame(df):
-    """
-    Normalise an OHLCV dataframe.
-    """
-
-    if df is None or df.empty:
-        return pd.DataFrame()
-
-    data = df.copy()
-
-    # Handle Yahoo Finance MultiIndex columns.
-    if isinstance(
-        data.columns,
-        pd.MultiIndex
-    ):
-
-        flattened = []
-
-        for column in data.columns:
-
-            if isinstance(
-                column,
-                tuple
-            ):
-
-                flattened.append(
-                    str(column[0])
-                )
-
-            else:
-
-                flattened.append(
-                    str(column)
-                )
-
-        data.columns = flattened
-
-    data.columns = [
-        str(column).strip()
-        for column in data.columns
-    ]
-
-    return data
+    return value
 
 
 # ==========================================================
-# EXPONENTIAL MOVING AVERAGE
+# Exponential Moving Average
 # ==========================================================
 
-def ema(
-    series,
-    period
-):
+def ema(series, period):
 
-    series = _to_series(
-        series
-    )
+    series = _series(series)
 
     return series.ewm(
         span=period,
-        adjust=False,
-        min_periods=period
-    ).mean()
-
-
-# ==========================================================
-# SIMPLE MOVING AVERAGE
-# ==========================================================
-
-def sma(
-    series,
-    period
-):
-
-    series = _to_series(
-        series
-    )
-
-    return series.rolling(
-        window=period,
-        min_periods=period
+        adjust=False
     ).mean()
 
 
@@ -128,56 +43,36 @@ def sma(
 # RSI
 # ==========================================================
 
-def rsi(
-    series,
-    period=14
-):
+def rsi(series, period=14):
 
-    series = _to_series(
-        series
-    )
+    series = _series(series)
 
     delta = series.diff()
 
-    gain = delta.clip(
-        lower=0
-    )
+    gain = delta.clip(lower=0)
 
-    loss = -delta.clip(
-        upper=0
-    )
+    loss = -delta.clip(upper=0)
 
     avg_gain = gain.ewm(
         alpha=1 / period,
-        adjust=False,
-        min_periods=period
+        adjust=False
     ).mean()
 
     avg_loss = loss.ewm(
         alpha=1 / period,
-        adjust=False,
-        min_periods=period
+        adjust=False
     ).mean()
 
-    rs = (
-        avg_gain /
-        avg_loss.replace(
-            0,
-            np.nan
-        )
+    rs = avg_gain / avg_loss.replace(
+        0,
+        np.nan
     )
 
-    result = (
-        100 -
-        (
-            100 /
-            (1 + rs)
-        )
+    result = 100 - (
+        100 / (1 + rs)
     )
 
-    return result.fillna(
-        50.0
-    )
+    return result
 
 
 # ==========================================================
@@ -191,34 +86,24 @@ def macd(
     signal=9
 ):
 
-    series = _to_series(
-        series
-    )
+    series = _series(series)
 
-    fast_ema = ema(
+    ema_fast = ema(
         series,
         fast
     )
 
-    slow_ema = ema(
+    ema_slow = ema(
         series,
         slow
     )
 
-    macd_line = (
-        fast_ema -
-        slow_ema
-    )
+    macd_line = ema_fast - ema_slow
 
-    signal_line = (
-        macd_line
-        .ewm(
-            span=signal,
-            adjust=False,
-            min_periods=signal
-        )
-        .mean()
-    )
+    signal_line = macd_line.ewm(
+        span=signal,
+        adjust=False
+    ).mean()
 
     histogram = (
         macd_line -
@@ -236,66 +121,36 @@ def macd(
 # ATR
 # ==========================================================
 
-def atr(
-    df,
-    period=14
-):
+def atr(df, period=14):
 
-    data = _clean_frame(
-        df
-    )
+    high = _series(df["High"])
+    low = _series(df["Low"])
+    close = _series(df["Close"])
 
-    if data.empty:
-        return pd.Series(
-            dtype=float
-        )
-
-    high = _to_series(
-        data["High"]
-    )
-
-    low = _to_series(
-        data["Low"]
-    )
-
-    close = _to_series(
-        data["Close"]
-    )
-
-    previous_close = (
-        close.shift(1)
-    )
-
-    high_low = (
-        high -
-        low
-    )
+    high_low = high - low
 
     high_close = (
         high -
-        previous_close
+        close.shift()
     ).abs()
 
     low_close = (
         low -
-        previous_close
+        close.shift()
     ).abs()
 
-    true_range = pd.concat(
+    tr = pd.concat(
         [
             high_low,
             high_close,
             low_close
         ],
         axis=1
-    ).max(
-        axis=1
-    )
+    ).max(axis=1)
 
-    return true_range.ewm(
+    return tr.ewm(
         alpha=1 / period,
-        adjust=False,
-        min_periods=period
+        adjust=False
     ).mean()
 
 
@@ -305,59 +160,34 @@ def atr(
 
 def vwap(df):
 
-    data = _clean_frame(
-        df
-    )
+    high = _series(df["High"])
+    low = _series(df["Low"])
+    close = _series(df["Close"])
+    volume = _series(df["Volume"])
 
-    if data.empty:
-        return pd.Series(
-            dtype=float
-        )
-
-    high = _to_series(
-        data["High"]
-    )
-
-    low = _to_series(
-        data["Low"]
-    )
-
-    close = _to_series(
-        data["Close"]
-    )
-
-    volume = _to_series(
-        data["Volume"]
-    )
-
-    typical_price = (
+    typical = (
         high +
         low +
         close
-    ) / 3.0
+    ) / 3
 
-    price_volume = (
-        typical_price *
-        volume
-    )
+    pv = typical * volume
 
     cumulative_volume = (
         volume.cumsum()
     )
 
-    result = (
-        price_volume.cumsum() /
+    return (
+        pv.cumsum() /
         cumulative_volume.replace(
             0,
             np.nan
         )
     )
 
-    return result
-
 
 # ==========================================================
-# RELATIVE VOLUME
+# Relative Volume
 # ==========================================================
 
 def relative_volume(
@@ -365,192 +195,130 @@ def relative_volume(
     period=20
 ):
 
-    data = _clean_frame(
-        df
-    )
-
-    if data.empty:
-        return 0.0
-
-    volume = _to_series(
-        data["Volume"]
+    volume = _series(
+        df["Volume"]
     )
 
     if len(volume) < period:
+
         return 0.0
 
-    current_volume = float(
-        volume.iloc[-1]
-    )
-
-    average_volume = float(
+    average = (
         volume
-        .rolling(
-            period
-        )
+        .rolling(period)
         .mean()
         .iloc[-1]
     )
 
-    if (
-        not np.isfinite(
-            average_volume
-        )
-        or
-        average_volume <= 0
-    ):
+    current = float(
+        volume.iloc[-1]
+    )
+
+    if average <= 0:
 
         return 0.0
 
-    return (
-        current_volume /
-        average_volume
-    )
+    return current / average
 
 
 # ==========================================================
-# CLOSING STRENGTH
+# Closing Strength
 # ==========================================================
 
-def closing_strength(
-    df
-):
-
-    data = _clean_frame(
-        df
-    )
-
-    if data.empty:
-        return 0.0
+def closing_strength(df):
 
     high = float(
-        _to_series(
-            data["High"]
-        ).iloc[-1]
+        _series(df["High"]).iloc[-1]
     )
 
     low = float(
-        _to_series(
-            data["Low"]
-        ).iloc[-1]
+        _series(df["Low"]).iloc[-1]
     )
 
     close = float(
-        _to_series(
-            data["Close"]
-        ).iloc[-1]
+        _series(df["Close"]).iloc[-1]
     )
 
-    candle_range = (
-        high -
-        low
-    )
+    candle_range = high - low
 
     if candle_range <= 0:
+
         return 0.0
 
     return round(
-        (
-            close -
-            low
-        ) /
+        (close - low) /
         candle_range,
-        4
+        2
     )
 
 
 # ==========================================================
-# TREND STRENGTH
+# Trend Strength
 # ==========================================================
 
-def trend_strength(
-    df
-):
+def trend_strength(df):
 
-    data = _clean_frame(
-        df
+    close = _series(
+        df["Close"]
     )
 
-    if data.empty:
-        return 0
-
-    close = _to_series(
-        data["Close"]
-    )
-
-    if len(close) < 200:
-        return 0
-
-    ema20 = ema(
+    e20 = ema(
         close,
         20
     ).iloc[-1]
 
-    ema50 = ema(
+    e50 = ema(
         close,
         50
     ).iloc[-1]
 
-    ema200 = ema(
+    e200 = ema(
         close,
         200
     ).iloc[-1]
 
-    current_close = (
+    current = float(
         close.iloc[-1]
     )
 
     score = 0
 
-    if ema20 > ema50:
+    if e20 > e50:
         score += 1
 
-    if ema50 > ema200:
+    if e50 > e200:
         score += 1
 
-    if current_close > ema20:
+    if current > e20:
         score += 1
 
     return score
 
 
 # ==========================================================
-# PARKINSON VOLATILITY
+# Parkinson Volatility
 # ==========================================================
 
-def parkinson_volatility(
-    df
-):
+def parkinson_volatility(df):
 
-    data = _clean_frame(
-        df
+    high = _series(
+        df["High"]
     )
 
-    if data.empty:
-        return 0.0
-
-    high = _to_series(
-        data["High"]
+    low = _series(
+        df["Low"]
     )
 
-    low = _to_series(
-        data["Low"]
+    ratio = (
+        high / low
+    ).replace(
+        0,
+        np.nan
     )
 
-    valid = (
-        (high > 0) &
-        (low > 0)
-    )
+    hl = np.log(ratio)
 
-    if not valid.any():
-        return 0.0
-
-    hl = np.log(
-        high[valid] /
-        low[valid]
-    )
-
-    value = np.sqrt(
+    sigma = np.sqrt(
         (
             hl ** 2
         ).mean()
@@ -561,146 +329,25 @@ def parkinson_volatility(
         )
     )
 
-    return float(
-        value *
-        np.sqrt(252)
-    )
+    return sigma * np.sqrt(252)
 
 
 # ==========================================================
-# HISTORICAL VOLATILITY
+# Historical Volatility
 # ==========================================================
 
-def historical_volatility(
-    df
-):
+def historical_volatility(df):
 
-    data = _clean_frame(
-        df
-    )
-
-    if data.empty:
-        return 0.0
-
-    close = _to_series(
-        data["Close"]
+    close = _series(
+        df["Close"]
     )
 
     returns = np.log(
         close /
-        close.shift(1)
+        close.shift()
     )
 
-    value = (
-        returns
-        .dropna()
-        .std()
-    )
-
-    if not np.isfinite(
-        value
-    ):
-
-        return 0.0
-
-    return float(
-        value *
+    return (
+        returns.std() *
         np.sqrt(252)
-    )
-
-
-# ==========================================================
-# 52-WEEK HIGH
-# ==========================================================
-
-def highest_52_week(
-    df
-):
-
-    data = _clean_frame(
-        df
-    )
-
-    if data.empty:
-        return 0.0
-
-    high = _to_series(
-        data["High"]
-    )
-
-    if high.empty:
-        return 0.0
-
-    return float(
-        high.tail(
-            252
-        ).max()
-    )
-
-
-# ==========================================================
-# 52-WEEK LOW
-# ==========================================================
-
-def lowest_52_week(
-    df
-):
-
-    data = _clean_frame(
-        df
-    )
-
-    if data.empty:
-        return 0.0
-
-    low = _to_series(
-        data["Low"]
-    )
-
-    if low.empty:
-        return 0.0
-
-    return float(
-        low.tail(
-            252
-        ).min()
-    )
-
-
-# ==========================================================
-# PERCENT FROM 52-WEEK HIGH
-# ==========================================================
-
-def percent_from_52_week_high(
-    df
-):
-
-    data = _clean_frame(
-        df
-    )
-
-    if data.empty:
-        return 0.0
-
-    close = float(
-        _to_series(
-            data["Close"]
-        ).iloc[-1]
-    )
-
-    high_52 = highest_52_week(
-        data
-    )
-
-    if high_52 <= 0:
-        return 0.0
-
-    return round(
-        (
-            close /
-            high_52 -
-            1
-        ) *
-        100,
-        2
     )
