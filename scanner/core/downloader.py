@@ -1,137 +1,244 @@
 """
-trading os v12 professional
-broad nse universe downloader
+Trading OS v12 Professional
+Market Data Downloader
 
-universe:
-    up to 1800 nse-listed equity stocks
-
-purpose:
-    provide a much broader stock universe for
-    strict, aggressive and budget scanners
+Responsibilities:
+    - NSE equity universe
+    - 1800-stock scanning universe
+    - Yahoo Finance historical data
+    - NIFTY / BANK NIFTY index data
 """
 
 import time
-import requests
+import logging
+
 import pandas as pd
 import yfinance as yf
 
 
+logger = logging.getLogger(
+    "TradingOS"
+)
+
+
 # ==========================================================
-# configuration
+# CONFIGURATION
 # ==========================================================
 
-MAX_UNIVERSE = 1800
+DEFAULT_PERIOD = "6mo"
+DEFAULT_INTERVAL = "1d"
+
+INDEX_PERIOD = "2y"
+INDEX_INTERVAL = "1d"
 
 DOWNLOAD_CHUNK = 75
 
-REQUEST_TIMEOUT = 20
-
-MIN_HISTORY = 220
-
 
 # ==========================================================
-# headers
+# CLEAN YAHOO DATA
 # ==========================================================
 
-NSE_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 "
-        "(Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 "
-        "(KHTML, like Gecko) "
-        "Chrome/131.0 Safari/537.36"
-    ),
-    "Accept": (
-        "text/html,application/xhtml+xml,"
-        "application/xml;q=0.9,*/*;q=0.8"
-    ),
-    "Accept-Language": "en-US,en;q=0.9",
-    "Connection": "keep-alive",
-}
+def clean_dataframe(
+    df,
+    symbol=None
+):
 
+    if df is None or df.empty:
 
-# ==========================================================
-# helper
-# ==========================================================
+        return pd.DataFrame()
 
-def clean_symbol(symbol):
+    try:
 
-    if symbol is None:
-        return None
+        # --------------------------------------------------
+        # Flatten Yahoo MultiIndex
+        # --------------------------------------------------
 
-    symbol = str(symbol).strip().upper()
+        if isinstance(
+            df.columns,
+            pd.MultiIndex
+        ):
 
-    if not symbol:
-        return None
+            # Case: ticker is level 1
+            if (
+                symbol is not None and
+                symbol in df.columns
+                    .get_level_values(-1)
+            ):
 
-    # remove obvious invalid characters
-    if any(
-        x in symbol
-        for x in [
-            " ",
-            "/",
-            "\\",
-            "&",
-            "#",
-            "%",
-            "(",
-            ")",
+                try:
+
+                    df = df.xs(
+                        symbol,
+                        axis=1,
+                        level=-1
+                    )
+
+                except Exception:
+                    pass
+
+            # Still MultiIndex
+            if isinstance(
+                df.columns,
+                pd.MultiIndex
+            ):
+
+                df.columns = (
+                    df.columns
+                    .get_level_values(0)
+                )
+
+        # --------------------------------------------------
+        # Standardise columns
+        # --------------------------------------------------
+
+        df.columns = [
+            str(c).strip()
+            for c in df.columns
         ]
-    ):
-        return None
 
-    return symbol
+        required = [
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume"
+        ]
+
+        missing = [
+            c
+            for c in required
+            if c not in df.columns
+        ]
+
+        if missing:
+
+            return pd.DataFrame()
+
+        df = df[
+            required
+        ].copy()
+
+        df = df.apply(
+            pd.to_numeric,
+            errors="coerce"
+        )
+
+        df = df.dropna()
+
+        return df
+
+    except Exception:
+
+        return pd.DataFrame()
 
 
 # ==========================================================
-# get broad nse universe
+# DOWNLOAD INDEX
 # ==========================================================
 
-def get_broad_nse_universe():
+def download_index(
+    symbol,
+    period=INDEX_PERIOD,
+    interval=INDEX_INTERVAL
+):
 
-    """
-    downloads the broad nse equity universe.
+    try:
 
-    returns up to 1800 usable NSE symbols.
+        df = yf.download(
+            symbol,
+            period=period,
+            interval=interval,
+            progress=False,
+            auto_adjust=True,
+            threads=False,
+            prepost=False
+        )
 
-    yfinance format:
-        SYMBOL.NS
-    """
+        df = clean_dataframe(
+            df,
+            symbol
+        )
+
+        return df
+
+    except Exception as e:
+
+        logger.warning(
+            f"Index download failed "
+            f"for {symbol}: {e}"
+        )
+
+        return pd.DataFrame()
+
+
+# ==========================================================
+# DOWNLOAD ONE STOCK
+# ==========================================================
+
+def download_stock(
+    symbol,
+    period=DEFAULT_PERIOD,
+    interval=DEFAULT_INTERVAL
+):
+
+    try:
+
+        df = yf.download(
+            symbol,
+            period=period,
+            interval=interval,
+            progress=False,
+            auto_adjust=True,
+            threads=False,
+            prepost=False
+        )
+
+        return clean_dataframe(
+            df,
+            symbol
+        )
+
+    except Exception as e:
+
+        logger.warning(
+            f"{symbol}: {e}"
+        )
+
+        return pd.DataFrame()
+
+
+# ==========================================================
+# NSE EQUITY UNIVERSE
+# ==========================================================
+
+def get_nse_equity_universe():
+
+    logger.info(
+        "Downloading NSE equity universe..."
+    )
 
     urls = [
 
-        # NSE equity master
-        "https://archives.nseindia.com/content/equities/EQUITY_L.csv",
+        (
+            "https://archives.nseindia.com/"
+            "content/equities/"
+            "EQUITY_L.csv"
+        ),
 
-        # fallback
-        "https://archives.nseindia.com/content/equities/EQUITY_L.csv",
-
+        (
+            "https://archives.nseindia.com/"
+            "content/equities/"
+            "EQ_ISINCODE_2026.csv"
+        )
     ]
-
-    symbols = []
 
     for url in urls:
 
         try:
 
-            print(
-                "Downloading NSE equity universe..."
-            )
-
-            response = requests.get(
-                url,
-                headers=NSE_HEADERS,
-                timeout=REQUEST_TIMEOUT
-            )
-
-            response.raise_for_status()
-
-            from io import StringIO
-
             df = pd.read_csv(
-                StringIO(
-                    response.text
-                )
+                url,
+                timeout=30
             )
 
             df.columns = [
@@ -139,108 +246,126 @@ def get_broad_nse_universe():
                 for c in df.columns
             ]
 
-            # --------------------------------------------------
-            # find symbol column
-            # --------------------------------------------------
-
             symbol_column = None
 
-            for column in [
+            for candidate in [
                 "SYMBOL",
                 "SYMBOLS",
+                "TICKER"
             ]:
 
-                if column in df.columns:
+                if candidate in df.columns:
 
-                    symbol_column = column
+                    symbol_column = candidate
                     break
 
             if symbol_column is None:
+
                 continue
 
-            for value in df[
-                symbol_column
-            ].tolist():
+            symbols = []
 
-                symbol = clean_symbol(
-                    value
+            for symbol in df[
+                symbol_column
+            ].dropna():
+
+                symbol = str(
+                    symbol
+                ).strip().upper()
+
+                if not symbol:
+                    continue
+
+                if (
+                    symbol.startswith(
+                        "20"
+                    )
+                ):
+                    continue
+
+                symbols.append(
+                    f"{symbol}.NS"
                 )
 
-                if symbol:
+            symbols = sorted(
+                list(
+                    set(symbols)
+                )
+            )
 
-                    symbols.append(
-                        symbol + ".NS"
-                    )
+            if len(symbols) >= 500:
 
-            if symbols:
-                break
+                logger.info(
+                    f"NSE universe: "
+                    f"{len(symbols)} symbols"
+                )
+
+                return symbols
 
         except Exception as e:
 
-            print(
-                f"NSE universe download failed: {e}"
+            logger.warning(
+                f"NSE universe source "
+                f"failed: {e}"
             )
 
-            continue
+    return []
 
-    # ======================================================
-    # fallback universe
-    # ======================================================
+
+# ==========================================================
+# 1800-STOCK UNIVERSE
+# ==========================================================
+
+def get_broad_universe(
+    limit=1800
+):
+
+    symbols = (
+        get_nse_equity_universe()
+    )
 
     if not symbols:
 
-        print(
-            "Using fallback NSE universe."
+        logger.warning(
+            "NSE equity universe unavailable."
         )
 
-        symbols = [
-            "RELIANCE.NS",
-            "HDFCBANK.NS",
-            "ICICIBANK.NS",
-            "SBIN.NS",
-            "INFY.NS",
-            "TCS.NS",
-            "BHARTIARTL.NS",
-            "ITC.NS",
-            "LT.NS",
-            "AXISBANK.NS",
-            "KOTAKBANK.NS",
-            "HINDUNILVR.NS",
-            "MARUTI.NS",
-            "M&M.NS",
-            "SUNPHARMA.NS",
-            "TITAN.NS",
-            "BAJFINANCE.NS",
-            "ADANIENT.NS",
-            "ADANIPORTS.NS",
-            "NTPC.NS",
-            "POWERGRID.NS",
-            "TATASTEEL.NS",
-            "JSWSTEEL.NS",
-            "BEL.NS",
-            "HAL.NS",
-        ]
+        return []
 
-    # ======================================================
-    # remove duplicates
-    # ======================================================
+    # Remove common non-trading / ETF-like
+    # symbols where possible.
 
-    symbols = sorted(
-        list(
-            set(symbols)
-        )
-    )
+    blacklist = {
 
-    # ======================================================
-    # limit to 1800
-    # ======================================================
+        "NIFTYBEES.NS",
+        "BANKBEES.NS",
+        "JUNIORBEES.NS",
+        "GOLDBEES.NS",
+        "LIQUIDBEES.NS",
+        "ITBEES.NS",
+        "PHARMABEES.NS",
+        "CPSEETF.NS",
+        "MON100.NS",
+        "SETFNIF50.NS",
 
-    symbols = symbols[
-        :MAX_UNIVERSE
+    }
+
+    symbols = [
+        s
+        for s in symbols
+        if s not in blacklist
     ]
 
-    print(
-        f"broad nse universe: "
+    # Deterministic universe.
+    # This keeps the scanner at the
+    # requested 1800-stock level.
+
+    symbols = symbols[
+        :limit
+    ]
+
+    logger.info(
+        f"Broad NSE universe: "
         f"{len(symbols)} symbols"
     )
 
@@ -248,59 +373,70 @@ def get_broad_nse_universe():
 
 
 # ==========================================================
-# compatibility function
+# NSE 500
 # ==========================================================
 
 def get_nse500():
 
-    """
-    kept for compatibility with the budget scanner.
-
-    IMPORTANT:
-    this now returns the broad 1800-stock universe.
-    """
-
-    return get_broad_nse_universe()
-
-
-# ==========================================================
-# f&o universe
-# ==========================================================
-
-def get_fno_symbols():
-
-    """
-    attempts to obtain the NSE F&O universe.
-
-    if NSE blocks the request, automatically falls back
-    to the broad 1800-stock universe.
-    """
-
     url = (
         "https://archives.nseindia.com/"
-        "content/fo/fo_mktlots.csv"
+        "content/indices/"
+        "ind_nifty500list.csv"
     )
 
     try:
 
-        print(
-            "Downloading NSE F&O universe..."
+        df = pd.read_csv(
+            url
         )
 
-        response = requests.get(
-            url,
-            headers=NSE_HEADERS,
-            timeout=REQUEST_TIMEOUT
+        df.columns = [
+            str(c).strip()
+            for c in df.columns
+        ]
+
+        symbols = [
+
+            f"{str(s).strip().upper()}.NS"
+
+            for s in df["Symbol"].dropna()
+
+        ]
+
+        return sorted(
+            list(
+                set(symbols)
+            )
         )
 
-        response.raise_for_status()
+    except Exception as e:
 
-        from io import StringIO
+        logger.warning(
+            f"NIFTY 500 download failed: "
+            f"{e}"
+        )
+
+        return get_broad_universe(
+            500
+        )
+
+
+# ==========================================================
+# F&O UNIVERSE
+# ==========================================================
+
+def get_fno_symbols():
+
+    url = (
+        "https://archives.nseindia.com/"
+        "content/fo/"
+        "fo_mktlots.csv"
+    )
+
+    try:
 
         df = pd.read_csv(
-            StringIO(
-                response.text
-            )
+            url
         )
 
         df.columns = [
@@ -309,78 +445,63 @@ def get_fno_symbols():
         ]
 
         if "SYMBOL" not in df.columns:
+
             raise ValueError(
-                "SYMBOL column missing"
+                "SYMBOL column not found"
             )
 
-        symbols = []
+        symbols = [
 
-        for value in df["SYMBOL"]:
+            f"{str(s).strip().upper()}.NS"
 
-            symbol = clean_symbol(
-                value
-            )
+            for s in df[
+                "SYMBOL"
+            ].dropna()
 
-            if symbol:
+        ]
 
-                symbols.append(
-                    symbol + ".NS"
-                )
-
-        symbols = sorted(
+        return sorted(
             list(
                 set(symbols)
             )
         )
 
-        if len(symbols) < 50:
-
-            raise ValueError(
-                "F&O universe unexpectedly small"
-            )
-
-        print(
-            f"F&O universe: "
-            f"{len(symbols)} symbols"
-        )
-
-        return symbols
-
     except Exception as e:
 
-        print(
+        logger.warning(
             "F&O universe download failed: "
             f"{e}"
         )
 
-        print(
-            "Falling back to broad "
-            "1800-stock universe."
-        )
-
-        return get_broad_nse_universe()
+        return []
 
 
 # ==========================================================
-# batch downloader
+# BATCH DOWNLOADER
 # ==========================================================
 
 def download_all(
     tickers,
-    period="6mo",
-    interval="1d",
+    period=DEFAULT_PERIOD,
+    interval=DEFAULT_INTERVAL,
     chunk=DOWNLOAD_CHUNK
 ):
 
     database = {}
 
-    total = len(tickers)
-
-    print(
-        f"Downloading {total} symbols..."
+    tickers = list(
+        dict.fromkeys(
+            tickers
+        )
     )
 
-    processed = 0
+    total = len(
+        tickers
+    )
+
+    logger.info(
+        f"Downloading {total} symbols..."
+    )
 
     for start in range(
         0,
@@ -395,51 +516,38 @@ def download_all(
         try:
 
             data = yf.download(
-
                 tickers=batch,
-
                 period=period,
-
                 interval=interval,
-
                 group_by="ticker",
-
                 auto_adjust=True,
-
                 threads=True,
-
                 progress=False,
-
-                prepost=False,
-
+                prepost=False
             )
 
-            # ==================================================
-            # single ticker
-            # ==================================================
+            # --------------------------------------------------
+            # Single ticker
+            # --------------------------------------------------
 
             if len(batch) == 1:
 
                 ticker = batch[0]
 
-                try:
+                df = clean_dataframe(
+                    data,
+                    ticker
+                )
 
-                    df = data.dropna()
+                if len(df) >= 50:
 
-                    if len(df) >= 50:
+                    database[
+                        ticker
+                    ] = df
 
-                        database[
-                            ticker
-                        ] = normalize_dataframe(
-                            df
-                        )
-
-                except Exception:
-                    pass
-
-            # ==================================================
-            # multiple tickers
-            # ==================================================
+            # --------------------------------------------------
+            # Multiple tickers
+            # --------------------------------------------------
 
             else:
 
@@ -447,17 +555,51 @@ def download_all(
 
                     try:
 
-                        df = data[
+                        if isinstance(
+                            data.columns,
+                            pd.MultiIndex
+                        ):
+
+                            if ticker not in (
+                                data.columns
+                                .get_level_values(0)
+                            ):
+
+                                if ticker not in (
+                                    data.columns
+                                    .get_level_values(1)
+                                ):
+
+                                    continue
+
+                            try:
+
+                                df = data[
+                                    ticker
+                                ]
+
+                            except Exception:
+
+                                df = data.xs(
+                                    ticker,
+                                    axis=1,
+                                    level=1
+                                )
+
+                        else:
+
+                            df = data
+
+                        df = clean_dataframe(
+                            df,
                             ticker
-                        ].dropna()
+                        )
 
                         if len(df) >= 50:
 
                             database[
                                 ticker
-                            ] = normalize_dataframe(
-                                df
-                            )
+                            ] = df
 
                     except Exception:
 
@@ -465,178 +607,33 @@ def download_all(
 
         except Exception as e:
 
-            print(
-                f"batch download error: {e}"
+            logger.warning(
+                f"Batch download failed "
+                f"{start + 1}-"
+                f"{min(start + chunk, total)}: "
+                f"{e}"
             )
 
-        processed += len(batch)
+        completed = min(
+            start + chunk,
+            total
+        )
 
-        print(
+        logger.info(
             f"Progress: "
-            f"{processed}/{total} | "
+            f"{completed}/{total} | "
             f"Charts: {len(database)}"
         )
 
-        # avoid hammering yahoo
-        time.sleep(0.20)
+        time.sleep(
+            0.10
+        )
 
     return database
 
 
 # ==========================================================
-# normalize dataframe
-# ==========================================================
-
-def normalize_dataframe(df):
-
-    """
-    ensures yfinance output has simple columns:
-        open
-        high
-        low
-        close
-        volume
-    """
-
-    if df is None or df.empty:
-        return df
-
-    # handle multi-index columns
-    if hasattr(
-        df.columns,
-        "nlevels"
-    ):
-
-        if df.columns.nlevels > 1:
-
-            try:
-
-                df.columns = (
-                    df.columns
-                    .get_level_values(0)
-                )
-
-            except Exception:
-                pass
-
-    df.columns = [
-        str(column).strip().title()
-        for column in df.columns
-    ]
-
-    required = [
-        "Open",
-        "High",
-        "Low",
-        "Close",
-        "Volume",
-    ]
-
-    for column in required:
-
-        if column not in df.columns:
-
-            return pd.DataFrame()
-
-    return df.dropna(
-        subset=[
-            "Close"
-        ]
-    )
-
-
-# ==========================================================
-# download index
-# ==========================================================
-
-def download_index(symbol):
-
-    try:
-
-        df = yf.download(
-
-            symbol,
-
-            period="2y",
-
-            interval="1d",
-
-            progress=False,
-
-            auto_adjust=True,
-
-            threads=False,
-
-        )
-
-        if df is None or df.empty:
-
-            return pd.DataFrame()
-
-        return normalize_dataframe(
-            df
-        )
-
-    except Exception as e:
-
-        print(
-            f"Index download error "
-            f"{symbol}: {e}"
-        )
-
-        return pd.DataFrame()
-
-
-# ==========================================================
-# download one stock
-# ==========================================================
-
-def download_stock(symbol):
-
-    try:
-
-        df = yf.download(
-
-            symbol,
-
-            period="2y",
-
-            interval="1d",
-
-            progress=False,
-
-            auto_adjust=True,
-
-            threads=False,
-
-        )
-
-        if df is None or df.empty:
-
-            return pd.DataFrame()
-
-        df = normalize_dataframe(
-            df
-        )
-
-        if len(df) < MIN_HISTORY:
-
-            return pd.DataFrame()
-
-        return df
-
-    except Exception as e:
-
-        print(
-            f"Stock download error "
-            f"{symbol}: {e}"
-        )
-
-        return pd.DataFrame()
-
-
-# ==========================================================
-# watchlist
+# WATCHLIST
 # ==========================================================
 
 def download_watchlist(
@@ -644,13 +641,8 @@ def download_watchlist(
 ):
 
     return download_all(
-
         watchlist,
-
-        period="2y",
-
+        period="6mo",
         interval="1d",
-
         chunk=25
-
     )
