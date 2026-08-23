@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 
 # ==========================================================
-# Risk Model
+# RISK MODEL
 # ==========================================================
 
 @dataclass
@@ -19,11 +19,11 @@ class RiskModel:
 
 
 # ==========================================================
-# Risk Amount
+# RISK AMOUNT
 # ==========================================================
 
 def risk_amount(
-    model
+    model: RiskModel
 ):
 
     return (
@@ -34,13 +34,13 @@ def risk_amount(
 
 
 # ==========================================================
-# Position Size
+# POSITION SIZE
 # ==========================================================
 
 def position_size(
     entry,
     stoploss,
-    model
+    model: RiskModel
 ):
 
     risk = risk_amount(
@@ -56,17 +56,19 @@ def position_size(
 
         return 0
 
+    quantity = int(
+        risk /
+        per_share
+    )
+
     return max(
-        int(
-            risk /
-            per_share
-        ),
+        quantity,
         0
     )
 
 
 # ==========================================================
-# Capital Required
+# CAPITAL REQUIRED
 # ==========================================================
 
 def capital_required(
@@ -82,7 +84,7 @@ def capital_required(
 
 
 # ==========================================================
-# Risk Reward
+# RISK / REWARD
 # ==========================================================
 
 def risk_reward(
@@ -102,6 +104,7 @@ def risk_reward(
     )
 
     if risk <= 0:
+
         return 0
 
     return round(
@@ -112,7 +115,7 @@ def risk_reward(
 
 
 # ==========================================================
-# Trade Plan
+# TRADE PLAN
 # ==========================================================
 
 def build_trade_plan(
@@ -155,4 +158,5 @@ def build_trade_plan(
         ),
 
         "RR": rr
+
     }
