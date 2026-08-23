@@ -6,29 +6,39 @@ Aggressive Momentum Scanner
 import pandas as pd
 
 from scanner.core.downloader import (
-    get_fno_symbols,
-    download_all
+    get_broad_universe,
+    download_all,
 )
 
 from scanner.core.scoring import (
-    score_stock
+    score_stock,
 )
 
 from scanner.core.market import (
-    get_market_status
+    get_market_status,
 )
 
 from scanner.core.utils import (
     export_markdown,
-    logger
+    logger,
 )
 
 
+# ==========================================================
+# CONFIGURATION
+# ==========================================================
+
+UNIVERSE_SIZE = 1800
+
 TOP_RESULTS = 25
+
+LOOKBACK = "6mo"
+
+INTERVAL = "1d"
 
 
 # ==========================================================
-# Scanner
+# AGGRESSIVE SCANNER
 # ==========================================================
 
 def run_aggressive():
@@ -37,27 +47,72 @@ def run_aggressive():
         "Starting Aggressive Momentum Scanner..."
     )
 
-    market = get_market_status()
+    # ------------------------------------------------------
+    # Market
+    # ------------------------------------------------------
 
-    symbols = get_fno_symbols()
+    try:
+
+        market = (
+            get_market_status()
+        )
+
+    except Exception as e:
+
+        logger.warning(
+            f"Market regime unavailable: {e}"
+        )
+
+        market = {
+
+            "MODE": "UNKNOWN",
+            "NIFTY": "NA",
+            "BANKNIFTY": "NA"
+
+        }
+
+    # ------------------------------------------------------
+    # Universe
+    # ------------------------------------------------------
+
+    symbols = (
+        get_broad_universe(
+            UNIVERSE_SIZE
+        )
+    )
 
     if not symbols:
 
         logger.error(
-            "No symbols available."
+            "No stock universe available."
         )
 
         return False
 
+    # ------------------------------------------------------
+    # Download
+    # ------------------------------------------------------
+
     database = download_all(
         symbols,
-        period="3mo",
-        interval="1d"
+        period=LOOKBACK,
+        interval=INTERVAL
     )
+
+    logger.info(
+        f"Charts downloaded: "
+        f"{len(database)}"
+    )
+
+    # ------------------------------------------------------
+    # Score
+    # ------------------------------------------------------
 
     results = []
 
-    for symbol, df in database.items():
+    for symbol, df in (
+        database.items()
+    ):
 
         try:
 
@@ -66,16 +121,21 @@ def run_aggressive():
             )
 
             if stock is None:
+
                 continue
 
+            # Aggressive filter
             if stock["Score"] < 10:
+
                 continue
 
-            if stock["RVOL"] < 1.2:
+            if stock["RVOL"] < 1.20:
+
                 continue
 
             stock["Symbol"] = (
-                symbol.replace(
+                symbol
+                .replace(
                     ".NS",
                     ""
                 )
@@ -91,13 +151,27 @@ def run_aggressive():
                 f"{symbol}: {e}"
             )
 
+    # ------------------------------------------------------
+    # No results
+    # ------------------------------------------------------
+
     if not results:
 
         logger.warning(
             "No aggressive setups found."
         )
 
+        export_markdown(
+            "# 🚀 Aggressive Momentum Scanner\n\n"
+            "No qualifying setups found.\n",
+            "aggressive_scan.md"
+        )
+
         return True
+
+    # ------------------------------------------------------
+    # Sort
+    # ------------------------------------------------------
 
     report = (
         pd.DataFrame(results)
@@ -109,85 +183,131 @@ def run_aggressive():
             ],
             ascending=False
         )
-        .head(TOP_RESULTS)
-        .reset_index(drop=True)
+        .head(
+            TOP_RESULTS
+        )
+        .reset_index(
+            drop=True
+        )
     )
 
-    markdown = (
+    # ------------------------------------------------------
+    # Report
+    # ------------------------------------------------------
+
+    md = (
         "# 🚀 Aggressive Momentum Scanner\n\n"
     )
 
-    markdown += (
+    md += (
+        f"- Universe : **{len(symbols)}**\n"
+    )
+
+    md += (
+        f"- Charts : **{len(database)}**\n"
+    )
+
+    md += (
         f"- NIFTY : "
-        f"**{market['NIFTY']}**\n"
+        f"**{market.get('NIFTY', 'NA')}**\n"
     )
 
-    markdown += (
+    md += (
         f"- BANKNIFTY : "
-        f"**{market['BANKNIFTY']}**\n"
+        f"**{market.get('BANKNIFTY', 'NA')}**\n"
     )
 
-    markdown += (
-        f"- MODE : "
-        f"**{market['MODE']}**\n\n"
+    md += (
+        f"- Market Mode : "
+        f"**{market.get('MODE', 'UNKNOWN')}**\n\n"
     )
-
-    markdown += "---\n\n"
 
     for _, row in report.iterrows():
 
-        markdown += (
+        md += (
             f"## {row['Symbol']} "
             f"({row['Grade']})\n\n"
         )
 
-        markdown += (
+        md += (
             f"- Score : **{row['Score']}**\n"
         )
 
-        markdown += (
+        md += (
             f"- Trade : **{row['Trade']}**\n"
         )
 
-        markdown += (
+        md += (
             f"- Entry : ₹{row['Entry']}\n"
         )
 
-        markdown += (
-            f"- SL : ₹{row['SL']}\n"
+        md += (
+            f"- Stop Loss : ₹{row['SL']}\n"
         )
 
-        markdown += (
-            f"- T1 : ₹{row['T1']}\n"
+        md += (
+            f"- Target 1 : ₹{row['T1']}\n"
         )
 
-        markdown += (
-            f"- T2 : ₹{row['T2']}\n"
+        md += (
+            f"- Target 2 : ₹{row['T2']}\n"
         )
 
-        markdown += (
-            f"- T3 : ₹{row['T3']}\n"
+        md += (
+            f"- Target 3 : ₹{row['T3']}\n"
         )
 
-        markdown += (
+        md += (
             f"- RSI : {row['RSI']}\n"
         )
 
-        markdown += (
+        md += (
             f"- RVOL : {row['RVOL']}\n"
         )
 
-        markdown += "\n---\n\n"
+        md += (
+            f"- EMA20 : {row['EMA20']}\n"
+        )
+
+        md += (
+            f"- EMA50 : {row['EMA50']}\n"
+        )
+
+        md += (
+            f"- EMA200 : {row['EMA200']}\n\n"
+        )
+
+        md += "---\n\n"
+
+    # ------------------------------------------------------
+    # Save
+    # ------------------------------------------------------
 
     export_markdown(
-        markdown,
+        md,
         "aggressive_scan.md"
     )
 
-    print(report)
+    print(
+        report[
+            [
+                "Symbol",
+                "Score",
+                "Grade",
+                "Trade",
+                "Entry",
+                "SL",
+                "T1",
+                "RSI",
+                "RVOL"
+            ]
+        ].to_string(
+            index=False
+        )
+    )
 
     logger.info(
-        "Aggressive scan completed."
+        "Aggressive scan completed successfully."
     )
 
     return True
@@ -199,6 +319,4 @@ def run_aggressive():
 
 if __name__ == "__main__":
 
-    if not run_aggressive():
-
-        raise SystemExit(1)
+    run_aggressive()
