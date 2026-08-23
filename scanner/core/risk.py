@@ -1,162 +1,24 @@
-"""
-Trading OS v12 Professional
-Risk Management Engine
-"""
-
-from dataclasses import dataclass
+"""Trade levels derived from ATR; educational output, not investment advice."""
+from .indicators import atr
 
 
-# ==========================================================
-# RISK MODEL
-# ==========================================================
+def trade_levels(frame, entry=None, stop_atr=1.5, target_atr=3.0):
+    price = float(entry if entry is not None else frame["Close"].iloc[-1])
+    atr_value = float(atr(frame).iloc[-1])
 
-@dataclass
-class RiskModel:
+    if atr_value <= 0:
+        return {}
 
-    capital: float = 100000.0
-
-    risk_percent: float = 2.0
-
-
-# ==========================================================
-# RISK AMOUNT
-# ==========================================================
-
-def risk_amount(
-    model: RiskModel
-):
-
-    return (
-        model.capital *
-        model.risk_percent /
-        100
-    )
-
-
-# ==========================================================
-# POSITION SIZE
-# ==========================================================
-
-def position_size(
-    entry,
-    stoploss,
-    model: RiskModel
-):
-
-    risk = risk_amount(
-        model
-    )
-
-    per_share = abs(
-        entry -
-        stoploss
-    )
-
-    if per_share <= 0:
-
-        return 0
-
-    quantity = int(
-        risk /
-        per_share
-    )
-
-    return max(
-        quantity,
-        0
-    )
-
-
-# ==========================================================
-# CAPITAL REQUIRED
-# ==========================================================
-
-def capital_required(
-    entry,
-    quantity
-):
-
-    return round(
-        entry *
-        quantity,
-        2
-    )
-
-
-# ==========================================================
-# RISK / REWARD
-# ==========================================================
-
-def risk_reward(
-    entry,
-    stoploss,
-    target
-):
-
-    risk = abs(
-        entry -
-        stoploss
-    )
-
-    reward = abs(
-        target -
-        entry
-    )
-
-    if risk <= 0:
-
-        return 0
-
-    return round(
-        reward /
-        risk,
-        2
-    )
-
-
-# ==========================================================
-# TRADE PLAN
-# ==========================================================
-
-def build_trade_plan(
-    entry,
-    sl,
-    t1,
-    model=None
-):
-
-    if model is None:
-
-        model = RiskModel()
-
-    quantity = position_size(
-        entry,
-        sl,
-        model
-    )
-
-    capital = capital_required(
-        entry,
-        quantity
-    )
-
-    rr = risk_reward(
-        entry,
-        sl,
-        t1
-    )
+    stop = price - stop_atr * atr_value
+    target = price + target_atr * atr_value
 
     return {
-
-        "Quantity": quantity,
-
-        "Capital": capital,
-
-        "RiskAmount": round(
-            risk_amount(model),
-            2
+        "entry": round(price, 2),
+        "stop": round(stop, 2),
+        "target": round(target, 2),
+        "atr": round(atr_value, 2),
+        "reward_risk": round(
+            (target - price) / (price - stop),
+            2,
         ),
-
-        "RR": rr
-
     }
