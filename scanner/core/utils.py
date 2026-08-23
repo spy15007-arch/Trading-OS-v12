@@ -10,7 +10,7 @@ import logging
 
 
 # ==========================================================
-# Logging
+# LOGGING
 # ==========================================================
 
 logging.basicConfig(
@@ -28,10 +28,12 @@ logger = logging.getLogger(
 
 
 # ==========================================================
-# Banner
+# BANNER
 # ==========================================================
 
-def banner(title):
+def banner(
+    title: str
+) -> str:
 
     return (
         "# ==========================================\n"
@@ -41,7 +43,7 @@ def banner(title):
 
 
 # ==========================================================
-# IST Timestamp
+# IST TIMESTAMP
 # ==========================================================
 
 def timestamp():
@@ -64,12 +66,14 @@ def timestamp():
 
 
 # ==========================================================
-# Reports Folder
+# REPORT FOLDER
 # ==========================================================
 
 def ensure_reports_folder():
 
-    folder = Path("reports")
+    folder = Path(
+        "reports"
+    )
 
     folder.mkdir(
         parents=True,
@@ -80,7 +84,7 @@ def ensure_reports_folder():
 
 
 # ==========================================================
-# Markdown Export
+# EXPORT MARKDOWN
 # ==========================================================
 
 def export_markdown(
@@ -88,7 +92,9 @@ def export_markdown(
     filename
 ):
 
-    folder = ensure_reports_folder()
+    folder = (
+        ensure_reports_folder()
+    )
 
     filepath = (
         folder /
@@ -99,19 +105,22 @@ def export_markdown(
         filepath,
         "w",
         encoding="utf-8"
-    ) as file:
+    ) as f:
 
-        file.write(content)
+        f.write(
+            content
+        )
 
     logger.info(
-        f"Report saved : {filepath}"
+        f"Report saved : "
+        f"{filepath}"
     )
 
     return filepath
 
 
 # ==========================================================
-# Divider
+# DIVIDER
 # ==========================================================
 
 def divider(
@@ -123,17 +132,21 @@ def divider(
 
 
 # ==========================================================
-# Heading
+# HEADING
 # ==========================================================
 
-def heading(text):
+def heading(
+    text
+):
 
     print(
         "\n" +
         divider("=")
     )
 
-    print(text)
+    print(
+        text
+    )
 
     print(
         divider("=")
