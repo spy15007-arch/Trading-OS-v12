@@ -1,198 +1,75 @@
-name: Trading OS v12 Scanner
+name: Trading OS v12 Market Scanner
 
 on:
   workflow_dispatch:
+    inputs:
+      scan:
+        description: Scanner to run
+        required: true
+        default: strict
+        type: choice
+        options:
+          - strict
+          - aggressive
+          - budget
 
   schedule:
-    - cron: '45 3 * * 1-5'
-    - cron: '45 9 * * 1-5'
+    # 17:00 IST, Monday-Friday (after NSE market close).
+    - cron: "30 11 * * 1-5"
 
+permissions:
+  contents: read
+
+concurrency:
+  group: trading-os-market-scanner
+  cancel-in-progress: false
 
 jobs:
-
   scan:
-
     runs-on: ubuntu-latest
+    timeout-minutes: 45
 
-    permissions:
-      contents: write
+    env:
+      PYTHONUNBUFFERED: "1"
 
     steps:
-
-      - name: Checkout Repository
+      - name: Check out repository
         uses: actions/checkout@v4
 
-
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
 
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-
-      # =====================================================
-      # VERIFY PROJECT STRUCTURE
-      # =====================================================
-
-      - name: Inspect Scanner Core
-        run: |
-          echo "===== Repository ====="
-          pwd
-          echo ""
-
-          echo "===== scanner ====="
-          ls -la scanner
-          echo ""
-
-          echo "===== scanner/core ====="
-          ls -la scanner/core
-          echo ""
-
-          echo "===== Python files ====="
-          find scanner/core -maxdepth 1 -type f -print | sort
-
-
-      # =====================================================
-      # NORMALISE INDICATORS FILE NAME
-      # =====================================================
-
-      - name: Normalise indicators filename
+      - name: Run scanner
         shell: bash
         run: |
-
-          if [ -f "scanner/core/Indicators.py" ] && [ ! -f "scanner/core/indicators.py" ]; then
-
-            echo "Found Indicators.py"
-            echo "Renaming to indicators.py"
-
-            mv scanner/core/Indicators.py scanner/core/indicators.py
-
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            case "${{ inputs.scan }}" in
+              strict)
+                python run_scan.py
+                ;;
+              aggressive)
+                python run_aggressive_scan.py
+                ;;
+              budget)
+                python run_budget_scan.py
+                ;;
+            esac
+          else
+            python run_scan.py
           fi
 
-
-          if [ -f "scanner/core/INDICATORS.py" ] && [ ! -f "scanner/core/indicators.py" ]; then
-
-            echo "Found INDICATORS.py"
-            echo "Renaming to indicators.py"
-
-            mv scanner/core/INDICATORS.py scanner/core/indicators.py
-
-          fi
-
-
-          echo "===== Final scanner/core ====="
-
-          ls -la scanner/core
-
-
-      # =====================================================
-      # PYTHON IMPORT TEST
-      # =====================================================
-
-      - name: Test Python Imports
-        run: |
-
-          python - <<'PY'
-
-          import scanner
-
-          import scanner.core
-
-          import scanner.core.indicators
-
-          import scanner.core.downloader
-
-          import scanner.core.market
-
-          import scanner.core.scoring
-
-          import scanner.core.risk
-
-          import scanner.core.report
-
-          import scanner.core.utils
-
-          print("")
-          print("==========================================")
-          print("ALL CORE IMPORTS PASSED")
-          print("==========================================")
-
-          PY
-
-      - name: Verify Core Package
-        run: |
-          echo "=== scanner directory ==="
-          find scanner -maxdepth 2 -type f | sort
-          
-          echo ""
-          echo "=== indicators.py ==="
-          ls -l scanner/core/indicators.py
-          
-          echo ""
-          echo "=== core init ==="
-          ls -l scanner/core/__init__.py
-          
-          echo ""
-          echo "=== Python import test ==="
-          python -c "import scanner.core.indicators; print('CORE INDICATORS IMPORT OK')"
-      # =====================================================
-      # RUN STRICT SCANNER
-      # =====================================================
-     
-      - name: Run Strict Scanner
-        run: |
-          python run_scan.py
-
-
-      # =====================================================
-      # RUN AGGRESSIVE SCANNER
-      # =====================================================
-
-      - name: Run Aggressive Scanner
-        run: |
-          python run_aggressive_scan.py
-
-
-      # =====================================================
-      # RUN BUDGET SCANNER
-      # =====================================================
-
-      - name: Run Budget Scanner
-        run: |
-          python run_budget_scan.py
-
-
-      # =====================================================
-      # TELEGRAM
-      # =====================================================
-
-      - name: Send Telegram Reports
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-
-        run: |
-          python telegram_push.py
-
-
-      # =====================================================
-      # COMMIT REPORTS
-      # =====================================================
-
-      - name: Commit Reports
-        run: |
-
-          git config user.name "github-actions"
-
-          git config user.email "github-actions@github.com"
-
-          git add reports/
-
-          git diff --cached --quiet || git commit -m "Auto update Trading OS v12"
-
-          git push
+      - name: Upload scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trading-os-v12-report-${{ github.run_id }}
+          path: reports/*.csv
+          if-no-files-found: warn
+          retention-days: 30
