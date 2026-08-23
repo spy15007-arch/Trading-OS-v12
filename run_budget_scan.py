@@ -1,37 +1,33 @@
 """
 Trading OS v12 Professional
-Budget Scanner (< ₹600)
+Budget Scanner
 """
 
 import pandas as pd
 
 from scanner.core.downloader import (
-    get_nse750,
-    download_all
+    get_nse500,
+    download_all,
 )
 
 from scanner.core.scoring import (
-    score_stock
+    score_stock,
 )
 
 from scanner.core.market import (
-    get_market_status
+    get_market_status,
 )
 
 from scanner.core.utils import (
     export_markdown,
-    logger
+    logger,
 )
 
 
 TOP_RESULTS = 25
 
-MAX_PRICE = 600
+MAX_PRICE = 500
 
-
-# ==========================================================
-# Scanner
-# ==========================================================
 
 def run_budget():
 
@@ -39,14 +35,30 @@ def run_budget():
         "Starting Budget Scanner..."
     )
 
-    market = get_market_status()
+    try:
 
-    symbols = get_nse750()
+        market = (
+            get_market_status()
+        )
+
+    except Exception as e:
+
+        logger.warning(
+            f"Market regime unavailable: {e}"
+        )
+
+        market = {
+            "MODE": "UNKNOWN",
+            "NIFTY": "NA",
+            "BANKNIFTY": "NA"
+        }
+
+    symbols = get_nse500()
 
     if not symbols:
 
         logger.error(
-            "No NSE750 symbols available."
+            "NIFTY 500 universe unavailable."
         )
 
         return False
@@ -59,7 +71,9 @@ def run_budget():
 
     results = []
 
-    for symbol, df in database.items():
+    for symbol, df in (
+        database.items()
+    ):
 
         try:
 
@@ -68,12 +82,15 @@ def run_budget():
             )
 
             if stock is None:
+
                 continue
 
             if stock["Entry"] > MAX_PRICE:
+
                 continue
 
             if stock["Score"] < 11:
+
                 continue
 
             stock["Symbol"] = (
@@ -99,6 +116,12 @@ def run_budget():
             "No budget setups found."
         )
 
+        export_markdown(
+            "# 💰 Budget Scanner\n\n"
+            "No qualifying setups found.\n",
+            "budget_scan.md"
+        )
+
         return True
 
     report = (
@@ -111,96 +134,105 @@ def run_budget():
             ],
             ascending=False
         )
-        .head(TOP_RESULTS)
-        .reset_index(drop=True)
+        .head(
+            TOP_RESULTS
+        )
     )
 
-    markdown = (
-        "# 💰 Budget Scanner (< ₹600)\n\n"
+    md = (
+        "# 💰 Budget Scanner (< ₹500)\n\n"
     )
 
-    markdown += (
+    md += (
         f"- NIFTY : "
-        f"**{market['NIFTY']}**\n"
+        f"**{market.get('NIFTY', 'NA')}**\n"
     )
 
-    markdown += (
+    md += (
         f"- BANKNIFTY : "
-        f"**{market['BANKNIFTY']}**\n"
+        f"**{market.get('BANKNIFTY', 'NA')}**\n"
     )
 
-    markdown += (
+    md += (
         f"- MODE : "
-        f"**{market['MODE']}**\n\n"
+        f"**{market.get('MODE', 'UNKNOWN')}**\n\n"
     )
-
-    markdown += "---\n\n"
 
     for _, row in report.iterrows():
 
-        markdown += (
+        md += (
             f"## {row['Symbol']} "
             f"({row['Grade']})\n\n"
         )
 
-        markdown += (
+        md += (
             f"- Entry : ₹{row['Entry']}\n"
         )
 
-        markdown += (
+        md += (
             f"- Score : **{row['Score']}**\n"
         )
 
-        markdown += (
+        md += (
             f"- Trade : {row['Trade']}\n"
         )
 
-        markdown += (
+        md += (
             f"- RSI : {row['RSI']}\n"
         )
 
-        markdown += (
+        md += (
             f"- RVOL : {row['RVOL']}\n"
         )
 
-        markdown += (
+        md += (
             f"- Stop Loss : ₹{row['SL']}\n"
         )
 
-        markdown += (
+        md += (
             f"- Target 1 : ₹{row['T1']}\n"
         )
 
-        markdown += (
+        md += (
             f"- Target 2 : ₹{row['T2']}\n"
         )
 
-        markdown += (
+        md += (
             f"- Target 3 : ₹{row['T3']}\n\n"
         )
 
-        markdown += "---\n\n"
+        md += "---\n\n"
 
     export_markdown(
-        markdown,
+        md,
         "budget_scan.md"
     )
 
-    print(report)
+    print(
+        report[
+            [
+                "Symbol",
+                "Score",
+                "Grade",
+                "Trade",
+                "Entry",
+                "SL",
+                "T1",
+                "RSI",
+                "RVOL"
+            ]
+        ].to_string(
+            index=False
+        )
+    )
 
     logger.info(
-        "Budget scan completed."
+        "Budget scan completed successfully."
     )
 
     return True
 
 
-# ==========================================================
-# MAIN
-# ==========================================================
-
 if __name__ == "__main__":
 
-    if not run_budget():
-
-        raise SystemExit(1)
+    run_budget()
