@@ -1,4 +1,1 @@
-"""
-Trading OS v12
-Scanner package
-"""
+"""Trading OS v12 scanner package."""
