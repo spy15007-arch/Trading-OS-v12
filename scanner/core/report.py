@@ -21,9 +21,16 @@ REPORT_COLUMNS = [
     "reward_risk_t3",
 ]
 
+LATEST_NAMES = {
+    "strict": "00_LATEST_STRICT",
+    "aggressive": "01_LATEST_AGGRESSIVE",
+    "budget": "02_LATEST_BUDGET",
+}
+
 
 def chart_link(symbol):
     ticker = str(symbol).replace(".NS", "").upper()
+
     return (
         "https://www.tradingview.com/chart/"
         f"?symbol={quote(f'NSE:{ticker}', safe='')}"
@@ -81,20 +88,29 @@ def _markdown_report(results, profile, regime):
 
 
 def write_report(results, profile, regime, output_dir="reports"):
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    profile = profile.lower()
 
-    csv_path = Path(output_dir) / f"{profile}_scan_{timestamp}.csv"
-    markdown_path = Path(output_dir) / f"{profile}_scan_{timestamp}.md"
+    timestamp_csv = output_path / f"{profile}_scan_{timestamp}.csv"
+    timestamp_markdown = output_path / f"{profile}_scan_{timestamp}.md"
+
+    latest_name = LATEST_NAMES[profile]
+    latest_csv = output_path / f"{latest_name}.csv"
+    latest_markdown = output_path / f"{latest_name}.md"
 
     frame = pd.DataFrame(results, columns=REPORT_COLUMNS)
+    markdown = _markdown_report(results, profile, regime)
 
-    frame.to_csv(csv_path, index=False)
-    markdown_path.write_text(
-        _markdown_report(results, profile, regime),
-        encoding="utf-8",
-    )
+    # Timestamped files are retained in the GitHub Actions artifact.
+    frame.to_csv(timestamp_csv, index=False)
+    timestamp_markdown.write_text(markdown, encoding="utf-8")
+
+    # Stable latest files are committed back to the repository.
+    frame.to_csv(latest_csv, index=False)
+    latest_markdown.write_text(markdown, encoding="utf-8")
 
     print(
         f"\n{profile.upper()} scan | "
@@ -108,10 +124,14 @@ def write_report(results, profile, regime, output_dir="reports"):
         else "No qualifying candidates today."
     )
 
-    print(f"CSV report: {csv_path}")
-    print(f"Markdown report: {markdown_path}")
+    print(f"CSV report: {timestamp_csv}")
+    print(f"Markdown report: {timestamp_markdown}")
+    print(f"Latest CSV: {latest_csv}")
+    print(f"Latest Markdown: {latest_markdown}")
 
     return {
-        "csv": csv_path,
-        "markdown": markdown_path,
+        "csv": timestamp_csv,
+        "markdown": timestamp_markdown,
+        "latest_csv": latest_csv,
+        "latest_markdown": latest_markdown,
     }
