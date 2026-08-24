@@ -20,7 +20,7 @@ on:
     - cron: "45 10 * * 1-5"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: trading-os-market-scanner
@@ -41,6 +41,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -55,17 +57,39 @@ jobs:
       - name: Run selected scanner
         run: python run_scan.py --profile "$SELECTED_PROFILE"
 
+      - name: Commit latest reports to repository
+        if: success()
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add reports/00_LATEST_STRICT.csv
+          git add reports/00_LATEST_STRICT.md
+          git add reports/01_LATEST_AGGRESSIVE.csv
+          git add reports/01_LATEST_AGGRESSIVE.md
+          git add reports/02_LATEST_BUDGET.csv
+          git add reports/02_LATEST_BUDGET.md
+
+          if git diff --cached --quiet; then
+            echo "Latest reports are unchanged."
+          else
+            git commit -m "chore: update latest scanner reports"
+            git push
+          fi
+
       - name: Publish Markdown reports in workflow summary
         if: always()
         shell: bash
         run: |
           shopt -s nullglob
-          for report in reports/*.md; do
+
+          for report in reports/00_LATEST_*.md; do
             cat "$report" >> "$GITHUB_STEP_SUMMARY"
             printf '\n\n' >> "$GITHUB_STEP_SUMMARY"
           done
 
-      - name: Upload CSV and Markdown reports
+      - name: Upload timestamped and latest reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
