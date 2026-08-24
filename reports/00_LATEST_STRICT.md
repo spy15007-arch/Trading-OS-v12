@@ -1,7 +1,7 @@
 # Trading OS v12 — Strict Scan
 
 - **Market regime:** NEUTRAL
-- **Generated:** 2026-08-24 13:55:09
+- **Generated:** 2026-08-24 16:30:17
 - **Selected candidates:** 120
 
 | Symbol | Score | Entry | Stop-loss | Target 1 | Target 2 | Target 3 | Chart |
