@@ -22,8 +22,10 @@ def chart_link(symbol):
 
 
 def send_telegram(message):
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    raw_token = os.getenv("TELEGRAM_BOT_TOKEN") or ""
+    token = "".join(raw_token.split())
+
+    chat_id = (os.getenv("TELEGRAM_CHAT_ID") or "").strip()
 
     if not token or not chat_id:
         logger.warning(
@@ -49,7 +51,14 @@ def send_telegram(message):
         return True
 
     except requests.RequestException as exc:
-        logger.error("Telegram alert failed: %s", exc)
+        response_text = getattr(exc.response, "text", "")
+
+        logger.error(
+            "Telegram alert failed: %s | Telegram response: %s",
+            exc,
+            response_text,
+        )
+
         return False
 
 
@@ -61,7 +70,10 @@ def _money(value):
 
 
 def _candidate_card(number, result):
-    symbol = html.escape(str(result["symbol"]).replace(".NS", "").upper())
+    symbol = html.escape(
+        str(result["symbol"]).replace(".NS", "").upper()
+    )
+
     url = chart_link(symbol)
 
     return (
