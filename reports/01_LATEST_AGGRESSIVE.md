@@ -1,7 +1,7 @@
 # Trading OS v12 — Aggressive Scan
 
 - **Market regime:** NEUTRAL
-- **Generated:** 2026-08-24 16:30:30
+- **Generated:** 2026-08-24 18:03:36
 - **Selected candidates:** 210
 
 | Symbol | Score | Entry | Stop-loss | Target 1 | Target 2 | Target 3 | Chart |
