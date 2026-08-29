@@ -1,7 +1,7 @@
 # Trading OS v12 — Budget Scan
 
 - **Market regime:** NEUTRAL
-- **Generated:** 2026-08-28 21:20:13
+- **Generated:** 2026-08-29 10:49:18
 - **Selected candidates:** 108
 
 | Symbol | Score | Entry | Stop-loss | Target 1 | Target 2 | Target 3 | Chart |
