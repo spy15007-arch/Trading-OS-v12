@@ -77,13 +77,11 @@ jobs:
           git add reports/01_LATEST_AGGRESSIVE.md
           git add reports/02_LATEST_BUDGET.csv
           git add reports/02_LATEST_BUDGET.md
+          git add reports/.last_scan
 
-          if git diff --cached --quiet; then
-            echo "Latest reports are unchanged."
-          else
-            git commit -m "chore: update latest scanner reports"
-            git push
-          fi
+          # Always commit with timestamp, even if content is unchanged
+          git commit -m "chore: update scanner reports [$(date -u +'%Y-%m-%d %H:%M:%S UTC')]" --allow-empty
+          git push
 
       - name: Publish Markdown reports in workflow summary
         if: always()
