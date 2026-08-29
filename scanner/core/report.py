@@ -112,6 +112,10 @@ def write_report(results, profile, regime, output_dir="reports"):
     frame.to_csv(latest_csv, index=False)
     latest_markdown.write_text(markdown, encoding="utf-8")
 
+    # Track last scan timestamp in ISO format for visibility
+    last_scan_file = output_path / ".last_scan"
+    last_scan_file.write_text(datetime.now().isoformat(), encoding="utf-8")
+
     print(
         f"\n{profile.upper()} scan | "
         f"market: {regime} | "
@@ -128,6 +132,7 @@ def write_report(results, profile, regime, output_dir="reports"):
     print(f"Markdown report: {timestamp_markdown}")
     print(f"Latest CSV: {latest_csv}")
     print(f"Latest Markdown: {latest_markdown}")
+    print(f"Last scan tracked: {last_scan_file}")
 
     return {
         "csv": timestamp_csv,
