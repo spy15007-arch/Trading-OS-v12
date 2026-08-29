@@ -1,4 +1,6 @@
+pip requirements
 pandas>=2.0
 yfinance>=0.2.54
 requests>=2.31
 streamlit>=1.57
+aiohttp>=3.8.5
