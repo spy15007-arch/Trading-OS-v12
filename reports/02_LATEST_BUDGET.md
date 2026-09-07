@@ -1,34 +1,89 @@
 # Trading OS v12 — Budget Scan
 
 - **Market regime:** DEFENSIVE
-- **Generated:** 2026-09-07 05:04:07
-- **Selected candidates:** 26
+- **Generated:** 2026-09-07 09:14:55
+- **Selected candidates:** 81
 
 | Symbol | Score | Entry | Stop-loss | Target 1 | Target 2 | Target 3 | Chart |
 |---|---:|---:|---:|---:|---:|---:|---|
-| AEROENTER | 90 | ₹150.38 | ₹139.71 | ₹161.05 | ₹166.38 | ₹171.71 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAEROENTER) |
-| ANDHRAPAP | 90 | ₹63.77 | ₹60.85 | ₹66.69 | ₹68.16 | ₹69.62 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AANDHRAPAP) |
-| ANUHPHR | 90 | ₹84.61 | ₹80.24 | ₹88.98 | ₹91.16 | ₹93.35 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AANUHPHR) |
-| APOLLO | 90 | ₹401.00 | ₹383.91 | ₹418.09 | ₹426.64 | ₹435.18 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAPOLLO) |
+| AEROENTER | 90 | ₹151.75 | ₹140.76 | ₹162.74 | ₹168.23 | ₹173.72 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAEROENTER) |
+| AEROPLANE | 90 | ₹196.53 | ₹183.43 | ₹209.63 | ₹216.17 | ₹222.72 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAEROPLANE) |
+| APOLLO | 90 | ₹407.30 | ₹390.04 | ₹424.56 | ₹433.19 | ₹441.82 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAPOLLO) |
+| ARTEMISMED | 90 | ₹340.70 | ₹324.40 | ₹357.00 | ₹365.15 | ₹373.30 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AARTEMISMED) |
+| ASAHISONG | 90 | ₹391.25 | ₹365.81 | ₹416.69 | ₹429.40 | ₹442.12 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AASAHISONG) |
+| AVONMORE | 90 | ₹14.20 | ₹13.11 | ₹15.29 | ₹15.83 | ₹16.37 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAVONMORE) |
+| BALPHARMA | 90 | ₹92.70 | ₹87.10 | ₹98.30 | ₹101.11 | ₹103.91 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABALPHARMA) |
 | CONSOFINVT | 90 | ₹302.70 | ₹285.74 | ₹319.66 | ₹328.15 | ₹336.63 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACONSOFINVT) |
-| CPCAP | 90 | ₹138.22 | ₹126.40 | ₹150.04 | ₹155.95 | ₹161.86 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACPCAP) |
-| EXICOM | 90 | ₹184.75 | ₹172.12 | ₹197.38 | ₹203.69 | ₹210.00 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AEXICOM) |
-| FCL | 90 | ₹55.34 | ₹51.26 | ₹59.42 | ₹61.45 | ₹63.49 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AFCL) |
+| EMAMIPAP | 90 | ₹121.65 | ₹114.58 | ₹128.72 | ₹132.26 | ₹135.79 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AEMAMIPAP) |
+| EXICOM | 90 | ₹185.82 | ₹173.19 | ₹198.45 | ₹204.76 | ₹211.07 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AEXICOM) |
+| FCL | 90 | ₹56.66 | ₹52.45 | ₹60.87 | ₹62.98 | ₹65.09 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AFCL) |
+| FEDFINA | 90 | ₹165.23 | ₹157.77 | ₹172.69 | ₹176.41 | ₹180.14 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AFEDFINA) |
 | GANESHBE | 90 | ₹129.39 | ₹120.07 | ₹138.71 | ₹143.36 | ₹148.02 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AGANESHBE) |
-| GREENPLY | 90 | ₹307.00 | ₹292.12 | ₹321.88 | ₹329.33 | ₹336.77 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AGREENPLY) |
-| JKPAPER | 90 | ₹418.80 | ₹398.64 | ₹438.96 | ₹449.03 | ₹459.11 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AJKPAPER) |
-| JOCIL | 90 | ₹161.80 | ₹152.63 | ₹170.97 | ₹175.55 | ₹180.14 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AJOCIL) |
-| MOTOGENFIN | 90 | ₹29.50 | ₹27.93 | ₹31.07 | ₹31.85 | ₹32.64 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMOTOGENFIN) |
-| MUKTAARTS | 90 | ₹60.48 | ₹56.54 | ₹64.42 | ₹66.39 | ₹68.36 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMUKTAARTS) |
-| NECCLTD | 90 | ₹19.31 | ₹18.05 | ₹20.57 | ₹21.21 | ₹21.84 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ANECCLTD) |
-| ASAHISONG | 80 | ₹391.25 | ₹365.81 | ₹416.69 | ₹429.40 | ₹442.12 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AASAHISONG) |
-| FEDFINA | 80 | ₹167.84 | ₹160.44 | ₹175.24 | ₹178.94 | ₹182.64 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AFEDFINA) |
+| GPTHEALTH | 90 | ₹161.20 | ₹154.23 | ₹168.17 | ₹171.66 | ₹175.15 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AGPTHEALTH) |
+| GUJTHEM | 90 | ₹428.75 | ₹399.98 | ₹457.52 | ₹471.90 | ₹486.28 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AGUJTHEM) |
+| HEIDELBERG | 90 | ₹160.70 | ₹156.71 | ₹164.69 | ₹166.69 | ₹168.69 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AHEIDELBERG) |
+| HERITGFOOD | 90 | ₹385.20 | ₹365.71 | ₹404.69 | ₹414.43 | ₹424.17 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AHERITGFOOD) |
+| HMT | 90 | ₹69.00 | ₹64.56 | ₹73.44 | ₹75.66 | ₹77.88 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AHMT) |
+| IDEA | 90 | ₹15.62 | ₹14.87 | ₹16.37 | ₹16.75 | ₹17.13 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AIDEA) |
+| IIFLCAPS | 90 | ₹340.80 | ₹334.85 | ₹346.75 | ₹349.73 | ₹352.71 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AIIFLCAPS) |
+| JKPAPER | 90 | ₹420.25 | ₹399.53 | ₹440.97 | ₹451.34 | ₹461.70 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AJKPAPER) |
+| MANOMAY | 90 | ₹234.76 | ₹222.98 | ₹246.54 | ₹252.44 | ₹258.33 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMANOMAY) |
+| MARALOVER | 90 | ₹63.75 | ₹58.95 | ₹68.55 | ₹70.95 | ₹73.35 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMARALOVER) |
+| MARKOLINES | 90 | ₹176.16 | ₹167.97 | ₹184.35 | ₹188.44 | ₹192.54 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMARKOLINES) |
+| MITCON | 90 | ₹80.00 | ₹74.51 | ₹85.49 | ₹88.23 | ₹90.97 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMITCON) |
+| MOLDTECH | 90 | ₹218.11 | ₹202.42 | ₹233.80 | ₹241.65 | ₹249.50 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMOLDTECH) |
+| NECCLTD | 90 | ₹19.42 | ₹18.16 | ₹20.68 | ₹21.32 | ₹21.95 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ANECCLTD) |
+| NUVOCO | 90 | ₹345.35 | ₹329.82 | ₹360.88 | ₹368.64 | ₹376.40 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ANUVOCO) |
+| PENIND | 90 | ₹175.80 | ₹167.12 | ₹184.48 | ₹188.82 | ₹193.17 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APENIND) |
+| PFOCUS | 90 | ₹307.55 | ₹287.07 | ₹328.03 | ₹338.27 | ₹348.51 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APFOCUS) |
+| PPLPHARMA | 90 | ₹218.94 | ₹208.35 | ₹229.53 | ₹234.83 | ₹240.13 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APPLPHARMA) |
+| BSHSL | 80 | ₹93.49 | ₹88.11 | ₹98.87 | ₹101.56 | ₹104.25 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABSHSL) |
+| CHEMCON | 80 | ₹200.00 | ₹190.93 | ₹209.07 | ₹213.60 | ₹218.13 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACHEMCON) |
+| DVL | 80 | ₹295.40 | ₹276.61 | ₹314.19 | ₹323.58 | ₹332.98 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ADVL) |
+| EDELWEISS | 80 | ₹134.74 | ₹127.12 | ₹142.36 | ₹146.17 | ₹149.98 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AEDELWEISS) |
+| GAYAPROJ | 80 | ₹22.30 | ₹20.63 | ₹23.97 | ₹24.81 | ₹25.64 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AGAYAPROJ) |
+| GFLLIMITED | 80 | ₹62.49 | ₹58.30 | ₹66.68 | ₹68.77 | ₹70.87 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AGFLLIMITED) |
+| INDIQUBE | 80 | ₹201.26 | ₹189.69 | ₹212.83 | ₹218.61 | ₹224.40 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AINDIQUBE) |
+| LOTUSDEV | 80 | ₹197.07 | ₹184.55 | ₹209.59 | ₹215.84 | ₹222.10 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ALOTUSDEV) |
+| NCC | 80 | ₹151.38 | ₹144.73 | ₹158.03 | ₹161.35 | ₹164.67 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ANCC) |
+| PASUPTAC | 80 | ₹68.01 | ₹64.01 | ₹72.01 | ₹74.00 | ₹76.00 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APASUPTAC) |
+| PLATIND | 80 | ₹236.50 | ₹222.72 | ₹250.28 | ₹257.16 | ₹264.05 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APLATIND) |
+| 20MICRONS | 75 | ₹225.27 | ₹211.55 | ₹238.99 | ₹245.85 | ₹252.71 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3A20MICRONS) |
 | AKSHOPTFBR | 75 | ₹7.80 | ₹7.18 | ₹8.42 | ₹8.74 | ₹9.05 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAKSHOPTFBR) |
+| ANUHPHR | 75 | ₹88.59 | ₹83.71 | ₹93.47 | ₹95.91 | ₹98.35 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AANUHPHR) |
+| BESTAGRO | 75 | ₹20.10 | ₹18.48 | ₹21.72 | ₹22.52 | ₹23.33 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABESTAGRO) |
 | BIRLACABLE | 75 | ₹357.75 | ₹332.96 | ₹382.54 | ₹394.93 | ₹407.33 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABIRLACABLE) |
-| CINELINE | 75 | ₹97.80 | ₹92.36 | ₹103.24 | ₹105.96 | ₹108.68 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACINELINE) |
-| GUFICBIO | 75 | ₹451.50 | ₹425.39 | ₹477.61 | ₹490.66 | ₹503.72 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AGUFICBIO) |
-| MARKOLINES | 70 | ₹174.84 | ₹167.29 | ₹182.39 | ₹186.16 | ₹189.94 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMARKOLINES) |
-| MARALOVER | 65 | ₹62.25 | ₹57.45 | ₹67.05 | ₹69.45 | ₹71.85 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMARALOVER) |
-| MASTERTR | 65 | ₹91.92 | ₹85.92 | ₹97.92 | ₹100.91 | ₹103.91 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMASTERTR) |
-| NAHARCAP | 65 | ₹258.10 | ₹246.76 | ₹269.44 | ₹275.12 | ₹280.79 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ANAHARCAP) |
-| NRBBEARING | 65 | ₹475.85 | ₹448.73 | ₹502.97 | ₹516.53 | ₹530.10 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ANRBBEARING) |
+| CHEMBOND | 75 | ₹182.00 | ₹164.52 | ₹199.48 | ₹208.21 | ₹216.95 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACHEMBOND) |
+| CPCAP | 75 | ₹137.00 | ₹125.18 | ₹148.82 | ₹154.73 | ₹160.64 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACPCAP) |
+| CSLFINANCE | 75 | ₹245.67 | ₹232.64 | ₹258.70 | ₹265.22 | ₹271.73 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACSLFINANCE) |
+| CUB | 75 | ₹239.71 | ₹226.62 | ₹252.80 | ₹259.35 | ₹265.90 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACUB) |
+| EMKAY | 75 | ₹264.85 | ₹247.18 | ₹282.52 | ₹291.36 | ₹300.20 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AEMKAY) |
+| GENUSPAPER | 75 | ₹13.28 | ₹12.24 | ₹14.32 | ₹14.84 | ₹15.36 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AGENUSPAPER) |
+| GREENPLY | 75 | ₹303.10 | ₹288.03 | ₹318.17 | ₹325.70 | ₹333.23 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AGREENPLY) |
+| GUFICBIO | 75 | ₹449.30 | ₹422.54 | ₹476.06 | ₹489.44 | ₹502.82 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AGUFICBIO) |
+| HIKAL | 75 | ₹241.83 | ₹222.69 | ₹260.97 | ₹270.54 | ₹280.11 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AHIKAL) |
+| JAIBALAJI | 75 | ₹70.82 | ₹65.80 | ₹75.84 | ₹78.36 | ₹80.87 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AJAIBALAJI) |
+| JOCIL | 75 | ₹159.60 | ₹149.85 | ₹169.35 | ₹174.22 | ₹179.09 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AJOCIL) |
+| MALUPAPER | 75 | ₹33.25 | ₹30.89 | ₹35.61 | ₹36.79 | ₹37.97 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMALUPAPER) |
+| MASTERTR | 75 | ₹89.50 | ₹83.50 | ₹95.50 | ₹98.49 | ₹101.49 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMASTERTR) |
+| MBAPL | 75 | ₹166.27 | ₹156.74 | ₹175.80 | ₹180.56 | ₹185.33 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMBAPL) |
+| MEDICAMEQ | 75 | ₹278.95 | ₹257.46 | ₹300.44 | ₹311.18 | ₹321.92 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMEDICAMEQ) |
+| NAHARCAP | 75 | ₹259.75 | ₹248.18 | ₹271.32 | ₹277.10 | ₹282.89 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ANAHARCAP) |
+| NIRAJISPAT | 75 | ₹368.45 | ₹339.24 | ₹397.66 | ₹412.27 | ₹426.87 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ANIRAJISPAT) |
+| NRBBEARING | 75 | ₹481.95 | ₹454.26 | ₹509.64 | ₹523.49 | ₹537.33 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ANRBBEARING) |
+| PDMJEPAPER | 75 | ₹102.25 | ₹94.63 | ₹109.87 | ₹113.68 | ₹117.49 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APDMJEPAPER) |
+| PLASTIBLEN | 75 | ₹193.49 | ₹183.00 | ₹203.98 | ₹209.23 | ₹214.48 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APLASTIBLEN) |
+| PODDARMENT | 75 | ₹275.25 | ₹258.98 | ₹291.52 | ₹299.66 | ₹307.79 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APODDARMENT) |
+| GAIL | 70 | ₹175.58 | ₹170.25 | ₹180.91 | ₹183.57 | ₹186.23 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AGAIL) |
+| AMDIND | 65 | ₹60.22 | ₹54.96 | ₹65.48 | ₹68.12 | ₹70.75 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAMDIND) |
+| BHARATSE | 65 | ₹228.94 | ₹212.98 | ₹244.90 | ₹252.89 | ₹260.87 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABHARATSE) |
+| ELECTCAST | 65 | ₹81.15 | ₹76.70 | ₹85.60 | ₹87.83 | ₹90.05 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AELECTCAST) |
+| MARSONS | 65 | ₹131.25 | ₹120.30 | ₹142.20 | ₹147.68 | ₹153.16 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMARSONS) |
+| MODISONLTD | 65 | ₹474.60 | ₹434.18 | ₹515.02 | ₹535.23 | ₹555.44 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMODISONLTD) |
+| NDL | 65 | ₹3.01 | ₹2.81 | ₹3.21 | ₹3.32 | ₹3.42 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ANDL) |
+| NITIRAJ | 65 | ₹217.09 | ₹196.54 | ₹237.64 | ₹247.92 | ₹258.19 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ANITIRAJ) |
+| OCCLLTD | 65 | ₹163.26 | ₹153.14 | ₹173.38 | ₹178.45 | ₹183.51 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AOCCLLTD) |
+| OILCOUNTUB | 65 | ₹63.70 | ₹59.95 | ₹67.45 | ₹69.33 | ₹71.21 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AOILCOUNTUB) |
+| PARKHOSPS | 65 | ₹287.10 | ₹272.99 | ₹301.21 | ₹308.27 | ₹315.32 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APARKHOSPS) |
+| PLAZACABLE | 65 | ₹59.00 | ₹54.44 | ₹63.56 | ₹65.83 | ₹68.11 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APLAZACABLE) |
+| PRAENG | 65 | ₹24.32 | ₹22.20 | ₹26.44 | ₹27.50 | ₹28.56 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APRAENG) |
