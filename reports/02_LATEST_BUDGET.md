@@ -1,7 +1,7 @@
 # Trading OS v12 — Budget Scan
 
 - **Market regime:** DEFENSIVE
-- **Generated:** 2026-09-14 09:46:19
+- **Generated:** 2026-09-14 15:54:06
 - **Selected candidates:** 93
 
 | Symbol | Score | Entry | Stop-loss | Target 1 | Target 2 | Target 3 | Chart |
