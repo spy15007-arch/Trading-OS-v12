@@ -1,53 +1,58 @@
 # Trading OS v12 — Strict Scan
 
 - **Market regime:** DEFENSIVE
-- **Generated:** 2026-09-15 09:20:48
-- **Selected candidates:** 45
+- **Generated:** 2026-09-15 14:21:17
+- **Selected candidates:** 50
 
 | Symbol | Score | Entry | Stop-loss | Target 1 | Target 2 | Target 3 | Chart |
 |---|---:|---:|---:|---:|---:|---:|---|
-| ACMESOLAR | 90 | ₹420.10 | ₹396.09 | ₹444.11 | ₹456.12 | ₹468.13 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AACMESOLAR) |
-| ARIHANTCAP | 90 | ₹81.47 | ₹77.19 | ₹85.75 | ₹87.89 | ₹90.03 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AARIHANTCAP) |
-| CORONA | 90 | ₹2,226.60 | ₹2,116.69 | ₹2,336.51 | ₹2,391.47 | ₹2,446.43 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACORONA) |
-| CPCAP | 90 | ₹140.39 | ₹128.85 | ₹151.93 | ₹157.70 | ₹163.46 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACPCAP) |
-| EMCURE | 90 | ₹1,995.10 | ₹1,919.53 | ₹2,070.67 | ₹2,108.45 | ₹2,146.23 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AEMCURE) |
+| ABDL | 90 | ₹631.60 | ₹601.57 | ₹661.63 | ₹676.65 | ₹691.67 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AABDL) |
+| ACMESOLAR | 90 | ₹420.40 | ₹395.87 | ₹444.93 | ₹457.19 | ₹469.46 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AACMESOLAR) |
+| AEGISVOPAK | 90 | ₹302.00 | ₹283.30 | ₹320.70 | ₹330.04 | ₹339.39 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAEGISVOPAK) |
+| ARIHANTCAP | 90 | ₹81.45 | ₹77.17 | ₹85.73 | ₹87.87 | ₹90.01 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AARIHANTCAP) |
+| CPCAP | 90 | ₹140.17 | ₹128.63 | ₹151.71 | ₹157.48 | ₹163.24 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACPCAP) |
+| DIACABS | 90 | ₹387.50 | ₹360.88 | ₹414.12 | ₹427.43 | ₹440.74 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ADIACABS) |
+| DYNAMATECH | 90 | ₹12,071.00 | ₹11,398.34 | ₹12,743.66 | ₹13,080.00 | ₹13,416.33 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ADYNAMATECH) |
+| EMCURE | 90 | ₹1,993.00 | ₹1,917.43 | ₹2,068.57 | ₹2,106.35 | ₹2,144.13 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AEMCURE) |
 | EMUDHRA | 90 | ₹592.85 | ₹555.89 | ₹629.81 | ₹648.29 | ₹666.77 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AEMUDHRA) |
-| JINDALPOLY | 90 | ₹729.55 | ₹687.80 | ₹771.30 | ₹792.17 | ₹813.04 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AJINDALPOLY) |
+| GCSL | 90 | ₹601.55 | ₹570.36 | ₹632.74 | ₹648.34 | ₹663.94 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AGCSL) |
+| GRPLTD | 90 | ₹2,046.20 | ₹1,936.01 | ₹2,156.39 | ₹2,211.49 | ₹2,266.58 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AGRPLTD) |
+| JINDALPOLY | 90 | ₹737.90 | ₹696.15 | ₹779.65 | ₹800.52 | ₹821.39 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AJINDALPOLY) |
 | KANORICHEM | 90 | ₹178.12 | ₹165.73 | ₹190.51 | ₹196.70 | ₹202.89 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AKANORICHEM) |
-| KAVDEFENCE | 90 | ₹77.73 | ₹69.50 | ₹85.96 | ₹90.08 | ₹94.19 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AKAVDEFENCE) |
-| KESORAMIND | 90 | ₹12.61 | ₹12.18 | ₹13.04 | ₹13.25 | ₹13.47 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AKESORAMIND) |
-| MANBA | 90 | ₹134.08 | ₹128.06 | ₹140.10 | ₹143.10 | ₹146.11 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMANBA) |
-| OPTIEMUS | 90 | ₹605.05 | ₹566.16 | ₹643.94 | ₹663.39 | ₹682.84 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AOPTIEMUS) |
-| PFOCUS | 90 | ₹319.55 | ₹299.85 | ₹339.25 | ₹349.10 | ₹358.95 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APFOCUS) |
-| DIACABS | 80 | ₹387.50 | ₹360.88 | ₹414.12 | ₹427.43 | ₹440.74 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ADIACABS) |
+| KESORAMIND | 90 | ₹12.60 | ₹12.17 | ₹13.03 | ₹13.24 | ₹13.46 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AKESORAMIND) |
+| MANBA | 90 | ₹133.87 | ₹127.85 | ₹139.89 | ₹142.89 | ₹145.90 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMANBA) |
+| OPTIEMUS | 90 | ₹604.95 | ₹566.06 | ₹643.84 | ₹663.29 | ₹682.74 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AOPTIEMUS) |
+| PFOCUS | 90 | ₹319.00 | ₹299.30 | ₹338.70 | ₹348.55 | ₹358.40 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APFOCUS) |
+| CASTROLIND | 80 | ₹187.82 | ₹184.39 | ₹191.25 | ₹192.96 | ₹194.68 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACASTROLIND) |
 | 3IINFOLTD | 75 | ₹23.99 | ₹22.43 | ₹25.55 | ₹26.33 | ₹27.11 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3A3IINFOLTD) |
-| AEGISVOPAK | 75 | ₹300.10 | ₹281.40 | ₹318.80 | ₹328.14 | ₹337.49 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAEGISVOPAK) |
-| AIRAN | 75 | ₹16.64 | ₹15.43 | ₹17.85 | ₹18.45 | ₹19.05 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAIRAN) |
-| ASHOKAMET | 75 | ₹15.78 | ₹14.23 | ₹17.33 | ₹18.11 | ₹18.89 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AASHOKAMET) |
-| BALAJITELE | 75 | ₹94.70 | ₹88.83 | ₹100.57 | ₹103.50 | ₹106.44 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABALAJITELE) |
-| BIRLACABLE | 75 | ₹377.45 | ₹347.83 | ₹407.07 | ₹421.88 | ₹436.69 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABIRLACABLE) |
-| BLACKBUCK | 75 | ₹613.35 | ₹580.87 | ₹645.83 | ₹662.07 | ₹678.31 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABLACKBUCK) |
-| CHEMCON | 75 | ₹218.58 | ₹205.64 | ₹231.52 | ₹237.99 | ₹244.46 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACHEMCON) |
-| EBGNG | 75 | ₹673.10 | ₹620.81 | ₹725.39 | ₹751.53 | ₹777.67 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AEBGNG) |
-| ELLEN | 75 | ₹357.00 | ₹330.35 | ₹383.65 | ₹396.98 | ₹410.31 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AELLEN) |
-| FILATEX | 75 | ₹83.84 | ₹76.64 | ₹91.04 | ₹94.64 | ₹98.24 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AFILATEX) |
-| FINKURVE | 75 | ₹73.65 | ₹65.60 | ₹81.70 | ₹85.73 | ₹89.76 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AFINKURVE) |
-| GAYAPROJ | 75 | ₹25.57 | ₹23.59 | ₹27.55 | ₹28.54 | ₹29.52 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AGAYAPROJ) |
-| GCSL | 75 | ₹590.80 | ₹559.72 | ₹621.88 | ₹637.41 | ₹652.95 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AGCSL) |
-| GEEKAYWIRE | 75 | ₹29.38 | ₹26.66 | ₹32.10 | ₹33.46 | ₹34.82 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AGEEKAYWIRE) |
-| GPPL | 75 | ₹162.07 | ₹156.01 | ₹168.13 | ₹171.16 | ₹174.19 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AGPPL) |
-| INDORAMA | 75 | ₹83.22 | ₹74.09 | ₹92.35 | ₹96.92 | ₹101.48 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AINDORAMA) |
-| INNOVACAP | 75 | ₹1,140.80 | ₹1,067.80 | ₹1,213.80 | ₹1,250.30 | ₹1,286.80 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AINNOVACAP) |
-| JHS | 75 | ₹8.81 | ₹7.90 | ₹9.72 | ₹10.17 | ₹10.62 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AJHS) |
-| KSHINTL | 75 | ₹1,063.50 | ₹981.53 | ₹1,145.47 | ₹1,186.46 | ₹1,227.44 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AKSHINTL) |
-| LUMAXTECH | 75 | ₹2,010.00 | ₹1,893.86 | ₹2,126.14 | ₹2,184.20 | ₹2,242.27 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ALUMAXTECH) |
-| MUKKA | 75 | ₹31.93 | ₹29.18 | ₹34.68 | ₹36.05 | ₹37.42 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMUKKA) |
-| MWL | 75 | ₹41.67 | ₹37.76 | ₹45.58 | ₹47.54 | ₹49.49 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMWL) |
-| NRAIL | 75 | ₹642.00 | ₹588.78 | ₹695.22 | ₹721.84 | ₹748.45 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ANRAIL) |
-| ONEPOINT | 75 | ₹57.62 | ₹54.19 | ₹61.05 | ₹62.77 | ₹64.48 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AONEPOINT) |
-| ORTINGLOBE | 75 | ₹16.70 | ₹15.32 | ₹18.08 | ₹18.77 | ₹19.47 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AORTINGLOBE) |
+| ADROITINFO | 75 | ₹11.04 | ₹10.07 | ₹12.01 | ₹12.50 | ₹12.98 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AADROITINFO) |
+| AIRAN | 75 | ₹16.45 | ₹15.24 | ₹17.66 | ₹18.26 | ₹18.86 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAIRAN) |
+| ARROWGREEN | 75 | ₹838.55 | ₹784.37 | ₹892.73 | ₹919.82 | ₹946.91 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AARROWGREEN) |
+| BALAJITELE | 75 | ₹95.48 | ₹89.61 | ₹101.35 | ₹104.28 | ₹107.22 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABALAJITELE) |
+| BIRLACABLE | 75 | ₹377.95 | ₹347.98 | ₹407.92 | ₹422.90 | ₹437.88 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABIRLACABLE) |
+| BLACKBUCK | 75 | ₹611.90 | ₹579.06 | ₹644.74 | ₹661.16 | ₹677.58 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABLACKBUCK) |
+| CHEMCON | 75 | ₹213.88 | ₹200.94 | ₹226.82 | ₹233.29 | ₹239.76 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACHEMCON) |
+| CORONA | 75 | ₹2,217.90 | ₹2,107.03 | ₹2,328.77 | ₹2,384.20 | ₹2,439.63 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACORONA) |
+| EBGNG | 75 | ₹671.45 | ₹618.53 | ₹724.37 | ₹750.83 | ₹777.29 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AEBGNG) |
+| ELLEN | 75 | ₹355.10 | ₹328.14 | ₹382.06 | ₹395.55 | ₹409.03 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AELLEN) |
+| FCL | 75 | ₹53.88 | ₹49.08 | ₹58.68 | ₹61.08 | ₹63.48 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AFCL) |
+| FILATEX | 75 | ₹82.41 | ₹74.95 | ₹89.87 | ₹93.61 | ₹97.34 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AFILATEX) |
+| GEEKAYWIRE | 75 | ₹29.34 | ₹26.62 | ₹32.06 | ₹33.42 | ₹34.78 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AGEEKAYWIRE) |
+| GPPL | 75 | ₹161.18 | ₹155.11 | ₹167.25 | ₹170.28 | ₹173.31 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AGPPL) |
+| GPTHEALTH | 75 | ₹159.45 | ₹152.25 | ₹166.65 | ₹170.25 | ₹173.84 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AGPTHEALTH) |
+| INDORAMA | 75 | ₹82.81 | ₹73.56 | ₹92.06 | ₹96.68 | ₹101.31 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AINDORAMA) |
+| INNOVACAP | 75 | ₹1,140.10 | ₹1,067.10 | ₹1,213.10 | ₹1,249.60 | ₹1,286.10 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AINNOVACAP) |
+| JHS | 75 | ₹8.79 | ₹7.88 | ₹9.70 | ₹10.15 | ₹10.60 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AJHS) |
+| KAVDEFENCE | 75 | ₹75.17 | ₹66.93 | ₹83.41 | ₹87.53 | ₹91.66 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AKAVDEFENCE) |
+| LUMAXTECH | 75 | ₹1,991.30 | ₹1,875.16 | ₹2,107.44 | ₹2,165.50 | ₹2,223.57 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ALUMAXTECH) |
+| MANGALAM | 75 | ₹33.54 | ₹30.05 | ₹37.03 | ₹38.77 | ₹40.52 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMANGALAM) |
+| MUKKA | 75 | ₹31.39 | ₹28.55 | ₹34.23 | ₹35.65 | ₹37.06 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMUKKA) |
+| MWL | 75 | ₹41.03 | ₹37.12 | ₹44.94 | ₹46.90 | ₹48.85 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AMWL) |
+| NEPHROPLUS | 75 | ₹734.95 | ₹691.24 | ₹778.66 | ₹800.51 | ₹822.37 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ANEPHROPLUS) |
+| NRAIL | 75 | ₹638.85 | ₹585.63 | ₹692.07 | ₹718.69 | ₹745.30 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ANRAIL) |
+| ORTINGLOBE | 75 | ₹16.62 | ₹15.23 | ₹18.01 | ₹18.71 | ₹19.40 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AORTINGLOBE) |
 | PANACHE | 75 | ₹529.00 | ₹501.74 | ₹556.26 | ₹569.89 | ₹583.52 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APANACHE) |
-| PASUPTAC | 75 | ₹68.51 | ₹64.40 | ₹72.62 | ₹74.67 | ₹76.73 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APASUPTAC) |
-| PDMJEPAPER | 75 | ₹98.51 | ₹90.61 | ₹106.41 | ₹110.36 | ₹114.30 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APDMJEPAPER) |
-| PINELABS | 75 | ₹192.60 | ₹178.63 | ₹206.57 | ₹213.55 | ₹220.53 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APINELABS) |
-| PLAZACABLE | 75 | ₹60.63 | ₹55.32 | ₹65.94 | ₹68.60 | ₹71.26 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APLAZACABLE) |
+| PDMJEPAPER | 75 | ₹96.81 | ₹88.69 | ₹104.93 | ₹108.98 | ₹113.04 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APDMJEPAPER) |
+| PINELABS | 75 | ₹193.80 | ₹179.83 | ₹207.77 | ₹214.75 | ₹221.73 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APINELABS) |
+| PLAZACABLE | 75 | ₹61.38 | ₹56.07 | ₹66.69 | ₹69.35 | ₹72.01 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APLAZACABLE) |
+| PPL | 75 | ₹277.45 | ₹261.14 | ₹293.76 | ₹301.91 | ₹310.06 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3APPL) |
