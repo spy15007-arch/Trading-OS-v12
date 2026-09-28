@@ -6,18 +6,18 @@ on:
       profile:
         description: Scanner profile to run
         required: true
-        default: all
+        default: strict
         type: choice
         options:
-          - all
           - strict
           - aggressive
           - budget
+          - all
 
   schedule:
     # Morning scan: 9:30-9:45 IST (04:00-04:15 UTC)
     - cron: "0 4 * * 1-5"
-    
+
     # Afternoon scan: 14:40-14:45 IST (09:10-09:15 UTC)
     - cron: "10 9 * * 1-5"
 
@@ -30,7 +30,7 @@ concurrency:
 
 jobs:
   scan:
-    name: Run ${{ inputs.profile || 'all' }} scanner
+    name: Run ${{ inputs.profile || 'strict' }} scanner
     runs-on: ubuntu-latest
     timeout-minutes: 50
 
@@ -38,7 +38,7 @@ jobs:
       PYTHONUNBUFFERED: "1"
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      SELECTED_PROFILE: ${{ inputs.profile || 'all' }}
+      SELECTED_PROFILE: ${{ inputs.profile || 'strict' }}
 
     steps:
       - name: Check out repository
@@ -61,8 +61,28 @@ jobs:
       - name: Verify aiohttp installed
         run: python -c "import aiohttp, sys; print('aiohttp', aiohttp.__version__)"
 
-      - name: Run selected scanner
-        run: python run_scan.py --profile "$SELECTED_PROFILE"
+      - name: Run selected scanner with retry/backoff
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          attempts=0
+          max_attempts=3
+
+          until [ "$attempts" -ge "$max_attempts" ]; do
+            attempts=$((attempts + 1))
+            echo "Scanner attempt $attempts/$max_attempts"
+
+            if python run_scan.py --profile "$SELECTED_PROFILE"; then
+              exit 0
+            fi
+
+            echo "Scanner failed. Waiting 180s before retry..."
+            sleep 180
+          done
+
+          echo "Scanner failed after $max_attempts attempts"
+          exit 1
 
       - name: Commit latest reports to repository
         if: success()
@@ -79,7 +99,6 @@ jobs:
           git add reports/02_LATEST_BUDGET.md
           git add reports/.last_scan
 
-          # Always commit with timestamp, even if content is unchanged
           git commit -m "chore: update scanner reports [$(date -u +'%Y-%m-%d %H:%M:%S UTC')]" --allow-empty
           git push
 
