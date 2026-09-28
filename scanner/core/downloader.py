@@ -15,7 +15,9 @@ INDEX_PERIOD = "2y"
 INDEX_INTERVAL = "1d"
 
 MIN_STOCK_BARS = 110
-DOWNLOAD_CHUNK = 75
+DOWNLOAD_CHUNK = 20
+RATE_LIMIT_RETRY_COUNT = 4
+RATE_LIMIT_BACKOFF_SECONDS = 5
 
 _BLACKLIST = {
     "NIFTYBEES.NS",
@@ -84,17 +86,55 @@ def clean_dataframe(frame, symbol=None):
         return pd.DataFrame()
 
 
-def _download(symbols, period, interval, group_by="ticker"):
-    return yf.download(
-        symbols,
-        period=period,
-        interval=interval,
-        group_by=group_by,
-        auto_adjust=True,
-        progress=False,
-        threads=True,
-        prepost=False,
+def _is_rate_limit_error(exc):
+    if exc is None:
+        return False
+
+    text = str(exc).lower()
+    return (
+        "too many requests" in text
+        or "rate limited" in text
+        or "rate limit" in text
+        or "429" in text
+        or "temporarily blocked" in text
     )
+
+
+def _download(symbols, period, interval, group_by="ticker"):
+    """Download data with explicit throttle-aware retries for Yahoo."""
+    last_error = None
+
+    for attempt in range(1, RATE_LIMIT_RETRY_COUNT + 1):
+        try:
+            return yf.download(
+                symbols,
+                period=period,
+                interval=interval,
+                group_by=group_by,
+                auto_adjust=True,
+                progress=False,
+                threads=False,
+                prepost=False,
+                timeout=30,
+            )
+
+        except Exception as exc:
+            last_error = exc
+
+            if not _is_rate_limit_error(exc):
+                raise
+
+            wait_seconds = RATE_LIMIT_BACKOFF_SECONDS * attempt
+            logger.warning(
+                "Yahoo rate limited while downloading %s. Retry %d/%d in %ss.",
+                symbols if isinstance(symbols, str) else len(symbols),
+                attempt,
+                RATE_LIMIT_RETRY_COUNT,
+                wait_seconds,
+            )
+            time.sleep(wait_seconds)
+
+    raise last_error
 
 
 def download_index(symbol, period=INDEX_PERIOD, interval=INDEX_INTERVAL):
@@ -246,7 +286,10 @@ def download_all(
             )
 
             for ticker in batch:
-                frame = download_stock(ticker, period, interval)
+                try:
+                    frame = download_stock(ticker, period, interval)
+                except Exception:
+                    frame = pd.DataFrame()
 
                 if len(frame) >= MIN_STOCK_BARS:
                     database[ticker] = frame
@@ -258,6 +301,6 @@ def download_all(
             len(database),
         )
 
-        time.sleep(0.1)
+        time.sleep(1.0)
 
     return database
