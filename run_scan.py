@@ -25,10 +25,14 @@ def run_profiles(profiles):
         regime["regime"],
     )
 
+    universe = get_broad_universe(600)
+    logger.info("Using universe size: %d", len(universe))
+
     data = download_all(
-        get_broad_universe(1800),
+        universe,
         period="6mo",
         interval="1d",
+        chunk=20,
     )
 
     if not data:
