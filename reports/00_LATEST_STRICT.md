@@ -1,31 +1,27 @@
 # Trading OS v12 — Strict Scan
 
 - **Market regime:** DEFENSIVE
-- **Generated:** 2026-09-28 17:47:06
-- **Selected candidates:** 23
+- **Generated:** 2026-09-29 10:33:56
+- **Selected candidates:** 19
 
 | Symbol | Score | Entry | Stop-loss | Target 1 | Target 2 | Target 3 | Chart |
 |---|---:|---:|---:|---:|---:|---:|---|
-| BELRISE | 90 | ₹248.62 | ₹238.41 | ₹258.83 | ₹263.93 | ₹269.04 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABELRISE) |
-| BILVYAPAR | 90 | ₹4.48 | ₹4.13 | ₹4.83 | ₹5.00 | ₹5.17 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABILVYAPAR) |
-| BLISSGVS | 90 | ₹737.65 | ₹687.32 | ₹787.98 | ₹813.15 | ₹838.32 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABLISSGVS) |
-| BLUSPRING | 90 | ₹149.44 | ₹136.54 | ₹162.34 | ₹168.79 | ₹175.24 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABLUSPRING) |
-| BOROLTD | 90 | ₹280.80 | ₹263.68 | ₹297.92 | ₹306.48 | ₹315.04 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABOROLTD) |
-| CASTROLIND | 90 | ₹201.04 | ₹195.98 | ₹206.10 | ₹208.62 | ₹211.15 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACASTROLIND) |
-| AARTECH | 75 | ₹51.22 | ₹48.03 | ₹54.41 | ₹56.00 | ₹57.59 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAARTECH) |
-| ADVANCE | 75 | ₹121.50 | ₹113.49 | ₹129.51 | ₹133.51 | ₹137.51 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AADVANCE) |
-| AEQUS | 75 | ₹260.10 | ₹244.84 | ₹275.36 | ₹282.99 | ₹290.62 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAEQUS) |
-| AETHER | 75 | ₹1,739.20 | ₹1,652.00 | ₹1,826.40 | ₹1,870.00 | ₹1,913.60 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAETHER) |
-| APOLLO | 75 | ₹408.30 | ₹384.02 | ₹432.58 | ₹444.72 | ₹456.86 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAPOLLO) |
-| ARTEMISMED | 75 | ₹365.90 | ₹342.67 | ₹389.13 | ₹400.75 | ₹412.36 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AARTEMISMED) |
-| ASKAUTOLTD | 75 | ₹650.35 | ₹614.30 | ₹686.40 | ₹704.42 | ₹722.44 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AASKAUTOLTD) |
-| AVADHSUGAR | 75 | ₹808.40 | ₹753.05 | ₹863.75 | ₹891.42 | ₹919.10 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAVADHSUGAR) |
-| AXISCADES | 75 | ₹1,879.50 | ₹1,758.06 | ₹2,000.94 | ₹2,061.66 | ₹2,122.39 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAXISCADES) |
-| BANARBEADS | 75 | ₹117.27 | ₹108.24 | ₹126.30 | ₹130.81 | ₹135.33 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABANARBEADS) |
-| BELLACASA | 75 | ₹266.50 | ₹245.33 | ₹287.67 | ₹298.26 | ₹308.84 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABELLACASA) |
-| BOSCH-HCIL | 75 | ₹1,802.40 | ₹1,703.00 | ₹1,901.80 | ₹1,951.50 | ₹2,001.20 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABOSCH-HCIL) |
-| CHEMCON | 75 | ₹220.81 | ₹207.43 | ₹234.19 | ₹240.88 | ₹247.56 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACHEMCON) |
-| DBOL | 75 | ₹122.77 | ₹114.39 | ₹131.15 | ₹135.35 | ₹139.54 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ADBOL) |
-| DCMSIL | 75 | ₹78.98 | ₹71.73 | ₹86.23 | ₹89.85 | ₹93.47 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ADCMSIL) |
-| DELTACORP | 75 | ₹72.20 | ₹66.58 | ₹77.82 | ₹80.63 | ₹83.43 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ADELTACORP) |
-| DHAMPURSUG | 75 | ₹172.42 | ₹159.84 | ₹185.00 | ₹191.29 | ₹197.59 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ADHAMPURSUG) |
+| ABBOTINDIA | 90 | ₹27,270.00 | ₹26,393.95 | ₹28,146.05 | ₹28,584.08 | ₹29,022.10 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AABBOTINDIA) |
+| ADANIPORTS | 90 | ₹1,822.00 | ₹1,759.78 | ₹1,884.22 | ₹1,915.34 | ₹1,946.45 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AADANIPORTS) |
+| AETHER | 90 | ₹1,749.90 | ₹1,661.78 | ₹1,838.02 | ₹1,882.08 | ₹1,926.13 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAETHER) |
+| ALBERTDAVD | 90 | ₹876.35 | ₹834.42 | ₹918.28 | ₹939.24 | ₹960.21 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AALBERTDAVD) |
+| APLLTD | 90 | ₹861.50 | ₹824.71 | ₹898.29 | ₹916.69 | ₹935.09 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAPLLTD) |
+| AXISCADES | 90 | ₹2,067.40 | ₹1,934.50 | ₹2,200.30 | ₹2,266.75 | ₹2,333.20 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAXISCADES) |
+| AZAD | 90 | ₹2,914.20 | ₹2,735.20 | ₹3,093.20 | ₹3,182.71 | ₹3,272.21 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAZAD) |
+| BANSALWIRE | 90 | ₹327.65 | ₹310.95 | ₹344.35 | ₹352.69 | ₹361.04 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABANSALWIRE) |
+| BOROLTD | 90 | ₹276.21 | ₹259.22 | ₹293.20 | ₹301.70 | ₹310.20 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABOROLTD) |
+| BOSCH-HCIL | 90 | ₹1,934.40 | ₹1,822.29 | ₹2,046.51 | ₹2,102.57 | ₹2,158.62 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABOSCH-HCIL) |
+| CASTROLIND | 90 | ₹199.83 | ₹194.63 | ₹205.03 | ₹207.63 | ₹210.23 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACASTROLIND) |
+| CENTUM | 90 | ₹4,920.70 | ₹4,568.96 | ₹5,272.44 | ₹5,448.31 | ₹5,624.18 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACENTUM) |
+| CUPID | 90 | ₹288.00 | ₹266.72 | ₹309.28 | ₹319.91 | ₹330.55 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACUPID) |
+| ABINFRA | 80 | ₹12.50 | ₹11.48 | ₹13.52 | ₹14.04 | ₹14.55 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AABINFRA) |
+| AAATECH | 75 | ₹99.94 | ₹92.79 | ₹107.09 | ₹110.67 | ₹114.24 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAAATECH) |
+| BALPHARMA | 75 | ₹112.11 | ₹101.77 | ₹122.45 | ₹127.62 | ₹132.79 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABALPHARMA) |
+| BILVYAPAR | 75 | ₹4.29 | ₹3.93 | ₹4.65 | ₹4.83 | ₹5.00 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABILVYAPAR) |
+| BLISSGVS | 75 | ₹710.90 | ₹660.21 | ₹761.59 | ₹786.93 | ₹812.27 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABLISSGVS) |
+| DBOL | 75 | ₹124.49 | ₹116.01 | ₹132.97 | ₹137.21 | ₹141.45 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ADBOL) |
