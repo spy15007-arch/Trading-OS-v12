@@ -1,5 +1,6 @@
 """NSE universe and robust Yahoo Finance download functions."""
 import logging
+import random
 import time
 
 import pandas as pd
@@ -15,9 +16,10 @@ INDEX_PERIOD = "2y"
 INDEX_INTERVAL = "1d"
 
 MIN_STOCK_BARS = 110
-DOWNLOAD_CHUNK = 20
-RATE_LIMIT_RETRY_COUNT = 4
-RATE_LIMIT_BACKOFF_SECONDS = 5
+DOWNLOAD_CHUNK = 5
+RATE_LIMIT_RETRY_COUNT = 6
+RATE_LIMIT_BACKOFF_SECONDS = 15
+RATE_LIMIT_JITTER_SECONDS = 3
 
 _BLACKLIST = {
     "NIFTYBEES.NS",
@@ -100,6 +102,20 @@ def _is_rate_limit_error(exc):
     )
 
 
+def _sleep_for_rate_limit(attempt, context):
+    base_wait = RATE_LIMIT_BACKOFF_SECONDS * (2 ** max(0, attempt - 1))
+    jitter = random.uniform(0, RATE_LIMIT_JITTER_SECONDS)
+    delay = base_wait + jitter
+
+    logger.warning(
+        "Yahoo rate limited while downloading %s. Retry %d in %.1f seconds.",
+        context if isinstance(context, str) else len(context),
+        attempt,
+        delay,
+    )
+    time.sleep(delay)
+
+
 def _download(symbols, period, interval, group_by="ticker"):
     """Download data with explicit throttle-aware retries for Yahoo."""
     last_error = None
@@ -124,15 +140,10 @@ def _download(symbols, period, interval, group_by="ticker"):
             if not _is_rate_limit_error(exc):
                 raise
 
-            wait_seconds = RATE_LIMIT_BACKOFF_SECONDS * attempt
-            logger.warning(
-                "Yahoo rate limited while downloading %s. Retry %d/%d in %ss.",
-                symbols if isinstance(symbols, str) else len(symbols),
-                attempt,
-                RATE_LIMIT_RETRY_COUNT,
-                wait_seconds,
-            )
-            time.sleep(wait_seconds)
+            if attempt >= RATE_LIMIT_RETRY_COUNT:
+                break
+
+            _sleep_for_rate_limit(attempt, symbols)
 
     raise last_error
 
@@ -265,6 +276,10 @@ def download_all(
     for start in range(0, total, int(chunk)):
         batch = symbols[start:start + int(chunk)]
 
+        if start > 0:
+            # Throttle between Yahoo batches to avoid repeated rate-limit bursts.
+            time.sleep(3.0)
+
         try:
             raw = _download(batch, period, interval)
 
@@ -294,6 +309,8 @@ def download_all(
                 if len(frame) >= MIN_STOCK_BARS:
                     database[ticker] = frame
 
+            time.sleep(10.0)
+
         logger.info(
             "Downloaded %d/%d; usable charts: %d",
             min(start + len(batch), total),
@@ -301,6 +318,6 @@ def download_all(
             len(database),
         )
 
-        time.sleep(1.0)
+        time.sleep(2.0)
 
     return database
