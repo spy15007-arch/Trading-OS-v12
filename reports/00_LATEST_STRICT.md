@@ -1,19 +1,25 @@
 # Trading OS v12 — Strict Scan
 
 - **Market regime:** DEFENSIVE
-- **Generated:** 2026-10-02 15:46:50
-- **Selected candidates:** 11
+- **Generated:** 2026-10-05 14:16:38
+- **Selected candidates:** 17
 
 | Symbol | Score | Entry | Stop-loss | Target 1 | Target 2 | Target 3 | Chart |
 |---|---:|---:|---:|---:|---:|---:|---|
-| BOSCH-HCIL | 90 | ₹1,967.20 | ₹1,843.02 | ₹2,091.38 | ₹2,153.46 | ₹2,215.55 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABOSCH-HCIL) |
-| CYIENT | 90 | ₹1,104.60 | ₹1,039.65 | ₹1,169.55 | ₹1,202.03 | ₹1,234.51 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACYIENT) |
-| CUPID | 80 | ₹312.50 | ₹291.09 | ₹333.91 | ₹344.62 | ₹355.33 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACUPID) |
-| AAREYDRUGS | 75 | ₹103.85 | ₹97.71 | ₹109.99 | ₹113.05 | ₹116.12 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAAREYDRUGS) |
-| ACE | 75 | ₹1,212.30 | ₹1,151.29 | ₹1,273.31 | ₹1,303.82 | ₹1,334.33 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AACE) |
-| AGASTYAEN | 75 | ₹69.55 | ₹66.74 | ₹72.36 | ₹73.76 | ₹75.17 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAGASTYAEN) |
-| AZAD | 75 | ₹2,860.90 | ₹2,664.64 | ₹3,057.16 | ₹3,155.29 | ₹3,253.42 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAZAD) |
-| BHAGERIA | 75 | ₹382.05 | ₹348.97 | ₹415.13 | ₹431.67 | ₹448.21 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABHAGERIA) |
-| BOHRAIND | 75 | ₹14.74 | ₹12.91 | ₹16.57 | ₹17.48 | ₹18.39 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABOHRAIND) |
-| BOROLTD | 75 | ₹280.20 | ₹260.85 | ₹299.55 | ₹309.23 | ₹318.91 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABOROLTD) |
-| DELTACORP | 75 | ₹73.48 | ₹65.90 | ₹81.06 | ₹84.85 | ₹88.64 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ADELTACORP) |
+| AARNAV | 90 | ₹36.49 | ₹33.18 | ₹39.80 | ₹41.46 | ₹43.12 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAARNAV) |
+| AEROPLANE | 90 | ₹211.24 | ₹197.69 | ₹224.79 | ₹231.57 | ₹238.34 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAEROPLANE) |
+| AVADHSUGAR | 90 | ₹840.35 | ₹779.57 | ₹901.13 | ₹931.52 | ₹961.91 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAVADHSUGAR) |
+| BATLIBOI | 90 | ₹89.78 | ₹83.15 | ₹96.41 | ₹99.73 | ₹103.04 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABATLIBOI) |
+| BBTCL | 90 | ₹234.94 | ₹221.04 | ₹248.84 | ₹255.80 | ₹262.75 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABBTCL) |
+| BOSCH-HCIL | 90 | ₹1,998.20 | ₹1,875.43 | ₹2,120.97 | ₹2,182.36 | ₹2,243.75 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABOSCH-HCIL) |
+| CYIENT | 90 | ₹1,140.20 | ₹1,072.51 | ₹1,207.89 | ₹1,241.74 | ₹1,275.59 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACYIENT) |
+| DEVX | 90 | ₹37.85 | ₹35.40 | ₹40.30 | ₹41.52 | ₹42.75 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ADEVX) |
+| DHAMPURSUG | 90 | ₹176.85 | ₹164.37 | ₹189.33 | ₹195.57 | ₹201.81 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ADHAMPURSUG) |
+| ADL | 75 | ₹75.90 | ₹66.97 | ₹84.83 | ₹89.29 | ₹93.76 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AADL) |
+| AEROFLEX | 75 | ₹544.35 | ₹504.46 | ₹584.24 | ₹604.19 | ₹624.13 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAEROFLEX) |
+| AMANTA | 75 | ₹199.92 | ₹192.06 | ₹207.78 | ₹211.71 | ₹215.64 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AAMANTA) |
+| ARIES | 75 | ₹501.25 | ₹467.34 | ₹535.16 | ₹552.11 | ₹569.06 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3AARIES) |
+| BIL | 75 | ₹1,071.15 | ₹991.95 | ₹1,150.35 | ₹1,189.95 | ₹1,229.55 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ABIL) |
+| CAPTRUST | 75 | ₹19.99 | ₹18.43 | ₹21.55 | ₹22.33 | ₹23.11 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACAPTRUST) |
+| COFORGE | 75 | ₹1,852.00 | ₹1,760.18 | ₹1,943.82 | ₹1,989.73 | ₹2,035.64 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACOFORGE) |
+| CYBERTECH | 75 | ₹139.10 | ₹131.21 | ₹146.99 | ₹150.94 | ₹154.89 | [Open chart](https://www.tradingview.com/chart/?symbol=NSE%3ACYBERTECH) |
