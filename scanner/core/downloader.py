@@ -17,9 +17,9 @@ INDEX_INTERVAL = "1d"
 
 MIN_STOCK_BARS = 110
 DOWNLOAD_CHUNK = 5
-RATE_LIMIT_RETRY_COUNT = 6
-RATE_LIMIT_BACKOFF_SECONDS = 15
-RATE_LIMIT_JITTER_SECONDS = 3
+RATE_LIMIT_RETRY_COUNT = 12
+RATE_LIMIT_BACKOFF_SECONDS = 45
+RATE_LIMIT_JITTER_SECONDS = 15
 
 _BLACKLIST = {
     "NIFTYBEES.NS",
@@ -105,7 +105,7 @@ def _is_rate_limit_error(exc):
 def _sleep_for_rate_limit(attempt, context):
     base_wait = RATE_LIMIT_BACKOFF_SECONDS * (2 ** max(0, attempt - 1))
     jitter = random.uniform(0, RATE_LIMIT_JITTER_SECONDS)
-    delay = base_wait + jitter
+    delay = min(base_wait + jitter, 600)
 
     logger.warning(
         "Yahoo rate limited while downloading %s. Retry %d in %.1f seconds.",
@@ -277,8 +277,8 @@ def download_all(
         batch = symbols[start:start + int(chunk)]
 
         if start > 0:
-            # Throttle between Yahoo batches to avoid repeated rate-limit bursts.
-            time.sleep(3.0)
+            # Throttle between Yahoo batches to avoid repeat rate-limit bursts.
+            time.sleep(5.0)
 
         try:
             raw = _download(batch, period, interval)
@@ -309,7 +309,7 @@ def download_all(
                 if len(frame) >= MIN_STOCK_BARS:
                     database[ticker] = frame
 
-            time.sleep(10.0)
+            time.sleep(15.0)
 
         logger.info(
             "Downloaded %d/%d; usable charts: %d",
