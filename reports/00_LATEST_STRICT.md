@@ -1,7 +1,7 @@
 # Trading OS v12 — Strict Scan
 
 - **Market regime:** DEFENSIVE
-- **Generated:** 2026-10-06 11:11:57
+- **Generated:** 2026-10-06 15:58:52
 - **Selected candidates:** 30
 
 | Symbol | Score | Entry | Stop-loss | Target 1 | Target 2 | Target 3 | Chart |
