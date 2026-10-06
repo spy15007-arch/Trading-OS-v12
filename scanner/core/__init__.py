@@ -1,1 +1,1 @@
-"""Core services for Trading OS v12."""
+"""Trading OS v12 core package."""
