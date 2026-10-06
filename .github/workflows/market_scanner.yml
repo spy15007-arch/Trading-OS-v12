@@ -30,7 +30,7 @@ concurrency:
 
 jobs:
   scan:
-    name: Run ${{ inputs.profile || 'strict' }} scanner
+    name: Run scanner
     runs-on: ubuntu-latest
     timeout-minutes: 50
 
@@ -38,7 +38,6 @@ jobs:
       PYTHONUNBUFFERED: "1"
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      SELECTED_PROFILE: ${{ inputs.profile || 'strict' }}
 
     steps:
       - name: Check out repository
@@ -58,10 +57,10 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
-      - name: Verify aiohttp installed
-        run: python -c "import aiohttp, sys; print('aiohttp', aiohttp.__version__)"
+      - name: Verify dependencies installed
+        run: python -c "import yfinance, pandas, numpy, requests; print('All dependencies OK')"
 
-      - name: Run selected scanner with retry/backoff
+      - name: Run master swing breakout scanner
         shell: bash
         run: |
           set -euo pipefail
@@ -73,7 +72,7 @@ jobs:
             attempts=$((attempts + 1))
             echo "Scanner attempt $attempts/$max_attempts"
 
-            if python run_scan.py --profile "$SELECTED_PROFILE"; then
+            if python run_scan.py; then
               exit 0
             fi
 
@@ -91,15 +90,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add reports/00_LATEST_STRICT.csv
-          git add reports/00_LATEST_STRICT.md
-          git add reports/01_LATEST_AGGRESSIVE.csv
-          git add reports/01_LATEST_AGGRESSIVE.md
-          git add reports/02_LATEST_BUDGET.csv
-          git add reports/02_LATEST_BUDGET.md
+          git add reports/swing_scan.csv
+          git add reports/swing_scan.md
           git add reports/.last_scan
 
-          git commit -m "chore: update scanner reports [$(date -u +'%Y-%m-%d %H:%M:%S UTC')]" --allow-empty
+          git commit -m "chore: update swing scan reports [$(date -u +'%Y-%m-%d %H:%M:%S UTC')]" --allow-empty
           git push
 
       - name: Publish Markdown reports in workflow summary
@@ -108,9 +103,8 @@ jobs:
         run: |
           shopt -s nullglob
 
-          for report in reports/00_LATEST_*.md; do
-            cat "$report" >> "$GITHUB_STEP_SUMMARY"
-            printf '\n\n' >> "$GITHUB_STEP_SUMMARY"
+          for report in reports/swing_scan.md; do
+            [ -f "$report" ] && cat "$report" >> "$GITHUB_STEP_SUMMARY"
           done
 
       - name: Upload timestamped and latest reports
