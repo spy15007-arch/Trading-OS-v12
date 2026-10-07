@@ -15,7 +15,8 @@ st.set_page_config(
 )
 
 
-REPORTS = {
+# Original multi-file report configuration. The app will prefer these if they exist.
+ORIGINAL_REPORTS = {
     "Strict": {
         "csv": Path("reports/00_LATEST_STRICT.csv"),
         "markdown": Path("reports/00_LATEST_STRICT.md"),
@@ -32,6 +33,11 @@ REPORTS = {
         "description": "Momentum setups priced at ₹500 or below.",
     },
 }
+
+
+# Fallback single-file scanner output used by the current automation
+SINGLE_REPORT_CSV = Path("reports/swing_scan.csv")
+SINGLE_REPORT_MD = Path("reports/swing_scan.md")
 
 
 def chart_link(symbol):
@@ -134,7 +140,7 @@ def render_report(name, config):
     frame = load_report(str(csv_path))
 
     st.subheader(f"{name} Scanner")
-    st.caption(config["description"])
+    st.caption(config.get("description", ""))
     st.caption(f"Last updated: {report_updated_at(csv_path)}")
 
     if frame.empty:
@@ -155,9 +161,7 @@ def render_report(name, config):
     )
 
     top_symbol = (
-        str(frame.iloc[0]["symbol"])
-        if "symbol" in frame.columns and not frame.empty
-        else "-"
+        str(frame.iloc[0]["symbol"]) if "symbol" in frame.columns and not frame.empty else "-"
     )
 
     metric_one, metric_two, metric_three = st.columns(3)
@@ -203,6 +207,37 @@ def render_report(name, config):
             )
 
 
+def build_active_reports():
+    """Return the reports mapping the app should use.
+
+    Preference order:
+    1. If the three "LATEST" CSVs exist, use them (multi-tab mode).
+    2. Else if the single `swing_scan.csv` exists, expose a single "Master" tab.
+    3. Else fall back to the original mapping (so UI still shows expected tabs).
+    """
+    active = {}
+    # Prefer explicit latest files if they exist
+    for name, cfg in ORIGINAL_REPORTS.items():
+        if cfg["csv"].exists() or cfg["markdown"].exists():
+            active[name] = cfg
+
+    if active:
+        return active
+
+    # Fallback: single-file output produced by the current automation
+    if SINGLE_REPORT_CSV.exists() or SINGLE_REPORT_MD.exists():
+        return {
+            "Master": {
+                "csv": SINGLE_REPORT_CSV,
+                "markdown": SINGLE_REPORT_MD,
+                "description": "Master swing scan output (single-file scanner).",
+            }
+        }
+
+    # No files detected; return original map so UI still renders the three tabs
+    return ORIGINAL_REPORTS
+
+
 st.title("📈 Trading OS v12")
 st.caption(
     "Latest NSE scanner reports. "
@@ -213,18 +248,17 @@ if st.button("Refresh latest reports"):
     st.cache_data.clear()
     st.rerun()
 
-strict_tab, aggressive_tab, budget_tab = st.tabs(
-    ["Strict", "Aggressive", "Budget"]
-)
+REPORTS = build_active_reports()
 
-with strict_tab:
-    render_report("Strict", REPORTS["Strict"])
+# Create tabs dynamically from the active reports mapping
+tab_names = list(REPORTS.keys())
+if not tab_names:
+    tab_names = ["Reports"]
 
-with aggressive_tab:
-    render_report("Aggressive", REPORTS["Aggressive"])
-
-with budget_tab:
-    render_report("Budget", REPORTS["Budget"])
+tab_objs = st.tabs(tab_names)
+for name, tab in zip(tab_names, tab_objs):
+    with tab:
+        render_report(name, REPORTS[name])
 
 st.divider()
 
