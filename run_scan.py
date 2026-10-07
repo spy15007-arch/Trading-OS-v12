@@ -3,47 +3,21 @@ Finds only PRE-BREAKOUT and FRESH BREAKOUT swing setups and ranks them 1..30.
 """
 import os
 import sys
-import traceback
 from pathlib import Path
-
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scanner.core.downloader import download_all, download_index, get_nse_equity_symbols
-from scanner.core.market import get_market_status
+from scanner.core.downloader import get_nse_equity_symbols, download_all, download_index
 from scanner.core.scoring import score_stock
+from scanner.core.market import get_market_status
 from scanner.core.utils import export_markdown, logger, timestamp
 
 UNIVERSE_SIZE = 1800
 TOP_RESULTS = 30
 MIN_SCORE = 60
-
-
-def send_telegram(message: str) -> None:
-    """Send a short message to the configured Telegram chat. This helper never raises."""
-    try:
-        import requests
-    except Exception:
-        logger.warning("requests not available, cannot send Telegram message")
-        return
-
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
-    chat_id = os.getenv("TELEGRAM_CHAT_ID")
-    if not token or not chat_id:
-        logger.info("Telegram env not configured (TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID)")
-        return
-
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    payload = {"chat_id": chat_id, "text": message}
-
-    try:
-        r = requests.post(url, data=payload, timeout=20)
-        logger.info("telegram_status=%s body=%s", r.status_code, r.text)
-    except Exception:
-        logger.exception("Failed to send Telegram message")
 
 
 def run_scan():
@@ -71,10 +45,7 @@ def run_scan():
 
     if not results:
         logger.warning("No pre-breakout or fresh-breakout setups found.")
-        export_markdown(
-            f"# Trading OS v12\n\nGenerated: {timestamp()}\n\nNo qualifying swing setups found.\n",
-            "swing_scan.md",
-        )
+        export_markdown(f"# Trading OS v12\n\nGenerated: {timestamp()}\n\nNo qualifying swing setups found.\n", "swing_scan.md")
         return 0
 
     df = pd.DataFrame(results)
@@ -83,6 +54,7 @@ def run_scan():
     df = df.drop_duplicates(subset=["Symbol"], keep="first").head(TOP_RESULTS).reset_index(drop=True)
     df.insert(0, "Rank", range(1, len(df) + 1))
 
+    # Prefer a balanced presentation, but do not distort the global ranking.
     breakout = df[df["Setup"] == "BREAKOUT"]
     pre = df[df["Setup"] == "PRE-BREAKOUT"]
 
@@ -115,19 +87,5 @@ def run_scan():
     return 0
 
 
-def main(profile: str | None = None) -> int:
-    """Entry point used by helper scripts and CI."""
-    try:
-        rc = run_scan()
-        send_telegram(f"Trading OS scan completed successfully. Outputs written to reports/.")
-        return rc
-    except Exception as exc:
-        tb = traceback.format_exc()
-        logger.exception("Scanner crashed: %s", exc)
-        send_telegram(f"Trading OS scanner crashed:\n{exc}\n\n{tb}")
-        export_markdown(f"# Trading OS v12 - Scanner Crash\n\n{timestamp()}\n\n{tb}\n", "swing_scan_error.md")
-        return 2
-
-
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(run_scan())
