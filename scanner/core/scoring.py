@@ -1,151 +1,1377 @@
+"""
+Trading OS v12 - Master Swing Scoring Engine
+
+The scanner is deliberately focused on only two setups:
+
+1. PRE-BREAKOUT
+   - Strong trend
+   - Tight / controlled base
+   - Close to prior resistance
+   - Not excessively extended
+
+2. FRESH BREAKOUT
+   - Actual resistance breakout
+   - Volume confirmation
+   - Strong closing price
+   - Momentum confirmation
+   - Limited extension / chase risk
+
+Final score:
+    0 - 100
+
+The engine also calculates:
+    RS20
+    RS60
+    RSI
+    RVOL
+    BreakoutPct
+    BaseRangePct
+    Entry
+    SL
+    T1
+    T2
+
+No stock is classified simply as "BREAKOUT".
+"""
+
+
 import numpy as np
 import pandas as pd
-from .indicators import ema, rsi, atr, relative_volume, closing_strength
+
+from .indicators import (
+    ema,
+    rsi,
+    macd,
+    atr,
+    relative_volume,
+    closing_strength,
+)
 
 
-def _clip(x, lo=0, hi=100):
-    return max(lo, min(hi, float(x)))
+# ============================================================
+# CONFIGURATION
+# ============================================================
+
+MIN_BARS = 220
+
+EMA_FAST = 20
+EMA_MID = 50
+EMA_SLOW = 200
+
+RSI_PERIOD = 14
+
+RESISTANCE_LOOKBACK = 20
+
+BASE_LOOKBACK = 20
+
+MAX_PRE_BREAKOUT_GAP = 5.0
+
+MAX_FRESH_BREAKOUT_GAP = 6.0
+
+MAX_EXTENSION_FROM_EMA20 = 12.0
+
+MIN_PRE_RSI = 52.0
+
+MIN_FRESH_RSI = 55.0
+
+MIN_PRE_RVOL = 0.70
+
+MIN_FRESH_RVOL = 1.30
 
 
-def _safe(x, default=0.0):
-    return default if pd.isna(x) or not np.isfinite(x) else float(x)
+# ============================================================
+# SAFE NUMBER
+# ============================================================
 
+def _num(value, default=np.nan):
+
+    try:
+
+        value = float(value)
+
+        if np.isfinite(value):
+            return value
+
+    except (
+        TypeError,
+        ValueError,
+    ):
+        pass
+
+    return default
+
+
+# ============================================================
+# DATA PREPARATION
+# ============================================================
+
+def _prepare_dataframe(df):
+
+    if df is None:
+        return None
+
+    if df.empty:
+        return None
+
+    data = df.copy()
+
+    # --------------------------------------------------------
+    # Flatten possible MultiIndex columns from yfinance.
+    # --------------------------------------------------------
+
+    if isinstance(
+        data.columns,
+        pd.MultiIndex,
+    ):
+
+        data.columns = [
+            str(col[0])
+            for col in data.columns
+        ]
+
+    # --------------------------------------------------------
+    # Standardise column names.
+    # --------------------------------------------------------
+
+    rename_map = {}
+
+    for column in data.columns:
+
+        name = str(column).strip()
+
+        lower = name.lower()
+
+        if lower == "open":
+            rename_map[column] = "Open"
+
+        elif lower == "high":
+            rename_map[column] = "High"
+
+        elif lower == "low":
+            rename_map[column] = "Low"
+
+        elif lower == "close":
+            rename_map[column] = "Close"
+
+        elif lower == "volume":
+            rename_map[column] = "Volume"
+
+    data = data.rename(
+        columns=rename_map
+    )
+
+    required = [
+        "Open",
+        "High",
+        "Low",
+        "Close",
+        "Volume",
+    ]
+
+    for column in required:
+
+        if column not in data.columns:
+            return None
+
+    data = data[
+        required
+    ].copy()
+
+    for column in required:
+
+        data[column] = pd.to_numeric(
+            data[column],
+            errors="coerce",
+        )
+
+    data = data.dropna(
+        subset=[
+            "High",
+            "Low",
+            "Close",
+        ]
+    )
+
+    data = data[
+        data["Close"] > 0
+    ]
+
+    data = data[
+        data["High"] >= data["Low"]
+    ]
+
+    if len(data) < MIN_BARS:
+        return None
+
+    return data
+
+
+# ============================================================
+# RELATIVE STRENGTH
+# ============================================================
+
+def _relative_return(
+    series,
+    periods,
+):
+
+    if len(series) <= periods:
+        return np.nan
+
+    start = _num(
+        series.iloc[-periods - 1]
+    )
+
+    end = _num(
+        series.iloc[-1]
+    )
+
+    if not np.isfinite(start):
+        return np.nan
+
+    if start <= 0:
+        return np.nan
+
+    return (
+        (end / start) - 1.0
+    ) * 100.0
+
+
+def _relative_strength(
+    stock_df,
+    benchmark_df,
+):
+
+    stock_rs20 = _relative_return(
+        stock_df["Close"],
+        20,
+    )
+
+    stock_rs60 = _relative_return(
+        stock_df["Close"],
+        60,
+    )
+
+    if (
+        benchmark_df is None
+        or benchmark_df.empty
+    ):
+
+        return (
+            stock_rs20,
+            stock_rs60,
+            stock_rs20,
+            stock_rs60,
+        )
+
+    benchmark = _prepare_dataframe(
+        benchmark_df
+    )
+
+    if benchmark is None:
+
+        return (
+            stock_rs20,
+            stock_rs60,
+            stock_rs20,
+            stock_rs60,
+        )
+
+    bench_rs20 = _relative_return(
+        benchmark["Close"],
+        20,
+    )
+
+    bench_rs60 = _relative_return(
+        benchmark["Close"],
+        60,
+    )
+
+    if np.isfinite(
+        stock_rs20
+    ) and np.isfinite(
+        bench_rs20
+    ):
+
+        relative_rs20 = (
+            stock_rs20
+            - bench_rs20
+        )
+
+    else:
+
+        relative_rs20 = stock_rs20
+
+    if np.isfinite(
+        stock_rs60
+    ) and np.isfinite(
+        bench_rs60
+    ):
+
+        relative_rs60 = (
+            stock_rs60
+            - bench_rs60
+        )
+
+    else:
+
+        relative_rs60 = stock_rs60
+
+    return (
+        stock_rs20,
+        stock_rs60,
+        relative_rs20,
+        relative_rs60,
+    )
+
+
+# ============================================================
+# BASE QUALITY
+# ============================================================
 
 def _base_metrics(df):
-    close = pd.to_numeric(df["Close"], errors="coerce")
-    high = pd.to_numeric(df["High"], errors="coerce")
-    low = pd.to_numeric(df["Low"], errors="coerce")
-    volume = pd.to_numeric(df["Volume"], errors="coerce")
-    e20 = ema(close, 20)
-    e50 = ema(close, 50)
-    e200 = ema(close, 200)
-    atr14 = atr(df, 14)
-    r = rsi(close, 14)
-    avg20 = volume.rolling(20).mean()
-    resistance20 = high.shift(1).rolling(20).max()
-    resistance30 = high.shift(1).rolling(30).max()
-    resistance55 = high.shift(1).rolling(55).max()
-    range20 = (high.rolling(20).max() - low.rolling(20).min()) / low.rolling(20).min()
-    range10 = (high.rolling(10).max() - low.rolling(10).min()) / low.rolling(10).min()
-    vol_ratio = volume / avg20
-    return locals()
 
+    recent = df.tail(
+        BASE_LOOKBACK
+    )
 
-def score_stock(df, benchmark_df=None):
-    if df is None or len(df) < 220:
-        return None
-    try:
-        m = _base_metrics(df)
-        close = m["close"]; high = m["high"]; low = m["low"]; volume = m["volume"]
-        e20 = m["e20"]; e50 = m["e50"]; e200 = m["e200"]; atr14 = m["atr14"]; r = m["r"]
-        avg20 = m["avg20"]; res20 = m["resistance20"]; res30 = m["resistance30"]; res55 = m["resistance55"]
-        range20 = m["range20"]; range10 = m["range10"]; vr = m["vol_ratio"]
+    if len(recent) < 15:
+        return {
+            "BaseRangePct": np.nan,
+            "Compression": 0.0,
+        }
 
-        c = float(close.iloc[-1]); a = _safe(atr14.iloc[-1]); rr = _safe(r.iloc[-1]); rv = _safe(vr.iloc[-1])
-        r20 = _safe(res20.iloc[-1]); r30 = _safe(res30.iloc[-1]); r55 = _safe(res55.iloc[-1])
-        dist20 = (c / r20 - 1) * 100 if r20 else 999
-        dist30 = (c / r30 - 1) * 100 if r30 else 999
-        dist55 = (c / r55 - 1) * 100 if r55 else 999
-        close_strength = _safe((c - float(low.iloc[-1])) / max(float(high.iloc[-1] - low.iloc[-1]), 1e-9))
-        trend = c > e20.iloc[-1] > e50.iloc[-1] > e200.iloc[-1]
-        trend_partial = c > e20.iloc[-1] and e20.iloc[-1] > e50.iloc[-1]
-        ret20 = c / float(close.iloc[-21]) - 1 if len(close) > 21 else 0
-        ret60 = c / float(close.iloc[-61]) - 1 if len(close) > 61 else 0
+    high = _num(
+        recent["High"].max()
+    )
 
-        if benchmark_df is not None and len(benchmark_df) >= 61:
-            bc = pd.to_numeric(benchmark_df["Close"], errors="coerce").dropna()
-            bench20 = float(bc.iloc[-1] / bc.iloc[-21] - 1)
-            bench60 = float(bc.iloc[-1] / bc.iloc[-61] - 1)
-            rs20 = ret20 - bench20
-            rs60 = ret60 - bench60
-        else:
-            rs20 = ret20
-            rs60 = ret60
+    low = _num(
+        recent["Low"].min()
+    )
 
-        # A fresh breakout is allowed only if it is recent and not already extended.
-        breakout = c > r20 * 1.002 and c <= r20 * 1.06 and rv >= 1.35 and rr >= 55 and trend_partial
-        fresh_breakout = False
-        for i in range(max(1, len(close) - 3), len(close)):
-            prior_res = float(high.iloc[:i].tail(20).max())
-            if float(close.iloc[i]) > prior_res * 1.002 and float(close.iloc[i]) <= prior_res * 1.08:
-                fresh_breakout = True
-                break
-        breakout = breakout or fresh_breakout
+    close = _num(
+        df["Close"].iloc[-1]
+    )
 
-        # Pre-breakout: tight base, close near resistance, but not already broken too far.
-        tight_base = _safe(range20.iloc[-1], 1) <= 0.18 and _safe(range10.iloc[-1], 1) <= 0.12
-        volume_contracting = _safe(volume.iloc[-1] / max(avg20.iloc[-1], 1)) <= 1.35
-        near_resistance = -3.0 <= dist20 <= 1.5
-        pre_breakout = tight_base and near_resistance and trend and rr >= 52 and rs60 > 0 and volume_contracting
-
-        if not breakout and not pre_breakout:
-            return None
-
-        setup = "BREAKOUT" if breakout else "PRE-BREAKOUT"
-        score = 0.0
-
-        # Trend quality: 20 points
-        score += 8 if trend else 5 if trend_partial else 0
-        score += 4 if c > e200.iloc[-1] else 0
-        score += 4 if e50.iloc[-1] > e200.iloc[-1] else 0
-        score += 4 if e20.iloc[-1] > e50.iloc[-1] else 0
-
-        # Relative strength: 15
-        score += _clip(7.5 + rs20 * 80, 0, 10)
-        score += _clip(5 + rs60 * 30, 0, 5)
-
-        # Base / setup quality: 20
-        if setup == "PRE-BREAKOUT":
-            score += _clip(12 - _safe(range20.iloc[-1]) * 40, 0, 12)
-            score += 5 if tight_base else 0
-            score += _clip(3 - abs(dist20) * 1.2, 0, 3)
-        else:
-            score += 10
-            score += _clip(7 - max(dist20, 0) * 1.2, 0, 7)
-            score += 3 if rv >= 2 else 2 if rv >= 1.5 else 0
-
-        # Volume: 15
-        score += _clip((rv - 0.8) * 7, 0, 10)
-        score += 5 if close_strength >= 0.75 else 3 if close_strength >= 0.60 else 0
-
-        # Momentum: 10
-        score += 5 if 58 <= rr <= 72 else 3 if 52 <= rr < 58 else 1 if rr < 78 else 0
-        score += 5 if ret20 > 0.08 else 4 if ret20 > 0.04 else 2 if ret20 > 0 else 0
-
-        # Risk/reward: 5. Prefer manageable ATR and room to resistance/target.
-        atr_pct = a / c * 100 if c else 99
-        score += 5 if 2 <= atr_pct <= 6 else 3 if atr_pct <= 8 else 1
-
-        # Chase penalty. This is deliberately strong.
-        extension = (c / float(e20.iloc[-1]) - 1) * 100
-        if extension > 10:
-            score -= min(15, (extension - 10) * 1.5)
-        elif extension > 7:
-            score -= (extension - 7) * 1.0
-        if rr > 78:
-            score -= 6
-
-        score = int(round(_clip(score, 0, 100)))
-        if score < 60:
-            return None
-
-        entry = c
-        sl = c - max(1.5 * a, c * 0.03)
-        t1 = c + 1.5 * a
-        t2 = c + 3.0 * a
-        t3 = c + 4.5 * a
-        risk = c - sl
-        rr1 = (t1 - c) / risk if risk else 0
+    if (
+        not np.isfinite(high)
+        or not np.isfinite(low)
+        or low <= 0
+    ):
 
         return {
-            "Entry": round(entry, 2), "Score": score, "Setup": setup,
-            "RSI": round(rr, 1), "RVOL": round(rv, 2),
-            "RS20": round(rs20 * 100, 2), "RS60": round(rs60 * 100, 2),
-            "BreakoutPct": round(dist20, 2), "BaseRangePct": round(_safe(range20.iloc[-1]) * 100, 2),
-            "ExtensionPct": round(extension, 2), "Grade": "A+" if score >= 90 else "A" if score >= 80 else "B+" if score >= 70 else "B",
-            "Trade": "SWING", "SL": round(sl, 2), "T1": round(t1, 2), "T2": round(t2, 2), "T3": round(t3, 2),
-            "RR1": round(rr1, 2), "EMA20": round(float(e20.iloc[-1]), 2), "EMA50": round(float(e50.iloc[-1]), 2),
-            "EMA200": round(float(e200.iloc[-1]), 2), "ATR": round(a, 2),
+            "BaseRangePct": np.nan,
+            "Compression": 0.0,
         }
-    except Exception:
+
+    base_range = (
+        (high - low)
+        / low
+    ) * 100.0
+
+    # --------------------------------------------------------
+    # Compare first half and second half of the base.
+    # A narrower second half = better compression.
+    # --------------------------------------------------------
+
+    half = len(recent) // 2
+
+    first = recent.iloc[
+        :half
+    ]
+
+    second = recent.iloc[
+        half:
+    ]
+
+    first_range = (
+        (
+            first["High"].max()
+            - first["Low"].min()
+        )
+        / max(
+            first["Low"].min(),
+            0.01,
+        )
+    ) * 100.0
+
+    second_range = (
+        (
+            second["High"].max()
+            - second["Low"].min()
+        )
+        / max(
+            second["Low"].min(),
+            0.01,
+        )
+    ) * 100.0
+
+    if first_range > 0:
+
+        compression = (
+            1.0
+            - (
+                second_range
+                / first_range
+            )
+        ) * 100.0
+
+    else:
+
+        compression = 0.0
+
+    compression = max(
+        0.0,
+        min(
+            100.0,
+            compression,
+        ),
+    )
+
+    return {
+        "BaseRangePct": base_range,
+        "Compression": compression,
+    }
+
+
+# ============================================================
+# BREAKOUT METRICS
+# ============================================================
+
+def _breakout_metrics(df):
+
+    close = _num(
+        df["Close"].iloc[-1]
+    )
+
+    # IMPORTANT:
+    # Exclude today's candle.
+    # This prevents today's close from becoming
+    # today's own resistance.
+
+    prior = df.iloc[
+        :-1
+    ]
+
+    if len(prior) < RESISTANCE_LOOKBACK:
         return None
+
+    resistance_window = prior.tail(
+        RESISTANCE_LOOKBACK
+    )
+
+    resistance = _num(
+        resistance_window["High"].max()
+    )
+
+    if (
+        not np.isfinite(resistance)
+        or resistance <= 0
+    ):
+
+        return None
+
+    breakout_pct = (
+        (
+            close
+            / resistance
+        ) - 1.0
+    ) * 100.0
+
+    return {
+        "Resistance": resistance,
+        "BreakoutPct": breakout_pct,
+    }
+
+
+# ============================================================
+# TREND
+# ============================================================
+
+def _trend_metrics(df):
+
+    close = df["Close"]
+
+    e20 = ema(
+        close,
+        EMA_FAST,
+    )
+
+    e50 = ema(
+        close,
+        EMA_MID,
+    )
+
+    e200 = ema(
+        close,
+        EMA_SLOW,
+    )
+
+    close_now = _num(
+        close.iloc[-1]
+    )
+
+    ema20 = _num(
+        e20.iloc[-1]
+    )
+
+    ema50 = _num(
+        e50.iloc[-1]
+    )
+
+    ema200 = _num(
+        e200.iloc[-1]
+    )
+
+    if not all(
+        np.isfinite(x)
+        for x in [
+            close_now,
+            ema20,
+            ema50,
+            ema200,
+        ]
+    ):
+
+        return None
+
+    extension = (
+        (
+            close_now
+            / ema20
+        ) - 1.0
+    ) * 100.0
+
+    return {
+        "EMA20": ema20,
+        "EMA50": ema50,
+        "EMA200": ema200,
+        "ExtensionPct": extension,
+        "Trend20Above50": ema20 > ema50,
+        "Trend50Above200": ema50 > ema200,
+        "CloseAbove20": close_now > ema20,
+    }
+
+
+# ============================================================
+# MOMENTUM
+# ============================================================
+
+def _momentum_metrics(df):
+
+    close = df["Close"]
+
+    rsi_series = rsi(
+        close,
+        RSI_PERIOD,
+    )
+
+    rsi_now = _num(
+        rsi_series.iloc[-1]
+    )
+
+    macd_line, signal, hist = macd(
+        close
+    )
+
+    macd_hist = _num(
+        hist.iloc[-1]
+    )
+
+    previous_hist = _num(
+        hist.iloc[-2]
+    )
+
+    return {
+        "RSI": rsi_now,
+        "MACDHist": macd_hist,
+        "MACDImproving": (
+            np.isfinite(
+                macd_hist
+            )
+            and np.isfinite(
+                previous_hist
+            )
+            and macd_hist
+            >= previous_hist
+        ),
+    }
+
+
+# ============================================================
+# VOLUME
+# ============================================================
+
+def _volume_metrics(df):
+
+    volume = df["Volume"]
+
+    rvol = _num(
+        relative_volume(
+            df,
+            20,
+        )
+    )
+
+    avg_volume = _num(
+        volume.tail(20).mean()
+    )
+
+    current_volume = _num(
+        volume.iloc[-1]
+    )
+
+    if (
+        not np.isfinite(avg_volume)
+        or avg_volume <= 0
+    ):
+
+        avg_volume = np.nan
+
+    return {
+        "RVOL": rvol,
+        "AvgVolume20": avg_volume,
+        "CurrentVolume": current_volume,
+    }
+
+
+# ============================================================
+# CANDLE STRENGTH
+# ============================================================
+
+def _candle_metrics(df):
+
+    strength = _num(
+        closing_strength(df)
+    )
+
+    open_price = _num(
+        df["Open"].iloc[-1]
+    )
+
+    close = _num(
+        df["Close"].iloc[-1]
+    )
+
+    high = _num(
+        df["High"].iloc[-1]
+    )
+
+    low = _num(
+        df["Low"].iloc[-1]
+    )
+
+    day_return = np.nan
+
+    if (
+        np.isfinite(open_price)
+        and open_price > 0
+    ):
+
+        day_return = (
+            (
+                close
+                / open_price
+            ) - 1.0
+        ) * 100.0
+
+    return {
+        "ClosingStrength": strength,
+        "DayReturnPct": day_return,
+        "High": high,
+        "Low": low,
+        "Close": close,
+    }
+
+
+# ============================================================
+# SETUP CLASSIFICATION
+# ============================================================
+
+def _classify_setup(
+    trend,
+    momentum,
+    volume,
+    breakout,
+    base,
+    candle,
+):
+
+    if (
+        trend is None
+        or momentum is None
+        or volume is None
+        or breakout is None
+        or base is None
+        or candle is None
+    ):
+
+        return None
+
+    gap = _num(
+        breakout["BreakoutPct"]
+    )
+
+    rsi_now = _num(
+        momentum["RSI"]
+    )
+
+    rvol = _num(
+        volume["RVOL"]
+    )
+
+    extension = _num(
+        trend["ExtensionPct"]
+    )
+
+    close_strength = _num(
+        candle["ClosingStrength"]
+    )
+
+    base_range = _num(
+        base["BaseRangePct"]
+    )
+
+    # --------------------------------------------------------
+    # FRESH BREAKOUT
+    #
+    # Price has actually cleared prior resistance.
+    # --------------------------------------------------------
+
+    fresh = (
+        gap > 0.0
+        and gap <= MAX_FRESH_BREAKOUT_GAP
+        and rvol >= MIN_FRESH_RVOL
+        and rsi_now >= MIN_FRESH_RSI
+        and close_strength >= 0.60
+        and trend["Trend20Above50"]
+        and trend["Trend50Above200"]
+        and trend["CloseAbove20"]
+        and extension <= MAX_EXTENSION_FROM_EMA20
+    )
+
+    if fresh:
+
+        return "FRESH BREAKOUT"
+
+    # --------------------------------------------------------
+    # PRE-BREAKOUT
+    #
+    # Price is still below resistance but within 5%.
+    # We deliberately do NOT accept stocks that are
+    # already extended far above EMA20.
+    # --------------------------------------------------------
+
+    pre = (
+        gap <= 0.0
+        and gap >= -MAX_PRE_BREAKOUT_GAP
+        and rsi_now >= MIN_PRE_RSI
+        and rvol >= MIN_PRE_RVOL
+        and trend["Trend20Above50"]
+        and trend["Trend50Above200"]
+        and trend["CloseAbove20"]
+        and extension <= MAX_EXTENSION_FROM_EMA20
+        and base_range <= 18.0
+    )
+
+    if pre:
+
+        return "PRE-BREAKOUT"
+
+    return None
+
+
+# ============================================================
+# SCORE
+# ============================================================
+
+def _score_setup(
+    setup,
+    trend,
+    momentum,
+    volume,
+    breakout,
+    base,
+    candle,
+    relative_rs20,
+    relative_rs60,
+):
+
+    score = 0.0
+
+    # ========================================================
+    # 1. TREND QUALITY — 20 POINTS
+    # ========================================================
+
+    if trend["Trend20Above50"]:
+        score += 7
+
+    if trend["Trend50Above200"]:
+        score += 7
+
+    if trend["CloseAbove20"]:
+        score += 6
+
+    # ========================================================
+    # 2. RELATIVE STRENGTH — 15 POINTS
+    # ========================================================
+
+    rs60 = _num(
+        relative_rs60,
+        0.0,
+    )
+
+    rs20 = _num(
+        relative_rs20,
+        0.0,
+    )
+
+    if rs60 >= 20:
+        score += 8
+
+    elif rs60 >= 10:
+        score += 6
+
+    elif rs60 >= 5:
+        score += 4
+
+    elif rs60 >= 0:
+        score += 2
+
+    if rs20 >= 10:
+        score += 7
+
+    elif rs20 >= 5:
+        score += 5
+
+    elif rs20 >= 0:
+        score += 3
+
+    # ========================================================
+    # 3. BASE QUALITY — 20 POINTS
+    # ========================================================
+
+    base_range = _num(
+        base["BaseRangePct"],
+        20,
+    )
+
+    compression = _num(
+        base["Compression"],
+        0,
+    )
+
+    if base_range <= 8:
+        score += 12
+
+    elif base_range <= 10:
+        score += 10
+
+    elif base_range <= 13:
+        score += 8
+
+    elif base_range <= 18:
+        score += 5
+
+    if compression >= 30:
+        score += 8
+
+    elif compression >= 15:
+        score += 6
+
+    elif compression >= 0:
+        score += 3
+
+    # ========================================================
+    # 4. BREAKOUT QUALITY / PROXIMITY — 15 POINTS
+    # ========================================================
+
+    gap = _num(
+        breakout["BreakoutPct"],
+        -10,
+    )
+
+    if setup == "FRESH BREAKOUT":
+
+        if 0 <= gap <= 2:
+            score += 15
+
+        elif gap <= 4:
+            score += 13
+
+        elif gap <= 6:
+            score += 10
+
+    else:
+
+        distance = abs(gap)
+
+        if distance <= 1:
+            score += 15
+
+        elif distance <= 2:
+            score += 13
+
+        elif distance <= 3:
+            score += 11
+
+        elif distance <= 5:
+            score += 8
+
+    # ========================================================
+    # 5. VOLUME — 15 POINTS
+    # ========================================================
+
+    rvol = _num(
+        volume["RVOL"],
+        0,
+    )
+
+    if rvol >= 3:
+        score += 15
+
+    elif rvol >= 2:
+        score += 13
+
+    elif rvol >= 1.5:
+        score += 10
+
+    elif rvol >= 1.2:
+        score += 7
+
+    elif rvol >= 1:
+        score += 4
+
+    # ========================================================
+    # 6. MOMENTUM — 10 POINTS
+    # ========================================================
+
+    rsi_now = _num(
+        momentum["RSI"],
+        50,
+    )
+
+    if 60 <= rsi_now <= 72:
+        score += 8
+
+    elif 55 <= rsi_now < 60:
+        score += 6
+
+    elif 72 < rsi_now <= 78:
+        score += 5
+
+    elif rsi_now >= 50:
+        score += 3
+
+    if momentum["MACDImproving"]:
+        score += 2
+
+    # ========================================================
+    # 7. RISK / ENTRY QUALITY — 5 POINTS
+    # ========================================================
+
+    extension = _num(
+        trend["ExtensionPct"],
+        99,
+    )
+
+    if extension <= 5:
+        score += 5
+
+    elif extension <= 8:
+        score += 4
+
+    elif extension <= 12:
+        score += 2
+
+    # ========================================================
+    # CHASE PENALTY
+    # ========================================================
+
+    # Strong stocks are useful.
+    # Buying a stock after it has already run too far is not.
+
+    if extension > 10:
+        score -= 5
+
+    if setup == "FRESH BREAKOUT":
+
+        if gap > 5:
+            score -= 5
+
+    score = max(
+        0,
+        min(
+            100,
+            round(score),
+        ),
+    )
+
+    return int(score)
+
+
+# ============================================================
+# TRADE LEVELS
+# ============================================================
+
+def _trade_levels(
+    df,
+    setup,
+    resistance,
+    atr_value,
+):
+
+    close = _num(
+        df["Close"].iloc[-1]
+    )
+
+    low20 = _num(
+        df["Low"].tail(20).min()
+    )
+
+    ema20 = _num(
+        ema(
+            df["Close"],
+            20,
+        ).iloc[-1]
+    )
+
+    atr_now = _num(
+        atr_value
+    )
+
+    if not np.isfinite(
+        atr_now
+    ) or atr_now <= 0:
+
+        atr_now = close * 0.03
+
+    # --------------------------------------------------------
+    # Entry
+    # --------------------------------------------------------
+
+    if setup == "FRESH BREAKOUT":
+
+        entry = close
+
+    else:
+
+        # Pre-breakout entry is slightly above resistance,
+        # representing confirmation rather than anticipation.
+        entry = resistance * 1.005
+
+    # --------------------------------------------------------
+    # Stop
+    # --------------------------------------------------------
+
+    swing_stop = (
+        low20
+        if np.isfinite(low20)
+        else ema20
+    )
+
+    atr_stop = (
+        entry
+        - 1.5 * atr_now
+    )
+
+    if setup == "FRESH BREAKOUT":
+
+        stop = max(
+            swing_stop,
+            atr_stop,
+        )
+
+    else:
+
+        stop = max(
+            swing_stop,
+            entry - 1.5 * atr_now,
+        )
+
+    # Ensure stop remains below entry.
+
+    if stop >= entry:
+
+        stop = (
+            entry
+            - 1.5 * atr_now
+        )
+
+    risk = (
+        entry
+        - stop
+    )
+
+    # Safety fallback.
+
+    if risk <= 0:
+
+        risk = entry * 0.03
+
+        stop = (
+            entry
+            - risk
+        )
+
+    t1 = (
+        entry
+        + 2.0 * risk
+    )
+
+    t2 = (
+        entry
+        + 3.0 * risk
+    )
+
+    return {
+        "Entry": round(
+            entry,
+            2,
+        ),
+        "SL": round(
+            stop,
+            2,
+        ),
+        "T1": round(
+            t1,
+            2,
+        ),
+        "T2": round(
+            t2,
+            2,
+        ),
+        "RiskPct": round(
+            (
+                risk
+                / entry
+            ) * 100,
+            2,
+        ),
+    }
+
+
+# ============================================================
+# MAIN SCORING FUNCTION
+# ============================================================
+
+def score_stock(
+    df,
+    benchmark_df=None,
+):
+
+    data = _prepare_dataframe(
+        df
+    )
+
+    if data is None:
+        return None
+
+    # --------------------------------------------------------
+    # Metrics
+    # --------------------------------------------------------
+
+    trend = _trend_metrics(
+        data
+    )
+
+    if trend is None:
+        return None
+
+    momentum = _momentum_metrics(
+        data
+    )
+
+    volume = _volume_metrics(
+        data
+    )
+
+    candle = _candle_metrics(
+        data
+    )
+
+    breakout = _breakout_metrics(
+        data
+    )
+
+    if breakout is None:
+        return None
+
+    base = _base_metrics(
+        data
+    )
+
+    (
+        stock_rs20,
+        stock_rs60,
+        relative_rs20,
+        relative_rs60,
+    ) = _relative_strength(
+        data,
+        benchmark_df,
+    )
+
+    # --------------------------------------------------------
+    # Setup classification
+    # --------------------------------------------------------
+
+    setup = _classify_setup(
+        trend,
+        momentum,
+        volume,
+        breakout,
+        base,
+        candle,
+    )
+
+    if setup is None:
+        return None
+
+    # --------------------------------------------------------
+    # Score
+    # --------------------------------------------------------
+
+    score = _score_setup(
+        setup=setup,
+        trend=trend,
+        momentum=momentum,
+        volume=volume,
+        breakout=breakout,
+        base=base,
+        candle=candle,
+        relative_rs20=relative_rs20,
+        relative_rs60=relative_rs60,
+    )
+
+    # --------------------------------------------------------
+    # Trade levels
+    # --------------------------------------------------------
+
+    atr_series = atr(
+        data,
+        14,
+    )
+
+    atr_now = _num(
+        atr_series.iloc[-1]
+    )
+
+    levels = _trade_levels(
+        data,
+        setup,
+        breakout["Resistance"],
+        atr_now,
+    )
+
+    # --------------------------------------------------------
+    # Final result
+    # --------------------------------------------------------
+
+    result = {
+        "Setup": setup,
+        "Score": score,
+
+        "BreakoutPct": round(
+            _num(
+                breakout["BreakoutPct"],
+                0,
+            ),
+            2,
+        ),
+
+        "RS20": round(
+            _num(
+                relative_rs20,
+                0,
+            ),
+            2,
+        ),
+
+        "RS60": round(
+            _num(
+                relative_rs60,
+                0,
+            ),
+            2,
+        ),
+
+        "StockRS20": round(
+            _num(
+                stock_rs20,
+                0,
+            ),
+            2,
+        ),
+
+        "StockRS60": round(
+            _num(
+                stock_rs60,
+                0,
+            ),
+            2,
+        ),
+
+        "RSI": round(
+            _num(
+                momentum["RSI"],
+                50,
+            ),
+            1,
+        ),
+
+        "RVOL": round(
+            _num(
+                volume["RVOL"],
+                0,
+            ),
+            2,
+        ),
+
+        "BaseRangePct": round(
+            _num(
+                base["BaseRangePct"],
+                0,
+            ),
+            2,
+        ),
+
+        "Compression": round(
+            _num(
+                base["Compression"],
+                0,
+            ),
+            2,
+        ),
+
+        "ExtensionPct": round(
+            _num(
+                trend["ExtensionPct"],
+                0,
+            ),
+            2,
+        ),
+
+        "Resistance": round(
+            _num(
+                breakout["Resistance"],
+                0,
+            ),
+            2,
+        ),
+
+        "ClosingStrength": round(
+            _num(
+                candle["ClosingStrength"],
+                0,
+            ),
+            2,
+        ),
+
+        "Entry": levels["Entry"],
+        "SL": levels["SL"],
+        "T1": levels["T1"],
+        "T2": levels["T2"],
+        "RiskPct": levels["RiskPct"],
+    }
+
+    return result
