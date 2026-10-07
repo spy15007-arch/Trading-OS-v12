@@ -1,19 +1,24 @@
-"""Trading OS v12 - Master Swing Breakout Scanner.
+"""
+Trading OS v12 - Master Swing Breakout Scanner
 
-Only two setup types are selected:
+Final architecture:
 
-1. PRE-BREAKOUT
-   Strong trend, tight base, close to resistance.
+1. Scan broad NSE equity universe
+2. Download historical data
+3. Identify:
+       PRE-BREAKOUT
+       FRESH BREAKOUT
+4. Score every qualifying setup
+5. Sort by score
+6. Remove duplicates
+7. Keep maximum 30
+8. Create detailed Markdown + CSV reports
+9. Send clean Telegram shortlist
 
-2. FRESH BREAKOUT
-   Recent breakout, volume confirmation, limited extension.
-
-Maximum 30 unique stocks, ranked by score.
-
-Telegram is sent only after the report has been successfully written.
-Telegram failure never makes the stock scan fail.
+Telegram failure is NON-FATAL.
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -33,7 +38,10 @@ from scanner.core.downloader import (
 )
 
 from scanner.core.scoring import score_stock
-from scanner.core.market import get_market_status
+
+from scanner.core.market import (
+    get_market_status,
+)
 
 from scanner.core.utils import (
     export_markdown,
@@ -44,27 +52,35 @@ from scanner.core.utils import (
 
 
 # ============================================================
-# SETTINGS
+# CONFIGURATION
 # ============================================================
 
 UNIVERSE_SIZE = 1800
+
 TOP_RESULTS = 30
+
 MIN_SCORE = 60
 
 
 # ============================================================
-# HELPERS
+# FORMATTER
 # ============================================================
 
 def _fmt(value, digits=2):
+
     try:
         return f"{float(value):.{digits}f}"
-    except (TypeError, ValueError):
+
+    except (
+        TypeError,
+        ValueError,
+    ):
+
         return "-"
 
 
 # ============================================================
-# REPORT BUILDER
+# BUILD MARKDOWN REPORT
 # ============================================================
 
 def build_report(
@@ -76,72 +92,106 @@ def build_report(
 ):
 
     generated = timestamp()
-    mode = market.get("MODE", "UNKNOWN")
 
-    md = "# TRADING OS v12 — TOP SWING SETUPS\n\n"
+    mode = market.get(
+        "MODE",
+        "UNKNOWN",
+    )
 
-    md += f"Generated: **{generated}**\n\n"
+    md = (
+        "# TRADING OS v12 — "
+        "TOP SWING SETUPS\n\n"
+    )
 
-    md += f"- Universe: **{universe_count} stocks**\n"
-    md += f"- Charts downloaded: **{chart_count}**\n"
-    md += f"- Qualifying candidates: **{candidate_count}**\n"
-    md += f"- Final watchlist: **{len(df)}**\n"
-    md += f"- Market mode: **{mode}**\n\n"
+    md += (
+        f"Generated: **{generated}**\n\n"
+    )
+
+    md += (
+        f"- Universe: **{universe_count} stocks**\n"
+    )
+
+    md += (
+        f"- Charts downloaded: "
+        f"**{chart_count}**\n"
+    )
+
+    md += (
+        f"- Qualifying candidates: "
+        f"**{candidate_count}**\n"
+    )
+
+    md += (
+        f"- Final watchlist: "
+        f"**{len(df)}**\n"
+    )
+
+    md += (
+        f"- Market mode: **{mode}**\n\n"
+    )
+
+    # --------------------------------------------------------
+    # EMPTY RESULT
+    # --------------------------------------------------------
 
     if df.empty:
 
         md += (
             "## Ranking\n\n"
-            "No qualifying PRE-BREAKOUT or FRESH BREAKOUT "
-            "setups found today.\n"
+            "No qualifying PRE-BREAKOUT or "
+            "FRESH BREAKOUT setups found today.\n"
         )
 
         return md
 
 
-    # ========================================================
-    # MAIN RANKING
-    # ========================================================
+    # --------------------------------------------------------
+    # MAIN TABLE
+    # --------------------------------------------------------
 
     md += "## Ranking\n\n"
 
     md += (
-        "| Rank | Symbol | Setup | Score | Breakout % | "
-        "RS20 | RS60 | RSI | RVOL | Entry | SL | T1 | T2 |\n"
+        "| Rank | Symbol | Setup | Score | "
+        "Breakout % | RS20 | RS60 | RSI | RVOL | "
+        "Entry | SL | T1 | T2 |\n"
     )
 
     md += (
-        "|---:|---|---|---:|---:|---:|---:|---:|---:|"
-        "---:|---:|---:|---:|\n"
+        "|---:|---|---|---:|---:|---:|---:|"
+        "---:|---:|---:|---:|---:|---:|\n"
     )
 
 
-    for _, r in df.iterrows():
+    for _, row in df.iterrows():
 
         md += (
-            f"| {int(r['Rank'])} "
-            f"| **{r['Symbol']}** "
-            f"| {r['Setup']} "
-            f"| **{int(r['Score'])}** "
-            f"| {_fmt(r['BreakoutPct'])}% "
-            f"| {_fmt(r['RS20'])}% "
-            f"| {_fmt(r['RS60'])}% "
-            f"| {_fmt(r['RSI'], 1)} "
-            f"| {_fmt(r['RVOL'])} "
-            f"| ₹{_fmt(r['Entry'])} "
-            f"| ₹{_fmt(r['SL'])} "
-            f"| ₹{_fmt(r['T1'])} "
-            f"| ₹{_fmt(r['T2'])} |\n"
+            f"| {int(row['Rank'])} "
+            f"| **{row['Symbol']}** "
+            f"| {row['Setup']} "
+            f"| **{int(row['Score'])}** "
+            f"| {_fmt(row['BreakoutPct'])}% "
+            f"| {_fmt(row['RS20'])}% "
+            f"| {_fmt(row['RS60'])}% "
+            f"| {_fmt(row['RSI'], 1)} "
+            f"| {_fmt(row['RVOL'])} "
+            f"| ₹{_fmt(row['Entry'])} "
+            f"| ₹{_fmt(row['SL'])} "
+            f"| ₹{_fmt(row['T1'])} "
+            f"| ₹{_fmt(row['T2'])} |\n"
         )
 
 
-    # ========================================================
-    # FRESH BREAKOUT SECTION
-    # ========================================================
+    # --------------------------------------------------------
+    # FRESH BREAKOUTS
+    # --------------------------------------------------------
 
     md += "\n## Fresh Breakouts\n\n"
 
-    fresh = df[df["Setup"] == "FRESH BREAKOUT"]
+    fresh = df[
+        df["Setup"] == "FRESH BREAKOUT"
+    ]
+
 
     if fresh.empty:
 
@@ -149,24 +199,33 @@ def build_report(
 
     else:
 
-        for _, r in fresh.iterrows():
+        for _, row in fresh.iterrows():
 
             md += (
-                f"- **#{int(r['Rank'])} {r['Symbol']}** — "
-                f"score {int(r['Score'])}, "
-                f"breakout {_fmt(r['BreakoutPct'])}%, "
-                f"RVOL {_fmt(r['RVOL'])}, "
-                f"RSI {_fmt(r['RSI'], 1)}\n"
+                f"- **#{int(row['Rank'])} "
+                f"{row['Symbol']}** — "
+                f"score {int(row['Score'])}, "
+                f"breakout "
+                f"{_fmt(row['BreakoutPct'])}%, "
+                f"RS60 "
+                f"{_fmt(row['RS60'])}%, "
+                f"RVOL "
+                f"{_fmt(row['RVOL'])}, "
+                f"RSI "
+                f"{_fmt(row['RSI'], 1)}\n"
             )
 
 
-    # ========================================================
-    # PRE-BREAKOUT SECTION
-    # ========================================================
+    # --------------------------------------------------------
+    # PRE-BREAKOUTS
+    # --------------------------------------------------------
 
     md += "\n## Pre-Breakouts\n\n"
 
-    pre = df[df["Setup"] == "PRE-BREAKOUT"]
+    pre = df[
+        df["Setup"] == "PRE-BREAKOUT"
+    ]
+
 
     if pre.empty:
 
@@ -174,21 +233,28 @@ def build_report(
 
     else:
 
-        for _, r in pre.iterrows():
+        for _, row in pre.iterrows():
 
             md += (
-                f"- **#{int(r['Rank'])} {r['Symbol']}** — "
-                f"score {int(r['Score'])}, "
-                f"resistance gap {_fmt(r['BreakoutPct'])}%, "
-                f"base {_fmt(r['BaseRangePct'])}%, "
-                f"RVOL {_fmt(r['RVOL'])}, "
-                f"RSI {_fmt(r['RSI'], 1)}\n"
+                f"- **#{int(row['Rank'])} "
+                f"{row['Symbol']}** — "
+                f"score {int(row['Score'])}, "
+                f"resistance gap "
+                f"{_fmt(row['BreakoutPct'])}%, "
+                f"base "
+                f"{_fmt(row['BaseRangePct'])}%, "
+                f"RS60 "
+                f"{_fmt(row['RS60'])}%, "
+                f"RVOL "
+                f"{_fmt(row['RVOL'])}\n"
             )
 
 
     md += (
-        "\n> Scanner output is a watchlist, not a guaranteed trade. "
-        "Confirm price/volume action before entry.\n"
+        "\n"
+        "> Scanner output is a watchlist, not a "
+        "guaranteed trade. Confirm price/volume "
+        "action before entry.\n"
     )
 
     return md
@@ -200,19 +266,30 @@ def build_report(
 
 def run_scan():
 
-    logger.info("==========================================")
     logger.info(
-        "TRADING OS v12 - MASTER SWING BREAKOUT SCANNER"
+        "=========================================="
     )
-    logger.info("==========================================")
 
+    logger.info(
+        "TRADING OS v12 - MASTER "
+        "SWING BREAKOUT SCANNER"
+    )
+
+    logger.info(
+        "=========================================="
+    )
+
+
+    # --------------------------------------------------------
+    # REPORT DIRECTORY
+    # --------------------------------------------------------
 
     ensure_reports_folder()
 
 
-    # ========================================================
+    # --------------------------------------------------------
     # MARKET REGIME
-    # ========================================================
+    # --------------------------------------------------------
 
     try:
 
@@ -221,7 +298,8 @@ def run_scan():
     except Exception as exc:
 
         logger.warning(
-            f"Market regime unavailable; continuing scan: {exc}"
+            "Market regime unavailable; "
+            f"continuing scan: {exc}"
         )
 
         market = {
@@ -229,27 +307,35 @@ def run_scan():
         }
 
 
-    logger.info(
-        f"Market Mode: {market.get('MODE', 'UNKNOWN')}"
+    market_mode = market.get(
+        "MODE",
+        "UNKNOWN",
     )
 
 
-    # ========================================================
+    logger.info(
+        f"Market Mode: {market_mode}"
+    )
+
+
+    # --------------------------------------------------------
     # UNIVERSE
-    # ========================================================
+    # --------------------------------------------------------
 
     symbols = get_nse_equity_symbols(
         UNIVERSE_SIZE
     )
 
+
     logger.info(
-        f"{len(symbols)} symbols selected for scanning"
+        f"{len(symbols)} symbols selected "
+        "for scanning"
     )
 
 
-    # ========================================================
+    # --------------------------------------------------------
     # DOWNLOAD STOCK DATA
-    # ========================================================
+    # --------------------------------------------------------
 
     database = download_all(
         symbols,
@@ -257,6 +343,7 @@ def run_scan():
         interval="1d",
         chunk=75,
     )
+
 
     logger.info(
         f"{len(database)} charts downloaded"
@@ -271,9 +358,9 @@ def run_scan():
         )
 
 
-    # ========================================================
-    # NIFTY BENCHMARK
-    # ========================================================
+    # --------------------------------------------------------
+    # DOWNLOAD NIFTY BENCHMARK
+    # --------------------------------------------------------
 
     try:
 
@@ -293,29 +380,59 @@ def run_scan():
         benchmark = pd.DataFrame()
 
 
-    # ========================================================
+    # --------------------------------------------------------
     # SCORE STOCKS
-    # ========================================================
+    # --------------------------------------------------------
 
     results = []
 
 
     for symbol, df in database.items():
 
-        result = score_stock(
-            df,
-            benchmark_df=benchmark,
+        try:
+
+            result = score_stock(
+                df,
+                benchmark_df=benchmark,
+            )
+
+        except Exception as exc:
+
+            logger.warning(
+                f"Scoring failed for "
+                f"{symbol}: {exc}"
+            )
+
+            continue
+
+
+        if not result:
+
+            continue
+
+
+        if result["Score"] < MIN_SCORE:
+
+            continue
+
+
+        result["Symbol"] = (
+            symbol.replace(
+                ".NS",
+                "",
+            )
         )
 
 
-        if result and result["Score"] >= MIN_SCORE:
+        results.append(
+            result
+        )
 
-            result["Symbol"] = symbol.replace(
-                ".NS",
-                ""
-            )
 
-            results.append(result)
+    logger.info(
+        f"Qualifying candidates: "
+        f"{len(results)}"
+    )
 
 
     # ========================================================
@@ -324,46 +441,66 @@ def run_scan():
 
     if results:
 
-        result_df = pd.DataFrame(results)
+        result_df = pd.DataFrame(
+            results
+        )
 
 
-        # IMPORTANT:
-        # Highest score first.
-        # Never alphabetical ranking.
+        # ----------------------------------------------------
+        # FINAL RANKING
+        # ----------------------------------------------------
+
+        sort_columns = [
+            "Score",
+            "RS60",
+            "RVOL",
+            "RSI",
+        ]
+
+
+        available_sort_columns = [
+            column
+            for column in sort_columns
+            if column in result_df.columns
+        ]
+
 
         result_df = result_df.sort_values(
-            [
-                "Score",
-                "RS60",
-                "RVOL",
-                "RSI",
-            ],
+            available_sort_columns,
             ascending=[
-                False,
-                False,
-                False,
-                False,
+                False
+                for _ in available_sort_columns
             ],
             kind="mergesort",
         )
 
 
-        # One stock = one result.
+        # ----------------------------------------------------
+        # REMOVE DUPLICATES
+        # ----------------------------------------------------
 
         result_df = result_df.drop_duplicates(
-            subset=["Symbol"],
+            subset=[
+                "Symbol"
+            ],
             keep="first",
         )
 
 
-        # Maximum 30.
+        # ----------------------------------------------------
+        # MAXIMUM 30
+        # ----------------------------------------------------
 
         result_df = result_df.head(
             TOP_RESULTS
-        ).reset_index(drop=True)
+        ).reset_index(
+            drop=True
+        )
 
 
-        # Add ranking.
+        # ----------------------------------------------------
+        # RANK
+        # ----------------------------------------------------
 
         result_df.insert(
             0,
@@ -381,7 +518,7 @@ def run_scan():
 
 
     # ========================================================
-    # CREATE REPORT
+    # BUILD REPORT
     # ========================================================
 
     md = build_report(
@@ -393,6 +530,10 @@ def run_scan():
     )
 
 
+    # ========================================================
+    # SAVE MARKDOWN
+    # ========================================================
+
     report_path = export_markdown(
         md,
         "swing_scan.md",
@@ -400,7 +541,7 @@ def run_scan():
 
 
     # ========================================================
-    # CSV
+    # SAVE CSV
     # ========================================================
 
     csv_path = (
@@ -440,54 +581,94 @@ def run_scan():
     if result_df.empty:
 
         print(
-            "No qualifying PRE-BREAKOUT or "
+            "\nNo qualifying "
+            "PRE-BREAKOUT or "
             "FRESH BREAKOUT setups found."
         )
 
     else:
 
-        print("\n" + "=" * 110)
-
         print(
-            "TRADING OS v12 — TOP SWING SETUPS"
+            "\n"
+            + "=" * 120
         )
 
-        print("=" * 110)
+        print(
+            "TRADING OS v12 — "
+            "TOP SWING SETUPS"
+        )
+
+        print(
+            "=" * 120
+        )
+
+
+        display_columns = [
+            "Rank",
+            "Symbol",
+            "Setup",
+            "Score",
+            "BreakoutPct",
+            "RSI",
+            "RVOL",
+            "Entry",
+            "SL",
+            "T1",
+            "T2",
+        ]
+
+
+        available_display_columns = [
+            column
+            for column in display_columns
+            if column in result_df.columns
+        ]
 
 
         print(
             result_df[
-                [
-                    "Rank",
-                    "Symbol",
-                    "Setup",
-                    "Score",
-                    "BreakoutPct",
-                    "RSI",
-                    "RVOL",
-                    "Entry",
-                    "SL",
-                    "T1",
-                    "T2",
-                ]
-            ].to_string(index=False)
+                available_display_columns
+            ].to_string(
+                index=False
+            )
         )
 
 
     # ========================================================
+    # TELEGRAM METADATA
+    #
+    # The Telegram formatter reads these values.
+    # They are generated by THIS scan, not manually configured.
+    # ========================================================
+
+    os.environ[
+        "TRADING_OS_GENERATED"
+    ] = timestamp()
+
+
+    os.environ[
+        "TRADING_OS_MARKET"
+    ] = str(
+        market_mode
+    )
+
+
+    os.environ[
+        "TRADING_OS_CANDIDATES"
+    ] = str(
+        len(results)
+    )
+
+
+    # ========================================================
     # TELEGRAM
-    #
-    # VERY IMPORTANT:
-    # Telegram is imported ONLY AFTER the scanner
-    # and report have completed.
-    #
-    # Therefore a Telegram problem can NEVER stop
-    # the stock scanner.
     # ========================================================
 
     try:
 
-        from telegram_push import send_scan_alert
+        from telegram_push import (
+            send_scan_alert
+        )
 
 
         telegram_ok = send_scan_alert(
@@ -498,8 +679,9 @@ def run_scan():
         if not telegram_ok:
 
             logger.warning(
-                "Telegram notification was not delivered; "
-                "scan itself completed successfully."
+                "Telegram notification was not "
+                "delivered; scan itself completed "
+                "successfully."
             )
 
 
@@ -507,17 +689,19 @@ def run_scan():
 
         logger.warning(
             "Telegram notification failed; "
-            f"scan itself completed successfully: {exc}"
+            f"scan itself completed successfully: "
+            f"{exc}"
         )
 
 
     # ========================================================
-    # DONE
+    # COMPLETE
     # ========================================================
 
     logger.info(
         "Master swing scan completed successfully."
     )
+
 
     return 0
 
