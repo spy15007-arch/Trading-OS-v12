@@ -43,6 +43,64 @@ def chart_link(symbol):
     )
 
 
+def normalize_report_frame(frame: pd.DataFrame) -> pd.DataFrame:
+    """Normalize CSV field names to the app's expected lowercase schema.
+
+    This is needed because newer scanner exports use PascalCase columns like
+    `Rank,Symbol,Entry,...`, while older reports use lowercase names.
+    """
+    if frame.empty:
+        return frame
+
+    normalized = frame.copy()
+    normalized.columns = [str(col).strip() for col in normalized.columns]
+
+    rename_map = {
+        "Rank": "rank",
+        "Symbol": "symbol",
+        "Entry": "entry",
+        "Score": "score",
+        "Setup": "setup",
+        "RSI": "rsi",
+        "RVOL": "relative_volume",
+        "RS20": "rs20",
+        "RS60": "rs60",
+        "BreakoutPct": "breakout_pct",
+        "BaseRangePct": "base_range_pct",
+        "ExtensionPct": "extension_pct",
+        "SL": "stop",
+        "T1": "target1",
+        "T2": "target2",
+        "T3": "target3",
+        "ATR": "atr",
+        "Trade": "trade",
+        "Price": "price",
+        "EMA20": "ema20",
+        "EMA50": "ema50",
+        "EMA200": "ema200",
+        "Grade": "grade",
+        "RR1": "rr1",
+        "Relative_Volume": "relative_volume",
+        "Relative Volume": "relative_volume",
+        "Stop": "stop",
+    }
+
+    normalized = normalized.rename(columns=rename_map)
+
+    # Keep the user-facing order intuitive: rank first, symbol second, then the rest.
+    for key in ["rank", "symbol"]:
+        if key not in normalized.columns:
+            continue
+
+    if "rank" in normalized.columns and "symbol" in normalized.columns:
+        ordered = ["rank", "symbol"] + [
+            c for c in normalized.columns if c not in {"rank", "symbol"}
+        ]
+        normalized = normalized[ordered]
+
+    return normalized
+
+
 @st.cache_data(ttl=60, show_spinner=False)
 def load_report(path_text):
     path = Path(path_text)
@@ -51,7 +109,8 @@ def load_report(path_text):
         return pd.DataFrame()
 
     try:
-        return pd.read_csv(path)
+        frame = pd.read_csv(path)
+        return normalize_report_frame(frame)
     except Exception:
         return pd.DataFrame()
 
