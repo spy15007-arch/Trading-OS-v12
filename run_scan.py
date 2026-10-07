@@ -14,6 +14,7 @@ from scanner.core.downloader import get_nse_equity_symbols, download_all, downlo
 from scanner.core.scoring import score_stock
 from scanner.core.market import get_market_status
 from scanner.core.utils import export_markdown, logger, timestamp
+from telegram_push import send_scan_alert
 
 UNIVERSE_SIZE = 1800
 TOP_RESULTS = 30
@@ -46,6 +47,8 @@ def run_scan():
     if not results:
         logger.warning("No pre-breakout or fresh-breakout setups found.")
         export_markdown(f"# Trading OS v12\n\nGenerated: {timestamp()}\n\nNo qualifying swing setups found.\n", "swing_scan.md")
+        # Send empty alert
+        send_scan_alert([], "master", market.get('MODE', 'Unknown'))
         return 0
 
     df = pd.DataFrame(results)
@@ -91,6 +94,16 @@ def run_scan():
         logger.exception("Failed to reorder columns for CSV output")
 
     df.to_csv(Path("reports") / "swing_scan.csv", index=False)
+
+    # Send Telegram alert with scan results
+    logger.info("Sending Telegram alert...")
+    try:
+        # Normalize column names to lowercase for telegram_push compatibility
+        results_for_telegram = df.rename(columns=str.lower).to_dict(orient="records")
+        send_success = send_scan_alert(results_for_telegram, "master", market.get('MODE', 'Unknown'))
+        logger.info(f"Telegram alert sent: {send_success}")
+    except Exception as exc:
+        logger.exception("Failed to send Telegram alert: %s", exc)
 
     print("\n" + "=" * 95)
     print("TRADING OS v12 — TOP SWING SETUPS")
