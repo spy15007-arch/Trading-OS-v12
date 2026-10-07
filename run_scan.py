@@ -75,6 +75,21 @@ def run_scan():
         md += f"- **#{int(r.Rank)} {r.Symbol}** — score {int(r.Score)}, resistance gap {r.BreakoutPct}%, base {r.BaseRangePct}%, RVOL {r.RVOL}, RSI {r.RSI}\n"
 
     export_markdown(md, "swing_scan.md")
+
+    # Move Symbol column to be immediately after Rank so CSVs match Streamlit layout
+    try:
+        if "Symbol" in df.columns:
+            cols = [c for c in df.columns if c != "Symbol"]
+            if "Rank" in cols:
+                # place Symbol right after Rank
+                other = [c for c in cols if c != "Rank"]
+                new_cols = ["Rank", "Symbol"] + other
+            else:
+                new_cols = ["Symbol"] + cols
+            df = df[new_cols]
+    except Exception:
+        logger.exception("Failed to reorder columns for CSV output")
+
     df.to_csv(Path("reports") / "swing_scan.csv", index=False)
 
     print("\n" + "=" * 95)
