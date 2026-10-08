@@ -5,10 +5,6 @@ import pandas as pd
 import requests
 
 
-# ============================================================
-# CONFIGURATION
-# ============================================================
-
 DEFAULT_REPORT = Path(
     "reports/swing_scan.csv"
 )
@@ -16,22 +12,15 @@ DEFAULT_REPORT = Path(
 MAX_MESSAGE_LENGTH = 3900
 
 
-# ============================================================
-# TELEGRAM
-# ============================================================
-
 def _send_message(
     token,
     chat_id,
-    message
+    message,
 ):
-    """
-    Send one Telegram message.
-    """
 
     url = (
-        f"https://api.telegram.org/bot"
-        f"{token}/sendMessage"
+        f"https://api.telegram.org/"
+        f"bot{token}/sendMessage"
     )
 
     response = requests.post(
@@ -46,16 +35,11 @@ def _send_message(
 
     response.raise_for_status()
 
-    return response.json()
-
 
 def _split_message(
     message,
-    max_length=MAX_MESSAGE_LENGTH
+    max_length=MAX_MESSAGE_LENGTH,
 ):
-    """
-    Split large Telegram messages safely.
-    """
 
     if len(message) <= max_length:
         return [message]
@@ -63,6 +47,7 @@ def _split_message(
     lines = message.splitlines()
 
     chunks = []
+
     current = ""
 
     for line in lines:
@@ -76,6 +61,7 @@ def _split_message(
         if len(candidate) > max_length:
 
             if current.strip():
+
                 chunks.append(
                     current.rstrip()
                 )
@@ -90,6 +76,7 @@ def _split_message(
             current = candidate
 
     if current.strip():
+
         chunks.append(
             current.rstrip()
         )
@@ -97,18 +84,26 @@ def _split_message(
     return chunks
 
 
-def _fmt(value, decimals=2):
+def _fmt(
+    value,
+    decimals=2,
+):
+
     try:
-        return f"{float(value):.{decimals}f}"
+
+        return (
+            f"{float(value):."
+            f"{decimals}f"
+        )
+
     except Exception:
+
         return "-"
 
 
-def _setup_icon(setup):
-
-    setup = str(
-        setup
-    ).upper()
+def _icon(
+    setup
+):
 
     if setup == "FRESH BREAKOUT":
         return "🚀"
@@ -119,144 +114,57 @@ def _setup_icon(setup):
     return "📊"
 
 
-def _format_stock(row):
-    """
-    Phone-friendly detailed stock format.
-    """
+def _stock_message(
+    row
+):
 
     symbol = str(
-        row.get("Symbol", "")
+        row["Symbol"]
     )
 
     setup = str(
-        row.get("Setup", "")
-    )
-
-    score = _fmt(
-        row.get("Score"),
-        0
-    )
-
-    breakout = _fmt(
-        row.get("BreakoutPct")
-    )
-
-    rsi = _fmt(
-        row.get("RSI")
-    )
-
-    rvol = _fmt(
-        row.get("RVOL")
-    )
-
-    extension = _fmt(
-        row.get("Extension")
-    )
-
-    entry = _fmt(
-        row.get("Entry")
-    )
-
-    sl = _fmt(
-        row.get("SL")
-    )
-
-    t1 = _fmt(
-        row.get("T1")
-    )
-
-    t2 = _fmt(
-        row.get("T2")
-    )
-
-    t3 = _fmt(
-        row.get("T3")
-    )
-
-    t4 = _fmt(
-        row.get("T4")
-    )
-
-    icon = _setup_icon(
-        setup
+        row["Setup"]
     )
 
     return (
-        f"{icon} {symbol} | "
-        f"{setup}\n"
-        f"Score {score} | "
-        f"Breakout {breakout}% | "
-        f"RSI {rsi} | "
-        f"RVOL {rvol}\n"
-        f"Entry ₹{entry} | "
-        f"SL ₹{sl}\n"
-        f"T1 ₹{t1} | "
-        f"T2 ₹{t2} | "
-        f"T3 ₹{t3} | "
-        f"T4 ₹{t4}\n"
-        f"Extension {extension}%"
+        f"{_icon(setup)} "
+        f"{symbol} | {setup}\n"
+        f"Score: "
+        f"{_fmt(row['Score'], 0)}/100\n"
+        f"Breakout: "
+        f"{_fmt(row['BreakoutPct'])}% | "
+        f"RSI: "
+        f"{_fmt(row['RSI'])} | "
+        f"RVOL: "
+        f"{_fmt(row['RVOL'])}\n"
+        f"Entry: ₹{_fmt(row['Entry'])}\n"
+        f"SL: ₹{_fmt(row['SL'])}\n"
+        f"T1: ₹{_fmt(row['T1'])}\n"
+        f"T2: ₹{_fmt(row['T2'])}\n"
+        f"T3: ₹{_fmt(row['T3'])}\n"
+        f"T4: ₹{_fmt(row['T4'])}\n"
+        f"Extension: "
+        f"{_fmt(row['Extension'])}%"
     )
 
 
-def _format_compact(row):
-
-    symbol = str(
-        row.get("Symbol", "")
-    )
-
-    setup = str(
-        row.get("Setup", "")
-    )
-
-    score = _fmt(
-        row.get("Score"),
-        0
-    )
-
-    entry = _fmt(
-        row.get("Entry")
-    )
-
-    sl = _fmt(
-        row.get("SL")
-    )
-
-    t1 = _fmt(
-        row.get("T1")
-    )
-
-    t2 = _fmt(
-        row.get("T2")
-    )
-
-    t3 = _fmt(
-        row.get("T3")
-    )
-
-    t4 = _fmt(
-        row.get("T4")
-    )
-
-    icon = _setup_icon(
-        setup
-    )
+def _compact_message(
+    row
+):
 
     return (
-        f"{icon} {symbol} "
-        f"| {setup} "
-        f"| S{score} "
-        f"| E{entry} "
-        f"| SL{sl} "
-        f"| T1 {t1} "
-        f"| T2 {t2} "
-        f"| T3 {t3} "
-        f"| T4 {t4}"
+        f"{_icon(row['Setup'])} "
+        f"{row['Symbol']} | "
+        f"{row['Setup']} | "
+        f"S{_fmt(row['Score'], 0)} | "
+        f"E{_fmt(row['Entry'])} | "
+        f"SL{_fmt(row['SL'])} | "
+        f"T1 {_fmt(row['T1'])} | "
+        f"T2 {_fmt(row['T2'])} | "
+        f"T3 {_fmt(row['T3'])} | "
+        f"T4 {_fmt(row['T4'])}"
     )
 
-
-# ============================================================
-# MAIN ALERT
-# ============================================================
 
 def send_scan_alert(
     report_path=DEFAULT_REPORT
@@ -273,7 +181,8 @@ def send_scan_alert(
     if not token or not chat_id:
 
         print(
-            "Telegram credentials not configured."
+            "Telegram credentials "
+            "not configured."
         )
 
         return False
@@ -285,7 +194,7 @@ def send_scan_alert(
     if not report_path.exists():
 
         print(
-            f"Report not found: {report_path}"
+            "Telegram report not found."
         )
 
         return False
@@ -297,8 +206,11 @@ def send_scan_alert(
     if df.empty:
 
         message = (
-            "TRADING OS v12\n\n"
-            "No qualifying swing setups today."
+            "📊 TRADING OS v12\n\n"
+            "NO HIGH-QUALITY SETUPS "
+            "TODAY.\n\n"
+            "The scanner intentionally "
+            "did not fill the watchlist."
         )
 
         _send_message(
@@ -309,112 +221,104 @@ def send_scan_alert(
 
         return True
 
-    # --------------------------------------------------------
-    # COUNTS
-    # --------------------------------------------------------
-
-    pre = df[
-        df["Setup"] == "PRE-BREAKOUT"
-    ]
-
-    fresh = df[
-        df["Setup"] == "FRESH BREAKOUT"
-    ]
-
-    top_score = _fmt(
-        df["Score"].max(),
-        0
+    pre_count = len(
+        df[
+            df["Setup"]
+            == "PRE-BREAKOUT"
+        ]
     )
 
-    # --------------------------------------------------------
-    # HEADER
-    # --------------------------------------------------------
+    fresh_count = len(
+        df[
+            df["Setup"]
+            == "FRESH BREAKOUT"
+        ]
+    )
+
+    top_score = float(
+        df["Score"].max()
+    )
 
     header = (
         "📊 TRADING OS v12\n"
-        "TOP SWING SETUPS\n"
+        "HIGH-QUALITY SWING SETUPS\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
-        f"Final Watchlist: {len(df)}\n"
-        f"Pre-Breakout: {len(pre)}\n"
-        f"Fresh Breakout: {len(fresh)}\n"
-        f"Top Score: {top_score}\n"
+        f"Qualified: {len(df)}\n"
+        f"Pre-Breakout: {pre_count}\n"
+        f"Fresh Breakout: {fresh_count}\n"
+        f"Top Score: "
+        f"{top_score:.0f}/100\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
-        "T1=1R | T2=2R | T3=3R | T4=4R\n"
-        "R = Entry − Stop Loss\n"
+        "T1=1R | T2=2R | "
+        "T3=3R | T4=4R\n"
+        "R = Entry - Stop Loss\n"
     )
 
     messages = []
 
-    # --------------------------------------------------------
-    # TOP 10 DETAILED
-    # --------------------------------------------------------
+    # Show every stock in detail when there
+    # are only a few candidates.
+    if len(df) <= 10:
 
-    top_n = min(
-        10,
-        len(df)
-    )
+        parts = [header]
 
-    top = df.head(
-        top_n
-    )
+        for _, row in df.iterrows():
 
-    detailed_parts = [
-        header
-    ]
-
-    detailed_parts.append(
-        "\n🏆 TOP RANKED SETUPS\n"
-    )
-
-    for _, row in top.iterrows():
-
-        detailed_parts.append(
-            "\n"
-            + _format_stock(row)
-            + "\n"
-        )
-
-    detailed_message = "\n".join(
-        detailed_parts
-    )
-
-    messages.extend(
-        _split_message(
-            detailed_message
-        )
-    )
-
-    # --------------------------------------------------------
-    # REMAINING STOCKS
-    # --------------------------------------------------------
-
-    if len(df) > top_n:
-
-        remaining = df.iloc[
-            top_n:
-        ]
-
-        compact_lines = [
-            "📋 REMAINING WATCHLIST\n"
-        ]
-
-        for _, row in remaining.iterrows():
-
-            compact_lines.append(
-                _format_compact(row)
+            parts.append(
+                "\n"
+                + _stock_message(row)
+                + "\n"
             )
 
         messages.extend(
             _split_message(
-                "\n".join(
-                    compact_lines
-                )
+                "\n".join(parts)
             )
         )
 
-    # --------------------------------------------------------
-    # SEND
-    # --------------------------------------------------------
+    else:
+
+        parts = [
+            header,
+            "\n🏆 TOP SETUPS\n",
+        ]
+
+        for _, row in (
+            df.head(10).iterrows()
+        ):
+
+            parts.append(
+                "\n"
+                + _stock_message(row)
+                + "\n"
+            )
+
+        messages.extend(
+            _split_message(
+                "\n".join(parts)
+            )
+        )
+
+        remaining = df.iloc[10:]
+
+        compact = [
+            "📋 REMAINING "
+            "QUALIFIED SETUPS\n"
+        ]
+
+        for _, row in (
+            remaining.iterrows()
+        ):
+
+            compact.append(
+                _compact_message(row)
+            )
+
+        messages.extend(
+            _split_message(
+                "\n".join(compact)
+            )
+        )
 
     for message in messages:
 
@@ -425,16 +329,12 @@ def send_scan_alert(
         )
 
     print(
-        f"Telegram sent successfully: "
+        f"Telegram sent: "
         f"{len(messages)} message(s)"
     )
 
     return True
 
-
-# ============================================================
-# DIRECT EXECUTION
-# ============================================================
 
 if __name__ == "__main__":
 
