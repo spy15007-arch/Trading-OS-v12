@@ -1,268 +1,484 @@
-"""Trading OS v12 — latest scanner report dashboard."""
-from datetime import datetime
+import os
 from pathlib import Path
-from urllib.parse import quote
-from zoneinfo import ZoneInfo
 
 import pandas as pd
 import streamlit as st
 
 
+# ============================================================
+# CONFIG
+# ============================================================
+
+REPORT_FILE = Path(
+    "reports/swing_scan.csv"
+)
+
+
+# ============================================================
+# PAGE
+# ============================================================
+
 st.set_page_config(
     page_title="Trading OS v12",
-    page_icon="📈",
+    page_icon="📊",
     layout="wide",
 )
 
 
-# Original multi-file report configuration. The app will prefer these if they exist.
-ORIGINAL_REPORTS = {
-    "Strict": {
-        "csv": Path("reports/00_LATEST_STRICT.csv"),
-        "markdown": Path("reports/00_LATEST_STRICT.md"),
-        "description": "Higher-conviction momentum setups.",
-    },
-    "Aggressive": {
-        "csv": Path("reports/01_LATEST_AGGRESSIVE.csv"),
-        "markdown": Path("reports/01_LATEST_AGGRESSIVE.md"),
-        "description": "Broader momentum setups with looser filters.",
-    },
-    "Budget": {
-        "csv": Path("reports/02_LATEST_BUDGET.csv"),
-        "markdown": Path("reports/02_LATEST_BUDGET.md"),
-        "description": "Momentum setups priced at ₹500 or below.",
-    },
-}
+# ============================================================
+# HEADER
+# ============================================================
+
+st.title(
+    "📊 Trading OS v12 — Swing Trading Dashboard"
+)
+
+st.caption(
+    "PRE-BREAKOUT + FRESH BREAKOUT | TOP 30"
+)
 
 
-# Fallback single-file scanner output used by the current automation
-SINGLE_REPORT_CSV = Path("reports/swing_scan.csv")
-SINGLE_REPORT_MD = Path("reports/swing_scan.md")
+# ============================================================
+# LOAD DATA
+# ============================================================
 
+if not REPORT_FILE.exists():
 
-def chart_link(symbol):
-    ticker = str(symbol).replace(".NS", "").upper()
-
-    return (
-        "https://www.tradingview.com/chart/"
-        f"?symbol={quote(f'NSE:{ticker}', safe='')}"
+    st.error(
+        "No scan report found."
     )
 
-
-def normalize_report_frame(frame: pd.DataFrame) -> pd.DataFrame:
-    """Normalize CSV field names to the app's expected lowercase schema.
-
-    This is needed because newer scanner exports use PascalCase columns like
-    `Rank,Symbol,Entry,...`, while older reports use lowercase names.
-    """
-    if frame.empty:
-        return frame
-
-    normalized = frame.copy()
-    normalized.columns = [str(col).strip() for col in normalized.columns]
-
-    rename_map = {
-        "Rank": "rank",
-        "Symbol": "symbol",
-        "Entry": "entry",
-        "Score": "score",
-        "Setup": "setup",
-        "RSI": "rsi",
-        "RVOL": "relative_volume",
-        "RS20": "rs20",
-        "RS60": "rs60",
-        "BreakoutPct": "breakout_pct",
-        "BaseRangePct": "base_range_pct",
-        "ExtensionPct": "extension_pct",
-        "SL": "stop",
-        "T1": "target1",
-        "T2": "target2",
-        "T3": "target3",
-        "ATR": "atr",
-        "Trade": "trade",
-        "Price": "price",
-        "EMA20": "ema20",
-        "EMA50": "ema50",
-        "EMA200": "ema200",
-        "Grade": "grade",
-        "RR1": "rr1",
-        "Relative_Volume": "relative_volume",
-        "Relative Volume": "relative_volume",
-        "Stop": "stop",
-    }
-
-    normalized = normalized.rename(columns=rename_map)
-
-    # Keep the user-facing order intuitive: rank first, symbol second, then the rest.
-    for key in ["rank", "symbol"]:
-        if key not in normalized.columns:
-            continue
-
-    if "rank" in normalized.columns and "symbol" in normalized.columns:
-        ordered = ["rank", "symbol"] + [
-            c for c in normalized.columns if c not in {"rank", "symbol"}
-        ]
-        normalized = normalized[ordered]
-
-    return normalized
-
-
-@st.cache_data(ttl=60, show_spinner=False)
-def load_report(path_text):
-    path = Path(path_text)
-
-    if not path.exists():
-        return pd.DataFrame()
-
-    try:
-        frame = pd.read_csv(path)
-        return normalize_report_frame(frame)
-    except Exception:
-        return pd.DataFrame()
-
-
-def report_updated_at(path):
-    if not path.exists():
-        return "Not available"
-
-    timestamp = datetime.fromtimestamp(
-        path.stat().st_mtime,
-        tz=ZoneInfo("Asia/Kolkata"),
+    st.info(
+        "Run the scanner first to create "
+        "reports/swing_scan.csv"
     )
 
-    return timestamp.strftime("%d-%b-%Y %I:%M %p IST")
+    st.stop()
 
 
-def render_report(name, config):
-    csv_path = config["csv"]
-    markdown_path = config["markdown"]
+df = pd.read_csv(
+    REPORT_FILE
+)
 
-    frame = load_report(str(csv_path))
 
-    st.subheader(f"{name} Scanner")
-    st.caption(config.get("description", ""))
-    st.caption(f"Last updated: {report_updated_at(csv_path)}")
+if df.empty:
 
-    if frame.empty:
-        st.info(
-            "No latest report is available yet. "
-            "Run the corresponding scanner workflow first."
+    st.warning(
+        "No qualifying swing setups in the latest scan."
+    )
+
+    st.stop()
+
+
+# ============================================================
+# CLEAN DATA
+# ============================================================
+
+numeric_columns = [
+    "Score",
+    "BreakoutPct",
+    "RS20",
+    "RS60",
+    "StockRS",
+    "RSI",
+    "RVOL",
+    "BaseRange",
+    "Compression",
+    "Extension",
+    "Resistance",
+    "ClosingStrength",
+    "Entry",
+    "SL",
+    "T1",
+    "T2",
+    "T3",
+    "T4",
+    "RiskPct",
+]
+
+for column in numeric_columns:
+
+    if column in df.columns:
+
+        df[column] = pd.to_numeric(
+            df[column],
+            errors="coerce"
         )
-        return
 
-    if "symbol" in frame.columns:
-        frame["Chart"] = frame["symbol"].apply(chart_link)
 
-    candidates = len(frame)
-    highest_score = (
-        int(frame["score"].max())
-        if "score" in frame.columns and not frame.empty
-        else 0
+# ============================================================
+# COUNTS
+# ============================================================
+
+pre = df[
+    df["Setup"] == "PRE-BREAKOUT"
+]
+
+fresh = df[
+    df["Setup"] == "FRESH BREAKOUT"
+]
+
+
+top_score = (
+    float(df["Score"].max())
+    if not df.empty
+    else 0
+)
+
+
+# ============================================================
+# SUMMARY
+# ============================================================
+
+st.subheader(
+    "Market Snapshot"
+)
+
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+
+    st.metric(
+        "Final Watchlist",
+        len(df)
     )
 
-    top_symbol = (
-        str(frame.iloc[0]["symbol"]) if "symbol" in frame.columns and not frame.empty else "-"
+with col2:
+
+    st.metric(
+        "Pre-Breakout",
+        len(pre)
     )
 
-    metric_one, metric_two, metric_three = st.columns(3)
+with col3:
 
-    metric_one.metric("Selected candidates", candidates)
-    metric_two.metric("Highest score", highest_score)
-    metric_three.metric("Top-ranked symbol", top_symbol)
+    st.metric(
+        "Fresh Breakout",
+        len(fresh)
+    )
 
-    columns = [
-        column
-        for column in [
-            "symbol",
-            "score",
-            "price",
-            "rsi",
-            "relative_volume",
-            "entry",
-            "stop",
-            "target1",
-            "target2",
-            "target3",
-            "Chart",
-        ]
-        if column in frame.columns
+with col4:
+
+    st.metric(
+        "Top Score",
+        f"{top_score:.0f}/100"
+    )
+
+
+# ============================================================
+# MASTER RANKING
+# ============================================================
+
+st.divider()
+
+st.subheader(
+    "🏆 TOP 30 — MASTER RANKING"
+)
+
+
+master_columns = [
+    "Rank",
+    "Symbol",
+    "Setup",
+    "Score",
+    "BreakoutPct",
+    "RSI",
+    "RVOL",
+    "Entry",
+    "SL",
+    "T1",
+    "T2",
+    "T3",
+    "T4",
+]
+
+
+available_master = [
+    col
+    for col in master_columns
+    if col in df.columns
+]
+
+
+master_display = df[
+    available_master
+].copy()
+
+
+st.dataframe(
+    master_display,
+    use_container_width=True,
+    hide_index=True,
+)
+
+
+# ============================================================
+# PRE-BREAKOUT
+# ============================================================
+
+st.divider()
+
+st.subheader(
+    "👀 PRE-BREAKOUT"
+)
+
+if pre.empty:
+
+    st.info(
+        "No pre-breakout setups today."
+    )
+
+else:
+
+    pre_columns = [
+        "Rank",
+        "Symbol",
+        "Score",
+        "BreakoutPct",
+        "RSI",
+        "RVOL",
+        "Extension",
+        "Entry",
+        "SL",
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+    ]
+
+    available_pre = [
+        col
+        for col in pre_columns
+        if col in pre.columns
     ]
 
     st.dataframe(
-        frame[columns],
-        hide_index=True,
+        pre[available_pre],
         use_container_width=True,
-        column_config={
-            "Chart": st.column_config.LinkColumn(
-                "TradingView Chart",
-                display_text="Open chart",
-            ),
-        },
+        hide_index=True,
     )
 
-    if markdown_path.exists():
-        with st.expander("View full Markdown report"):
-            st.markdown(
-                markdown_path.read_text(encoding="utf-8")
-            )
 
+# ============================================================
+# FRESH BREAKOUT
+# ============================================================
 
-def build_active_reports():
-    """Return the reports mapping the app should use.
+st.divider()
 
-    Preference order:
-    1. If the three "LATEST" CSVs exist, use them (multi-tab mode).
-    2. Else if the single `swing_scan.csv` exists, expose a single "Master" tab.
-    3. Else fall back to the original mapping (so UI still shows expected tabs).
-    """
-    active = {}
-    # Prefer explicit latest files if they exist
-    for name, cfg in ORIGINAL_REPORTS.items():
-        if cfg["csv"].exists() or cfg["markdown"].exists():
-            active[name] = cfg
-
-    if active:
-        return active
-
-    # Fallback: single-file output produced by the current automation
-    if SINGLE_REPORT_CSV.exists() or SINGLE_REPORT_MD.exists():
-        return {
-            "Master": {
-                "csv": SINGLE_REPORT_CSV,
-                "markdown": SINGLE_REPORT_MD,
-                "description": "Master swing scan output (single-file scanner).",
-            }
-        }
-
-    # No files detected; return original map so UI still renders the three tabs
-    return ORIGINAL_REPORTS
-
-
-st.title("📈 Trading OS v12")
-st.caption(
-    "Latest NSE scanner reports. "
-    "This dashboard refreshes after the scanner workflow commits new reports."
+st.subheader(
+    "🚀 FRESH BREAKOUT"
 )
 
-if st.button("Refresh latest reports"):
-    st.cache_data.clear()
-    st.rerun()
+if fresh.empty:
 
-REPORTS = build_active_reports()
+    st.info(
+        "No fresh-breakout setups today."
+    )
 
-# Create tabs dynamically from the active reports mapping
-tab_names = list(REPORTS.keys())
-if not tab_names:
-    tab_names = ["Reports"]
+else:
 
-tab_objs = st.tabs(tab_names)
-for name, tab in zip(tab_names, tab_objs):
-    with tab:
-        render_report(name, REPORTS[name])
+    fresh_columns = [
+        "Rank",
+        "Symbol",
+        "Score",
+        "BreakoutPct",
+        "RSI",
+        "RVOL",
+        "Extension",
+        "Entry",
+        "SL",
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+    ]
+
+    available_fresh = [
+        col
+        for col in fresh_columns
+        if col in fresh.columns
+    ]
+
+    st.dataframe(
+        fresh[available_fresh],
+        use_container_width=True,
+        hide_index=True,
+    )
+
+
+# ============================================================
+# STOCK DETAILS
+# ============================================================
+
+st.divider()
+
+st.subheader(
+    "🔎 Stock Details"
+)
+
+
+symbols = df[
+    "Symbol"
+].astype(str).tolist()
+
+
+selected_symbol = st.selectbox(
+    "Select a stock",
+    symbols
+)
+
+
+selected = df[
+    df["Symbol"].astype(str)
+    == selected_symbol
+].iloc[0]
+
+
+# ------------------------------------------------------------
+# BASIC INFO
+# ------------------------------------------------------------
+
+info1, info2, info3, info4 = st.columns(4)
+
+with info1:
+
+    st.metric(
+        "Setup",
+        str(selected["Setup"])
+    )
+
+with info2:
+
+    st.metric(
+        "Score",
+        f"{selected['Score']:.0f}/100"
+    )
+
+with info3:
+
+    st.metric(
+        "RSI",
+        f"{selected['RSI']:.1f}"
+    )
+
+with info4:
+
+    st.metric(
+        "RVOL",
+        f"{selected['RVOL']:.2f}"
+    )
+
+
+# ------------------------------------------------------------
+# TECHNICAL DETAILS
+# ------------------------------------------------------------
+
+st.markdown(
+    "### Technical Structure"
+)
+
+
+tech_columns = [
+    "BreakoutPct",
+    "RS20",
+    "RS60",
+    "StockRS",
+    "BaseRange",
+    "Compression",
+    "Extension",
+    "Resistance",
+    "ClosingStrength",
+]
+
+
+tech_data = {}
+
+for column in tech_columns:
+
+    if column in selected.index:
+
+        tech_data[column] = [
+            selected[column]
+        ]
+
+
+if tech_data:
+
+    tech_df = pd.DataFrame(
+        tech_data
+    )
+
+    st.dataframe(
+        tech_df,
+        use_container_width=True,
+        hide_index=True,
+    )
+
+
+# ============================================================
+# TRADE PLAN
+# ============================================================
+
+st.markdown(
+    "### 🎯 Trade Plan"
+)
+
+
+trade_data = pd.DataFrame(
+    {
+        "Level": [
+            "Entry",
+            "Stop Loss",
+            "Target 1",
+            "Target 2",
+            "Target 3",
+            "Target 4",
+        ],
+
+        "Price": [
+            selected["Entry"],
+            selected["SL"],
+            selected["T1"],
+            selected["T2"],
+            selected["T3"],
+            selected["T4"],
+        ],
+
+        "Meaning": [
+            "Reference entry",
+            "Risk control",
+            "1R",
+            "2R",
+            "3R",
+            "4R",
+        ],
+    }
+)
+
+
+st.dataframe(
+    trade_data,
+    use_container_width=True,
+    hide_index=True,
+)
+
+
+# ============================================================
+# FOOTER
+# ============================================================
 
 st.divider()
 
 st.caption(
-    "Educational scanner output only. "
-    "Review liquidity, price action, and risk independently before trading."
+    "T1 = 1R | T2 = 2R | T3 = 3R | T4 = 4R"
+)
+
+st.caption(
+    "R = Entry − Stop Loss"
+)
+
+st.caption(
+    "Trading OS v12 is a screening and "
+    "decision-support system, not a guarantee "
+    "of future price movement."
 )
