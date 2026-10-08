@@ -29,6 +29,13 @@ REPORT_DIR = Path("reports")
 CSV_FILE = REPORT_DIR / "swing_scan.csv"
 MARKDOWN_FILE = REPORT_DIR / "swing_scan.md"
 
+FALLBACK_SYMBOLS = [
+    "RELIANCE", "HDFCBANK", "ICICIBANK", "SBIN", "INFY", "TCS",
+    "LT", "AXISBANK", "KOTAKBANK", "BHARTIARTL", "ITC", "MARUTI",
+    "SUNPHARMA", "TITAN", "M&M", "HINDUNILVR", "BAJFINANCE", "DIXON",
+    "POLYCAB", "TRENT", "CGPOWER", "PERSISTENT", "KEI", "BSE",
+]
+
 
 # ============================================================
 # NSE UNIVERSE
@@ -976,13 +983,10 @@ def main():
     symbols = get_nse_equity_symbols()
 
     if not symbols:
-
         print(
-            "ERROR: NSE equity universe could "
-            "not be loaded."
+            "NSE universe unavailable; falling back to a small built-in list."
         )
-
-        return
+        symbols = [f"{symbol}.NS" for symbol in FALLBACK_SYMBOLS]
 
     print(
         f"{len(symbols)} symbols selected "
@@ -1004,6 +1008,8 @@ def main():
         "Downloading historical market data..."
     )
 
+    results = []
+
     try:
 
         # IMPORTANT:
@@ -1021,168 +1027,164 @@ def main():
         print(
             f"Data download failed: {exc}"
         )
-
-        return
+        data_map = {}
 
     if not data_map:
 
         print(
-            "No stock market data returned."
+            "No stock market data returned. Continuing with an empty report."
         )
 
-        return
-
-    print(
-        f"Downloaded data for "
-        f"{len(data_map)} symbols"
-    )
-
-    # --------------------------------------------------------
-    # SCAN
-    # --------------------------------------------------------
-
-    results = []
-
-    total = len(data_map)
-
-    processed = 0
-
-    print("")
-    print(
-        "Scanning for PRE-BREAKOUT and "
-        "FRESH BREAKOUT setups..."
-    )
-
-    for symbol, raw_data in data_map.items():
-
-        processed += 1
-
-        symbol = str(
-            symbol
-        ).strip().upper()
-
-        if not symbol:
-            continue
-
-        df = normalise_dataframe(
-            raw_data
+    else:
+        print(
+            f"Downloaded data for "
+            f"{len(data_map)} symbols"
         )
 
-        if df is None:
-            continue
+        # --------------------------------------------------------
+        # SCAN
+        # --------------------------------------------------------
 
-        # Minimum data requirement.
-        if len(df) < 220:
-            continue
+        total = len(data_map)
 
-        try:
+        processed = 0
 
-            result = score_stock(
-                symbol=symbol,
-                data=df,
-                benchmark=benchmark,
+        print("")
+        print(
+            "Scanning for PRE-BREAKOUT and "
+            "FRESH BREAKOUT setups..."
+        )
+
+        for symbol, raw_data in data_map.items():
+
+            processed += 1
+
+            symbol = str(
+                symbol
+            ).strip().upper()
+
+            if not symbol:
+                continue
+
+            df = normalise_dataframe(
+                raw_data
             )
 
-        except TypeError:
+            if df is None:
+                continue
 
-            # Compatibility fallback.
+            # Minimum data requirement.
+            if len(df) < 220:
+                continue
+
             try:
 
                 result = score_stock(
-                    symbol,
-                    df,
-                    benchmark,
+                    symbol=symbol,
+                    data=df,
+                    benchmark=benchmark,
                 )
+
+            except TypeError:
+
+                # Compatibility fallback.
+                try:
+
+                    result = score_stock(
+                        symbol,
+                        df,
+                        benchmark,
+                    )
+
+                except Exception:
+                    continue
 
             except Exception:
                 continue
 
-        except Exception:
-            continue
-
-        result = clean_result(
-            result,
-            symbol,
-        )
-
-        if result is None:
-            continue
-
-        results.append(
-            result
-        )
-
-        if processed % 250 == 0:
-
-            print(
-                f"Processed "
-                f"{processed}/{total} symbols..."
+            result = clean_result(
+                result,
+                symbol,
             )
 
-    print("")
-    print(
-        f"Raw qualifying results: "
-        f"{len(results)}"
-    )
+            if result is None:
+                continue
 
-    # --------------------------------------------------------
-    # DUPLICATES
-    # --------------------------------------------------------
-
-    results = remove_duplicates(
-        results
-    )
-
-    print(
-        f"After duplicate removal: "
-        f"{len(results)}"
-    )
-
-    # --------------------------------------------------------
-    # QUALITY FILTER
-    # --------------------------------------------------------
-
-    results = final_quality_filter(
-        results
-    )
-
-    print(
-        f"After quality filter: "
-        f"{len(results)}"
-    )
-
-    # --------------------------------------------------------
-    # RANK BY SCORE
-    # --------------------------------------------------------
-
-    results.sort(
-        key=lambda x: float(
-            x.get(
-                "score",
-                0,
+            results.append(
+                result
             )
-        ),
-        reverse=True,
-    )
 
-    # --------------------------------------------------------
-    # MAXIMUM 30
-    # --------------------------------------------------------
+            if processed % 250 == 0:
 
-    results = results[
-        :MAX_RESULTS
-    ]
+                print(
+                    f"Processed "
+                    f"{processed}/{total} symbols..."
+                )
 
-    # --------------------------------------------------------
-    # FINAL RANK
-    # --------------------------------------------------------
+        print("")
+        print(
+            f"Raw qualifying results: "
+            f"{len(results)}"
+        )
 
-    for rank, result in enumerate(
-        results,
-        start=1,
-    ):
+        # --------------------------------------------------------
+        # DUPLICATES
+        # --------------------------------------------------------
 
-        result["rank"] = rank
+        results = remove_duplicates(
+            results
+        )
+
+        print(
+            f"After duplicate removal: "
+            f"{len(results)}"
+        )
+
+        # --------------------------------------------------------
+        # QUALITY FILTER
+        # --------------------------------------------------------
+
+        results = final_quality_filter(
+            results
+        )
+
+        print(
+            f"After quality filter: "
+            f"{len(results)}"
+        )
+
+        # --------------------------------------------------------
+        # RANK BY SCORE
+        # --------------------------------------------------------
+
+        results.sort(
+            key=lambda x: float(
+                x.get(
+                    "score",
+                    0,
+                )
+            ),
+            reverse=True,
+        )
+
+        # --------------------------------------------------------
+        # MAXIMUM 30
+        # --------------------------------------------------------
+
+        results = results[
+            :MAX_RESULTS
+        ]
+
+        # --------------------------------------------------------
+        # FINAL RANK
+        # --------------------------------------------------------
+
+        for rank, result in enumerate(
+            results,
+            start=1,
+        ):
+
+            result["rank"] = rank
 
     # --------------------------------------------------------
     # REPORT
