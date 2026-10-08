@@ -140,3 +140,21 @@ def write_report(results, profile, regime, output_dir="reports"):
         "latest_csv": latest_csv,
         "latest_markdown": latest_markdown,
     }
+
+
+def save_report(results, market_regime=None, output_dir="reports", profile="strict"):
+    """Backward-compatible wrapper for older scanner code.
+
+    Older code calls save_report(results, market_regime=..., output_dir=...),
+    while newer code uses write_report(results, profile, regime, output_dir=...).
+    This shim preserves both APIs and avoids import-time failures in CI.
+    """
+    if profile not in LATEST_NAMES:
+        profile = "strict"
+
+    return write_report(
+        results=results,
+        profile=profile,
+        regime=market_regime or "UNKNOWN",
+        output_dir=output_dir,
+    )
