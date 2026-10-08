@@ -1,12 +1,12 @@
-import os
+import io
 from pathlib import Path
 
 import pandas as pd
+import requests
 
 from scanner.core.downloader import download_all
 from scanner.core.market import get_market_regime
 from scanner.core.scoring import score_stock
-from scanner.core.utils import get_nse_equity_symbols
 from telegram_push import send_telegram_report
 
 
@@ -17,10 +17,11 @@ from telegram_push import send_telegram_report
 PERIOD = "1y"
 INTERVAL = "1d"
 
+# Maximum, NOT target.
+# If only 8 stocks qualify, output 8.
 MAX_RESULTS = 30
 
-# Minimum quality required.
-# The scanner is allowed to return fewer than 30 stocks.
+# Minimum quality score.
 MIN_SCORE = 75
 
 REPORT_DIR = Path("reports")
@@ -30,18 +31,141 @@ MARKDOWN_FILE = REPORT_DIR / "swing_scan.md"
 
 
 # ============================================================
+# NSE UNIVERSE
+# ============================================================
+
+NSE_EQUITY_URL = (
+    "https://archives.nseindia.com/content/equities/EQUITY_L.csv"
+)
+
+NSE_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/153.0.0.0 Safari/537.36"
+    ),
+    "Accept": (
+        "text/csv,application/csv,text/plain,"
+        "application/json,*/*"
+    ),
+    "Accept-Language": "en-US,en;q=0.9",
+    "Connection": "keep-alive",
+}
+
+
+def get_nse_equity_symbols():
+    """
+    Download the current NSE equity list directly from NSE.
+
+    Returns:
+        list[str]
+    """
+
+    print(
+        "Downloading NSE equity universe..."
+    )
+
+    try:
+
+        response = requests.get(
+            NSE_EQUITY_URL,
+            headers=NSE_HEADERS,
+            timeout=30,
+        )
+
+        response.raise_for_status()
+
+        content = response.content
+
+        if not content:
+            raise RuntimeError(
+                "NSE returned an empty response."
+            )
+
+        df = pd.read_csv(
+            io.BytesIO(content)
+        )
+
+        if df.empty:
+            raise RuntimeError(
+                "NSE equity list is empty."
+            )
+
+        # ----------------------------------------------------
+        # Find SYMBOL column safely
+        # ----------------------------------------------------
+
+        symbol_column = None
+
+        for column in df.columns:
+
+            if str(column).strip().upper() == "SYMBOL":
+                symbol_column = column
+                break
+
+        if symbol_column is None:
+            raise RuntimeError(
+                "SYMBOL column not found in NSE equity list."
+            )
+
+        symbols = (
+            df[symbol_column]
+            .astype(str)
+            .str.strip()
+            .str.upper()
+        )
+
+        # ----------------------------------------------------
+        # Basic cleanup
+        # ----------------------------------------------------
+
+        symbols = symbols[
+            symbols.notna()
+        ]
+
+        symbols = symbols[
+            symbols != ""
+        ]
+
+        symbols = symbols[
+            symbols != "NAN"
+        ]
+
+        # Remove obviously invalid values.
+        symbols = symbols[
+            ~symbols.str.contains(
+                "SYMBOL",
+                case=False,
+                na=False,
+            )
+        ]
+
+        # Remove duplicate symbols.
+        symbols = sorted(
+            set(symbols.tolist())
+        )
+
+        print(
+            f"broad nse universe: "
+            f"{len(symbols)} symbols"
+        )
+
+        return symbols
+
+    except Exception as exc:
+
+        print(
+            f"NSE universe download failed: {exc}"
+        )
+
+        return []
+
+
+# ============================================================
 # DATA NORMALISATION
 # ============================================================
 
 def normalise_dataframe(data):
-    """
-    Normalise yfinance/downloaded dataframe columns.
-
-    Handles:
-    - normal OHLCV columns
-    - MultiIndex columns
-    - missing/invalid rows
-    """
 
     if data is None:
         return None
@@ -59,18 +183,24 @@ def normalise_dataframe(data):
     # --------------------------------------------------------
 
     if isinstance(df.columns, pd.MultiIndex):
+
         flattened = []
 
         for col in df.columns:
+
             if isinstance(col, tuple):
-                flattened.append(str(col[0]))
+                flattened.append(
+                    str(col[0])
+                )
             else:
-                flattened.append(str(col))
+                flattened.append(
+                    str(col)
+                )
 
         df.columns = flattened
 
     # --------------------------------------------------------
-    # Standardise column names
+    # Standardise OHLCV names
     # --------------------------------------------------------
 
     rename_map = {}
@@ -97,7 +227,9 @@ def normalise_dataframe(data):
         elif name == "volume":
             rename_map[col] = "Volume"
 
-    df = df.rename(columns=rename_map)
+    df = df.rename(
+        columns=rename_map
+    )
 
     required = [
         "Open",
@@ -118,13 +250,7 @@ def normalise_dataframe(data):
         )
 
     df = df.dropna(
-        subset=[
-            "Open",
-            "High",
-            "Low",
-            "Close",
-            "Volume",
-        ]
+        subset=required
     )
 
     if df.empty:
@@ -138,15 +264,12 @@ def normalise_dataframe(data):
 # ============================================================
 
 def get_benchmark_data():
-    """
-    Download NIFTY 50 benchmark data.
-
-    This is used by the scoring engine for relative strength.
-    """
 
     try:
 
-        print("Downloading NIFTY 50 benchmark data...")
+        print(
+            "Downloading NIFTY 50 benchmark data..."
+        )
 
         benchmark_map = download_all(
             ["^NSEI"],
@@ -155,23 +278,39 @@ def get_benchmark_data():
         )
 
         if not benchmark_map:
-            print("Benchmark data unavailable.")
+            print(
+                "Benchmark data unavailable."
+            )
             return None
 
-        benchmark = benchmark_map.get("^NSEI")
+        benchmark = benchmark_map.get(
+            "^NSEI"
+        )
 
-        benchmark = normalise_dataframe(benchmark)
+        benchmark = normalise_dataframe(
+            benchmark
+        )
 
         if benchmark is None:
-            print("Benchmark data could not be normalised.")
+
+            print(
+                "Benchmark data could not "
+                "be normalised."
+            )
+
             return None
 
         if len(benchmark) < 100:
-            print("Insufficient benchmark history.")
+
+            print(
+                "Insufficient benchmark history."
+            )
+
             return None
 
         print(
-            f"Benchmark loaded: {len(benchmark)} sessions"
+            f"Benchmark loaded: "
+            f"{len(benchmark)} sessions"
         )
 
         return benchmark
@@ -190,12 +329,6 @@ def get_benchmark_data():
 # ============================================================
 
 def clean_result(result, symbol):
-    """
-    Convert scoring output into a consistent dictionary.
-
-    This also protects the scanner from slightly different
-    scoring-engine field names.
-    """
 
     if result is None:
         return None
@@ -210,10 +343,6 @@ def clean_result(result, symbol):
         or output.get("ticker")
         or symbol
     )
-
-    # --------------------------------------------------------
-    # Standard fields
-    # --------------------------------------------------------
 
     output["setup"] = (
         output.get("setup")
@@ -233,7 +362,10 @@ def clean_result(result, symbol):
 
     output["breakout_pct"] = output.get(
         "breakout_pct",
-        output.get("breakout_distance_pct", 0),
+        output.get(
+            "breakout_distance_pct",
+            0,
+        ),
     )
 
     output["rsi"] = output.get(
@@ -243,33 +375,44 @@ def clean_result(result, symbol):
 
     output["rvol"] = output.get(
         "rvol",
-        output.get("relative_volume", 0),
+        output.get(
+            "relative_volume",
+            0,
+        ),
     )
 
     output["entry"] = output.get(
         "entry",
-        output.get("entry_price", output["price"]),
+        output.get(
+            "entry_price",
+            output["price"],
+        ),
     )
 
     output["stop_loss"] = output.get(
         "stop_loss",
         output.get(
             "stop",
-            output.get("sl", 0),
+            output.get(
+                "sl",
+                0,
+            ),
         ),
     )
 
     # --------------------------------------------------------
-    # Four target levels
+    # Calculate four targets
     # --------------------------------------------------------
-
-    entry = output.get("entry", 0)
-    stop = output.get("stop_loss", 0)
 
     try:
 
-        entry = float(entry)
-        stop = float(stop)
+        entry = float(
+            output["entry"]
+        )
+
+        stop = float(
+            output["stop_loss"]
+        )
 
         risk = entry - stop
 
@@ -277,24 +420,20 @@ def clean_result(result, symbol):
 
         if risk > 0:
 
-            output["target_1"] = output.get(
-                "target_1",
-                output.get("t1", entry + risk),
+            output["target_1"] = (
+                entry + risk
             )
 
-            output["target_2"] = output.get(
-                "target_2",
-                output.get("t2", entry + (2 * risk)),
+            output["target_2"] = (
+                entry + (2 * risk)
             )
 
-            output["target_3"] = output.get(
-                "target_3",
-                output.get("t3", entry + (3 * risk)),
+            output["target_3"] = (
+                entry + (3 * risk)
             )
 
-            output["target_4"] = output.get(
-                "target_4",
-                output.get("t4", entry + (4 * risk)),
+            output["target_4"] = (
+                entry + (4 * risk)
             )
 
         else:
@@ -307,77 +446,73 @@ def clean_result(result, symbol):
     except Exception:
 
         output["risk"] = 0
-
-        output["target_1"] = output.get(
-            "target_1",
-            output.get("t1", 0),
-        )
-
-        output["target_2"] = output.get(
-            "target_2",
-            output.get("t2", 0),
-        )
-
-        output["target_3"] = output.get(
-            "target_3",
-            output.get("t3", 0),
-        )
-
-        output["target_4"] = output.get(
-            "target_4",
-            output.get("t4", 0),
-        )
+        output["target_1"] = 0
+        output["target_2"] = 0
+        output["target_3"] = 0
+        output["target_4"] = 0
 
     return output
 
 
 # ============================================================
-# DUPLICATE REMOVAL
+# REMOVE DUPLICATES
 # ============================================================
 
 def remove_duplicates(results):
-    """
-    Keep only one entry per stock.
-
-    If somehow the same symbol appears multiple times,
-    retain the highest scoring version.
-    """
 
     best = {}
 
     for result in results:
 
         symbol = str(
-            result.get("symbol", "")
+            result.get(
+                "symbol",
+                "",
+            )
         ).strip().upper()
 
         if not symbol:
             continue
 
-        current = best.get(symbol)
-
-        if current is None:
-            best[symbol] = result
-            continue
-
         try:
+
             new_score = float(
-                result.get("score", 0)
+                result.get(
+                    "score",
+                    0,
+                )
             )
+
         except Exception:
+
             new_score = 0
 
-        try:
-            old_score = float(
-                current.get("score", 0)
-            )
-        except Exception:
-            old_score = 0
+        if symbol not in best:
 
-        if new_score > old_score:
             best[symbol] = result
 
-    return list(best.values())
+        else:
+
+            try:
+
+                old_score = float(
+                    best[symbol].get(
+                        "score",
+                        0,
+                    )
+                )
+
+            except Exception:
+
+                old_score = 0
+
+            if new_score > old_score:
+
+                best[symbol] = result
+
+    return list(
+        best.values()
+    )
 
 
 # ============================================================
@@ -385,52 +520,55 @@ def remove_duplicates(results):
 # ============================================================
 
 def final_quality_filter(results):
-    """
-    Final safety filter.
-
-    Important:
-    MAX_RESULTS is a maximum, NOT a target.
-
-    If only 7 stocks genuinely qualify, return 7.
-    """
 
     filtered = []
 
     for result in results:
 
         try:
+
             score = float(
-                result.get("score", 0)
+                result.get(
+                    "score",
+                    0,
+                )
             )
+
         except Exception:
+
             score = 0
 
         if score < MIN_SCORE:
             continue
 
         setup = str(
-            result.get("setup", "")
-        ).upper()
+            result.get(
+                "setup",
+                "",
+            )
+        ).strip().upper()
 
-        # Only our two desired setups.
+        # Only the two setups we actually want.
         if setup not in {
             "PRE-BREAKOUT",
             "FRESH BREAKOUT",
         }:
             continue
 
-        # ----------------------------------------------------
-        # Validate entry / stop
-        # ----------------------------------------------------
-
         try:
 
             entry = float(
-                result.get("entry", 0)
+                result.get(
+                    "entry",
+                    0,
+                )
             )
 
             stop = float(
-                result.get("stop_loss", 0)
+                result.get(
+                    "stop_loss",
+                    0,
+                )
             )
 
         except Exception:
@@ -446,10 +584,6 @@ def final_quality_filter(results):
         if stop >= entry:
             continue
 
-        # ----------------------------------------------------
-        # Validate risk
-        # ----------------------------------------------------
-
         risk = entry - stop
 
         if risk <= 0:
@@ -457,16 +591,25 @@ def final_quality_filter(results):
 
         result["risk"] = risk
 
-        # ----------------------------------------------------
-        # Ensure four targets exist
-        # ----------------------------------------------------
+        result["target_1"] = (
+            entry + risk
+        )
 
-        result["target_1"] = entry + risk
-        result["target_2"] = entry + (2 * risk)
-        result["target_3"] = entry + (3 * risk)
-        result["target_4"] = entry + (4 * risk)
+        result["target_2"] = (
+            entry + (2 * risk)
+        )
 
-        filtered.append(result)
+        result["target_3"] = (
+            entry + (3 * risk)
+        )
+
+        result["target_4"] = (
+            entry + (4 * risk)
+        )
+
+        filtered.append(
+            result
+        )
 
     return filtered
 
@@ -475,7 +618,10 @@ def final_quality_filter(results):
 # MARKDOWN REPORT
 # ============================================================
 
-def build_markdown(results, market_regime):
+def build_markdown(
+    results,
+    market_regime,
+):
 
     lines = []
 
@@ -492,14 +638,16 @@ def build_markdown(results, market_regime):
     lines.append("")
 
     lines.append(
-        f"**Qualified Setups:** {len(results)}"
+        f"**Qualified Setups:** "
+        f"{len(results)}"
     )
 
     lines.append("")
 
     lines.append(
-        "> Maximum 30 stocks. The scanner does not "
-        "fill the list with weak setups."
+        "> Maximum 30 stocks. "
+        "The scanner does not fill the list "
+        "with weak setups."
     )
 
     lines.append("")
@@ -507,114 +655,52 @@ def build_markdown(results, market_regime):
     if not results:
 
         lines.append(
-            "No high-quality PRE-BREAKOUT or "
-            "FRESH BREAKOUT setups met the current "
-            "quality threshold."
+            "No high-quality PRE-BREAKOUT "
+            "or FRESH BREAKOUT setups met "
+            "the current quality threshold."
         )
 
         return "\n".join(lines)
 
     lines.append(
-        "| Rank | Stock | Setup | Score | Price | "
-        "Breakout % | RSI | RVOL | Entry | SL | "
-        "T1 | T2 | T3 | T4 |"
+        "| Rank | Stock | Setup | Score | "
+        "Price | Breakout % | RSI | RVOL | "
+        "Entry | SL | T1 | T2 | T3 | T4 |"
     )
 
     lines.append(
-        "|---:|---|---|---:|---:|---:|---:|---:|"
+        "|---:|---|---|---:|---:|---:|"
         "---:|---:|---:|---:|---:|---:|"
+        "---:|---:|"
     )
+
+    def fmt(value):
+
+        try:
+            return f"{float(value):.2f}"
+        except Exception:
+            return "-"
 
     for rank, result in enumerate(
         results,
         start=1,
     ):
 
-        symbol = result.get(
-            "symbol",
-            "",
-        )
-
-        setup = result.get(
-            "setup",
-            "",
-        )
-
-        score = result.get(
-            "score",
-            0,
-        )
-
-        price = result.get(
-            "price",
-            0,
-        )
-
-        breakout_pct = result.get(
-            "breakout_pct",
-            0,
-        )
-
-        rsi = result.get(
-            "rsi",
-            0,
-        )
-
-        rvol = result.get(
-            "rvol",
-            0,
-        )
-
-        entry = result.get(
-            "entry",
-            0,
-        )
-
-        stop = result.get(
-            "stop_loss",
-            0,
-        )
-
-        t1 = result.get(
-            "target_1",
-            0,
-        )
-
-        t2 = result.get(
-            "target_2",
-            0,
-        )
-
-        t3 = result.get(
-            "target_3",
-            0,
-        )
-
-        t4 = result.get(
-            "target_4",
-            0,
-        )
-
-        def fmt(value):
-
-            try:
-                return f"{float(value):.2f}"
-            except Exception:
-                return "-"
-
         lines.append(
-            f"| {rank} | {symbol} | {setup} | "
-            f"{fmt(score)} | "
-            f"{fmt(price)} | "
-            f"{fmt(breakout_pct)} | "
-            f"{fmt(rsi)} | "
-            f"{fmt(rvol)} | "
-            f"{fmt(entry)} | "
-            f"{fmt(stop)} | "
-            f"{fmt(t1)} | "
-            f"{fmt(t2)} | "
-            f"{fmt(t3)} | "
-            f"{fmt(t4)} |"
+            f"| {rank} | "
+            f"{result.get('symbol', '')} | "
+            f"{result.get('setup', '')} | "
+            f"{fmt(result.get('score', 0))} | "
+            f"{fmt(result.get('price', 0))} | "
+            f"{fmt(result.get('breakout_pct', 0))} | "
+            f"{fmt(result.get('rsi', 0))} | "
+            f"{fmt(result.get('rvol', 0))} | "
+            f"{fmt(result.get('entry', 0))} | "
+            f"{fmt(result.get('stop_loss', 0))} | "
+            f"{fmt(result.get('target_1', 0))} | "
+            f"{fmt(result.get('target_2', 0))} | "
+            f"{fmt(result.get('target_3', 0))} | "
+            f"{fmt(result.get('target_4', 0))} |"
         )
 
     lines.append("")
@@ -638,9 +724,10 @@ def build_markdown(results, market_regime):
     lines.append("")
 
     lines.append(
-        "The scanner penalises excessive extension/chasing "
-        "and prioritises stocks that are close to or have "
-        "just completed a technically confirmed breakout."
+        "The scanner prioritises stocks that "
+        "are close to or have just completed "
+        "a technically confirmed breakout and "
+        "penalises excessive extension/chasing."
     )
 
     return "\n".join(lines)
@@ -650,38 +737,39 @@ def build_markdown(results, market_regime):
 # SAVE REPORTS
 # ============================================================
 
-def save_reports(results, market_regime):
+def save_reports(
+    results,
+    market_regime,
+):
 
     REPORT_DIR.mkdir(
         parents=True,
         exist_ok=True,
     )
 
-    # --------------------------------------------------------
-    # CSV
-    # --------------------------------------------------------
+    preferred_columns = [
+        "rank",
+        "symbol",
+        "setup",
+        "score",
+        "price",
+        "breakout_pct",
+        "rsi",
+        "rvol",
+        "entry",
+        "stop_loss",
+        "risk",
+        "target_1",
+        "target_2",
+        "target_3",
+        "target_4",
+    ]
 
     if results:
 
-        df = pd.DataFrame(results)
-
-        # Put the important columns first.
-        preferred_columns = [
-            "symbol",
-            "setup",
-            "score",
-            "price",
-            "breakout_pct",
-            "rsi",
-            "rvol",
-            "entry",
-            "stop_loss",
-            "risk",
-            "target_1",
-            "target_2",
-            "target_3",
-            "target_4",
-        ]
+        df = pd.DataFrame(
+            results
+        )
 
         ordered = []
 
@@ -703,32 +791,13 @@ def save_reports(results, market_regime):
     else:
 
         df = pd.DataFrame(
-            columns=[
-                "symbol",
-                "setup",
-                "score",
-                "price",
-                "breakout_pct",
-                "rsi",
-                "rvol",
-                "entry",
-                "stop_loss",
-                "risk",
-                "target_1",
-                "target_2",
-                "target_3",
-                "target_4",
-            ]
+            columns=preferred_columns
         )
 
     df.to_csv(
         CSV_FILE,
         index=False,
     )
-
-    # --------------------------------------------------------
-    # Markdown
-    # --------------------------------------------------------
 
     markdown = build_markdown(
         results,
@@ -745,22 +814,26 @@ def save_reports(results, market_regime):
     )
 
     print(
-        f"Markdown report saved: {MARKDOWN_FILE}"
+        f"Markdown report saved: "
+        f"{MARKDOWN_FILE}"
     )
 
 
 # ============================================================
-# CONSOLE SUMMARY
+# CONSOLE RESULTS
 # ============================================================
 
-def print_results(results, market_regime):
+def print_results(
+    results,
+    market_regime,
+):
 
     print("")
-    print("=" * 70)
+    print("=" * 75)
     print(
         "TRADING OS v12 — TOP SWING SETUPS"
     )
-    print("=" * 70)
+    print("=" * 75)
 
     print(
         f"Market regime : {market_regime}"
@@ -774,7 +847,7 @@ def print_results(results, market_regime):
         f"Maximum       : {MAX_RESULTS}"
     )
 
-    print("=" * 70)
+    print("=" * 75)
 
     if not results:
 
@@ -783,44 +856,30 @@ def print_results(results, market_regime):
         )
 
         print(
-            "The scanner will not manufacture "
-            "weak candidates to fill the list."
+            "The scanner will NOT manufacture "
+            "weak candidates to fill TOP 30."
         )
 
-        print("=" * 70)
+        print("=" * 75)
 
         return
 
     print(
         f"{'RK':<4}"
         f"{'STOCK':<14}"
-        f"{'SETUP':<17}"
-        f"{'SCORE':>6}"
+        f"{'SETUP':<18}"
+        f"{'SCORE':>7}"
         f"{'PRICE':>11}"
         f"{'RSI':>7}"
         f"{'RVOL':>7}"
     )
 
-    print("-" * 70)
+    print("-" * 75)
 
     for rank, result in enumerate(
         results,
         start=1,
     ):
-
-        symbol = str(
-            result.get(
-                "symbol",
-                "",
-            )
-        )
-
-        setup = str(
-            result.get(
-                "setup",
-                "",
-            )
-        )
 
         try:
             score = float(
@@ -864,37 +923,36 @@ def print_results(results, market_regime):
 
         print(
             f"{rank:<4}"
-            f"{symbol:<14}"
-            f"{setup:<17}"
-            f"{score:>6.1f}"
+            f"{str(result.get('symbol', '')):<14}"
+            f"{str(result.get('setup', '')):<18}"
+            f"{score:>7.1f}"
             f"{price:>11.2f}"
             f"{rsi:>7.1f}"
             f"{rvol:>7.2f}"
         )
 
-    print("=" * 70)
+    print("=" * 75)
 
-    print("")
     print(
-        "Four targets: T1 = 1R | T2 = 2R | "
+        "Targets: T1 = 1R | T2 = 2R | "
         "T3 = 3R | T4 = 4R"
     )
 
-    print("=" * 70)
+    print("=" * 75)
 
 
 # ============================================================
-# MAIN SCANNER
+# MAIN
 # ============================================================
 
 def main():
 
     print("")
-    print("=" * 70)
+    print("=" * 75)
     print(
         "TRADING OS v12 — HIGH QUALITY SWING SCANNER"
     )
-    print("=" * 70)
+    print("=" * 75)
 
     # --------------------------------------------------------
     # MARKET REGIME
@@ -907,7 +965,7 @@ def main():
     )
 
     # --------------------------------------------------------
-    # LOAD NSE UNIVERSE
+    # NSE UNIVERSE
     # --------------------------------------------------------
 
     print("")
@@ -915,38 +973,20 @@ def main():
         "Loading stock universe..."
     )
 
-    try:
-
-        symbols = get_nse_equity_symbols()
-
-    except Exception as exc:
-
-        print(
-            f"Universe loading failed: {exc}"
-        )
-
-        return
+    symbols = get_nse_equity_symbols()
 
     if not symbols:
 
         print(
-            "No symbols available."
+            "ERROR: NSE equity universe could "
+            "not be loaded."
         )
 
         return
 
-    # Remove duplicates immediately.
-
-    symbols = sorted(
-        set(
-            str(symbol).strip().upper()
-            for symbol in symbols
-            if str(symbol).strip()
-        )
-    )
-
     print(
-        f"{len(symbols)} symbols selected for scanning"
+        f"{len(symbols)} symbols selected "
+        f"for scanning"
     )
 
     # --------------------------------------------------------
@@ -955,19 +995,8 @@ def main():
 
     benchmark = get_benchmark_data()
 
-    if benchmark is None:
-
-        print(
-            "WARNING: Benchmark unavailable."
-        )
-
-        print(
-            "Relative-strength calculations may "
-            "be unavailable."
-        )
-
     # --------------------------------------------------------
-    # DOWNLOAD STOCK DATA
+    # STOCK DATA
     # --------------------------------------------------------
 
     print("")
@@ -978,7 +1007,7 @@ def main():
     try:
 
         # IMPORTANT:
-        # Do NOT pass chunk_size here.
+        # No chunk_size parameter.
         # The current downloader does not accept it.
 
         data_map = download_all(
@@ -998,7 +1027,7 @@ def main():
     if not data_map:
 
         print(
-            "No market data returned."
+            "No stock market data returned."
         )
 
         return
@@ -1009,7 +1038,7 @@ def main():
     )
 
     # --------------------------------------------------------
-    # SCORE EACH STOCK
+    # SCAN
     # --------------------------------------------------------
 
     results = []
@@ -1042,10 +1071,7 @@ def main():
         if df is None:
             continue
 
-        # ----------------------------------------------------
-        # Minimum history requirement
-        # ----------------------------------------------------
-
+        # Minimum data requirement.
         if len(df) < 220:
             continue
 
@@ -1059,9 +1085,7 @@ def main():
 
         except TypeError:
 
-            # Compatibility fallback in case the scoring
-            # engine uses positional arguments.
-
+            # Compatibility fallback.
             try:
 
                 result = score_stock(
@@ -1088,8 +1112,6 @@ def main():
             result
         )
 
-        # Progress every 250 symbols.
-
         if processed % 250 == 0:
 
             print(
@@ -1104,7 +1126,7 @@ def main():
     )
 
     # --------------------------------------------------------
-    # REMOVE DUPLICATES
+    # DUPLICATES
     # --------------------------------------------------------
 
     results = remove_duplicates(
@@ -1117,7 +1139,7 @@ def main():
     )
 
     # --------------------------------------------------------
-    # FINAL QUALITY FILTER
+    # QUALITY FILTER
     # --------------------------------------------------------
 
     results = final_quality_filter(
@@ -1130,12 +1152,12 @@ def main():
     )
 
     # --------------------------------------------------------
-    # RANK
+    # RANK BY SCORE
     # --------------------------------------------------------
 
     results.sort(
-        key=lambda item: float(
-            item.get(
+        key=lambda x: float(
+            x.get(
                 "score",
                 0,
             )
@@ -1152,7 +1174,7 @@ def main():
     ]
 
     # --------------------------------------------------------
-    # FINAL RANK ASSIGNMENT
+    # FINAL RANK
     # --------------------------------------------------------
 
     for rank, result in enumerate(
@@ -1163,7 +1185,7 @@ def main():
         result["rank"] = rank
 
     # --------------------------------------------------------
-    # REPORTS
+    # REPORT
     # --------------------------------------------------------
 
     save_reports(
@@ -1192,7 +1214,9 @@ def main():
     try:
 
         send_telegram_report(
-            csv_path=str(CSV_FILE)
+            csv_path=str(
+                CSV_FILE
+            )
         )
 
         print(
@@ -1200,9 +1224,6 @@ def main():
         )
 
     except TypeError:
-
-        # Compatibility fallback for a Telegram function
-        # that accepts the CSV path positionally.
 
         try:
 
@@ -1217,26 +1238,29 @@ def main():
         except Exception as exc:
 
             print(
-                f"Telegram report failed: {exc}"
+                f"Telegram report failed: "
+                f"{exc}"
             )
 
     except Exception as exc:
 
         print(
-            f"Telegram report failed: {exc}"
+            f"Telegram report failed: "
+            f"{exc}"
         )
 
     print("")
-    print("=" * 70)
+    print("=" * 75)
     print(
         "TRADING OS v12 SCAN COMPLETE"
     )
-    print("=" * 70)
+    print("=" * 75)
 
     if results:
 
         print(
-            f"Final candidates: {len(results)}"
+            f"Final candidates: "
+            f"{len(results)}"
         )
 
     else:
@@ -1245,7 +1269,7 @@ def main():
             "No high-quality candidates today."
         )
 
-    print("=" * 70)
+    print("=" * 75)
 
 
 # ============================================================
