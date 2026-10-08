@@ -1,38 +1,165 @@
 import pandas as pd
+
 from .downloader import download_index
-from .indicators import ema, rsi
-
-MIN_BARS = 220
 
 
-def analyse(df):
-    if df is None or len(df) < MIN_BARS:
+def _normalise_index_data(data):
+    """
+    Normalise index OHLCV data returned by yfinance/downloader.
+    """
+
+    if data is None or data.empty:
         return None
-    close = pd.to_numeric(df["Close"], errors="coerce").dropna()
-    e20 = float(ema(close, 20).iloc[-1])
-    e50 = float(ema(close, 50).iloc[-1])
-    e200 = float(ema(close, 200).iloc[-1])
-    r = float(rsi(close).iloc[-1])
-    score = int(close.iloc[-1] > e20) + int(e20 > e50) + 2 * int(e50 > e200) + int(r > 60)
-    return {"close": round(float(close.iloc[-1]), 2), "ema20": round(e20, 2), "ema50": round(e50, 2), "ema200": round(e200, 2), "rsi": round(r, 1), "score": score}
+
+    df = data.copy()
+
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = [
+            col[0] if isinstance(col, tuple) else col
+            for col in df.columns
+        ]
+
+    rename_map = {}
+
+    for col in df.columns:
+
+        name = str(col).lower()
+
+        if name == "open":
+            rename_map[col] = "Open"
+
+        elif name == "high":
+            rename_map[col] = "High"
+
+        elif name == "low":
+            rename_map[col] = "Low"
+
+        elif name == "close":
+            rename_map[col] = "Close"
+
+        elif name == "volume":
+            rename_map[col] = "Volume"
+
+    df = df.rename(
+        columns=rename_map
+    )
+
+    if "Close" not in df.columns:
+        return None
+
+    df["Close"] = pd.to_numeric(
+        df["Close"],
+        errors="coerce"
+    )
+
+    df = df.dropna(
+        subset=["Close"]
+    )
+
+    return df
 
 
-def get_market_status():
-    nifty = analyse(download_index("^NSEI", period="2y"))
-    bank = analyse(download_index("^NSEBANK", period="2y"))
-    if nifty is None and bank is None:
-        return {"MODE": "UNKNOWN", "NIFTY": "NA", "BANKNIFTY": "NA", "NIFTY_RSI": "NA", "BANK_RSI": "NA", "TOTAL_SCORE": 0}
-    ns = nifty["score"] if nifty else 0
-    bs = bank["score"] if bank else 0
-    total = ns + bs
-    mode = "BULLISH" if total >= 8 else "NEUTRAL" if total >= 5 else "DEFENSIVE"
-    return {
-        "MODE": mode,
-        "NIFTY": nifty["close"] if nifty else "NA",
-        "BANKNIFTY": bank["close"] if bank else "NA",
-        "NIFTY_RSI": nifty["rsi"] if nifty else "NA",
-        "BANK_RSI": bank["rsi"] if bank else "NA",
-        "NIFTY_SCORE": ns,
-        "BANK_SCORE": bs,
-        "TOTAL_SCORE": total,
-    }
+def get_market_regime():
+    """
+    Determine broad NIFTY market regime.
+
+    Returns:
+        BULLISH
+        NEUTRAL
+        BEARISH
+        UNKNOWN
+
+    This function deliberately uses the canonical
+    download_index() from scanner/core/downloader.py.
+    """
+
+    try:
+
+        data = download_index(
+            "^NSEI",
+            period="2y",
+            interval="1d",
+        )
+
+        data = _normalise_index_data(
+            data
+        )
+
+        if data is None:
+            return "UNKNOWN"
+
+        if len(data) < 220:
+            return "UNKNOWN"
+
+        close = data["Close"]
+
+        ema20 = (
+            close
+            .ewm(
+                span=20,
+                adjust=False
+            )
+            .mean()
+            .iloc[-1]
+        )
+
+        ema50 = (
+            close
+            .ewm(
+                span=50,
+                adjust=False
+            )
+            .mean()
+            .iloc[-1]
+        )
+
+        ema200 = (
+            close
+            .ewm(
+                span=200,
+                adjust=False
+            )
+            .mean()
+            .iloc[-1]
+        )
+
+        current = float(
+            close.iloc[-1]
+        )
+
+        bullish_conditions = 0
+
+        if current > ema20:
+            bullish_conditions += 1
+
+        if ema20 > ema50:
+            bullish_conditions += 1
+
+        if ema50 > ema200:
+            bullish_conditions += 1
+
+        if current > ema200:
+            bullish_conditions += 1
+
+        # Strong bullish structure
+        if bullish_conditions >= 4:
+            return "BULLISH"
+
+        # Reasonably constructive
+        if bullish_conditions >= 3:
+            return "BULLISH"
+
+        # Mixed market
+        if bullish_conditions >= 2:
+            return "NEUTRAL"
+
+        # Weak market
+        return "BEARISH"
+
+    except Exception as exc:
+
+        print(
+            f"Market regime calculation failed: {exc}"
+        )
+
+        return "UNKNOWN"
