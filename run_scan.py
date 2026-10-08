@@ -11,8 +11,13 @@ from scanner.core.downloader import (
     download_index,
 )
 
-from scanner.core.market import get_market_regime
-from scanner.core.scoring import score_stock
+from scanner.core.market import (
+    get_market_regime
+)
+
+from scanner.core.scoring import (
+    score_stock
+)
 
 
 # ============================================================
@@ -20,42 +25,65 @@ from scanner.core.scoring import score_stock
 # ============================================================
 
 UNIVERSE_SIZE = 1800
-TOP_RESULTS = 30
-MIN_SCORE = 60
+
+# Maximum, NOT target quantity.
+MAX_RESULTS = 30
+
+# Higher quality threshold.
+MIN_SCORE = 75
 
 PERIOD = "1y"
 INTERVAL = "1d"
+
 CHUNK_SIZE = 75
 
-REPORT_DIR = Path("reports")
+REPORT_DIR = Path(
+    "reports"
+)
 
-CSV_FILE = REPORT_DIR / "swing_scan.csv"
-MD_FILE = REPORT_DIR / "swing_scan.md"
+CSV_FILE = (
+    REPORT_DIR
+    / "swing_scan.csv"
+)
+
+MD_FILE = (
+    REPORT_DIR
+    / "swing_scan.md"
+)
 
 
 # ============================================================
 # HELPERS
 # ============================================================
 
-def safe_float(value, default=0.0):
+def safe_float(
+    value,
+    default=0.0
+):
+
     try:
         return float(value)
+
     except Exception:
+
         return default
 
 
-def deduplicate_results(results):
-    """
-    Make absolutely sure one symbol appears only once.
-    """
+def deduplicate_results(
+    results
+):
 
     seen = set()
+
     output = []
 
     for row in results:
 
         symbol = str(
-            row.get("Symbol", "")
+            row.get(
+                "Symbol",
+                ""
+            )
         ).strip().upper()
 
         if not symbol:
@@ -65,24 +93,29 @@ def deduplicate_results(results):
             continue
 
         seen.add(symbol)
+
         output.append(row)
 
     return output
 
 
-def build_markdown(df, market_regime):
-    """
-    Build human-readable report.
-    """
+def build_markdown(
+    df,
+    market_regime
+):
 
     lines = []
 
-    generated = datetime.now().strftime(
-        "%d-%m-%Y %H:%M:%S"
+    generated = (
+        datetime.now()
+        .strftime(
+            "%d-%m-%Y %H:%M:%S"
+        )
     )
 
     lines.append(
-        "# TRADING OS v12 — TOP SWING SETUPS"
+        "# TRADING OS v12 — "
+        "TOP SWING SETUPS"
     )
 
     lines.append("")
@@ -92,11 +125,13 @@ def build_markdown(df, market_regime):
     )
 
     lines.append(
-        f"Market Regime: {market_regime}"
+        f"Market Regime: "
+        f"{market_regime}"
     )
 
     lines.append(
-        f"Final Candidates: {len(df)}"
+        f"Qualified Stocks: "
+        f"{len(df)}"
     )
 
     lines.append("")
@@ -107,31 +142,37 @@ def build_markdown(df, market_regime):
 
     lines.append("")
 
-    display_columns = [
-        "Rank",
-        "Symbol",
-        "Setup",
-        "Score",
-        "BreakoutPct",
-        "RSI",
-        "RVOL",
-        "Entry",
-        "SL",
-        "T1",
-        "T2",
-        "T3",
-        "T4",
-    ]
+    if df.empty:
 
-    master = df[
-        display_columns
-    ].copy()
-
-    lines.append(
-        master.to_markdown(
-            index=False
+        lines.append(
+            "NO STOCKS PASSED THE "
+            "QUALITY FILTER."
         )
-    )
+
+    else:
+
+        columns = [
+            "Rank",
+            "Symbol",
+            "Setup",
+            "Score",
+            "BreakoutPct",
+            "RSI",
+            "RVOL",
+            "Entry",
+            "SL",
+            "T1",
+            "T2",
+            "T3",
+            "T4",
+        ]
+
+        lines.append(
+            df[columns]
+            .to_markdown(
+                index=False
+            )
+        )
 
     lines.append("")
 
@@ -139,25 +180,27 @@ def build_markdown(df, market_regime):
     # PRE-BREAKOUT
     # --------------------------------------------------------
 
-    pre = df[
-        df["Setup"] == "PRE-BREAKOUT"
-    ].copy()
-
     lines.append(
         "## PRE-BREAKOUT"
     )
 
     lines.append("")
 
+    pre = df[
+        df["Setup"]
+        == "PRE-BREAKOUT"
+    ]
+
     if pre.empty:
 
         lines.append(
-            "No qualifying pre-breakout stocks today."
+            "No qualifying "
+            "pre-breakout setups."
         )
 
     else:
 
-        pre_columns = [
+        columns = [
             "Rank",
             "Symbol",
             "Score",
@@ -174,7 +217,8 @@ def build_markdown(df, market_regime):
         ]
 
         lines.append(
-            pre[pre_columns].to_markdown(
+            pre[columns]
+            .to_markdown(
                 index=False
             )
         )
@@ -185,25 +229,27 @@ def build_markdown(df, market_regime):
     # FRESH BREAKOUT
     # --------------------------------------------------------
 
-    fresh = df[
-        df["Setup"] == "FRESH BREAKOUT"
-    ].copy()
-
     lines.append(
         "## FRESH BREAKOUT"
     )
 
     lines.append("")
 
+    fresh = df[
+        df["Setup"]
+        == "FRESH BREAKOUT"
+    ]
+
     if fresh.empty:
 
         lines.append(
-            "No qualifying fresh-breakout stocks today."
+            "No qualifying "
+            "fresh-breakout setups."
         )
 
     else:
 
-        fresh_columns = [
+        columns = [
             "Rank",
             "Symbol",
             "Score",
@@ -220,7 +266,8 @@ def build_markdown(df, market_regime):
         ]
 
         lines.append(
-            fresh[fresh_columns].to_markdown(
+            fresh[columns]
+            .to_markdown(
                 index=False
             )
         )
@@ -231,10 +278,9 @@ def build_markdown(df, market_regime):
         "---"
     )
 
-    lines.append("")
-
     lines.append(
-        "T1 = 1R | T2 = 2R | T3 = 3R | T4 = 4R"
+        "T1 = 1R | T2 = 2R | "
+        "T3 = 3R | T4 = 4R"
     )
 
     lines.append(
@@ -244,22 +290,30 @@ def build_markdown(df, market_regime):
     lines.append("")
 
     lines.append(
-        "This is a scanner/watchlist, not a guarantee of price movement."
+        "The number of stocks is "
+        "NOT forced to 30. Only "
+        "stocks clearing the quality "
+        "threshold are included."
     )
 
-    return "\n".join(lines)
+    return "\n".join(
+        lines
+    )
 
 
 # ============================================================
-# MAIN SCANNER
+# MAIN
 # ============================================================
 
 def main():
 
     print("")
-    print("=" * 60)
-    print("TRADING OS v12 — INSTITUTIONAL SWING SCANNER")
-    print("=" * 60)
+    print("=" * 65)
+    print(
+        "TRADING OS v12 — "
+        "HIGH QUALITY SWING SCANNER"
+    )
+    print("=" * 65)
     print("")
 
     REPORT_DIR.mkdir(
@@ -268,48 +322,59 @@ def main():
     )
 
     # --------------------------------------------------------
-    # MARKET REGIME
+    # MARKET
     # --------------------------------------------------------
 
     try:
 
-        market_regime = get_market_regime()
+        market_regime = (
+            get_market_regime()
+        )
 
     except Exception as exc:
 
         print(
-            f"Market regime unavailable: {exc}"
+            f"Market regime unavailable: "
+            f"{exc}"
         )
 
         market_regime = "UNKNOWN"
 
     print(
-        f"Market regime: {market_regime}"
+        f"Market regime: "
+        f"{market_regime}"
     )
 
     # --------------------------------------------------------
-    # STOCK UNIVERSE
+    # UNIVERSE
     # --------------------------------------------------------
 
     print("")
-    print("Loading stock universe...")
+    print(
+        "Loading stock universe..."
+    )
 
     try:
 
-        symbols = get_nse_equity_symbols(
-            limit=UNIVERSE_SIZE
+        symbols = (
+            get_nse_equity_symbols(
+                limit=UNIVERSE_SIZE
+            )
         )
 
     except TypeError:
 
-        symbols = get_nse_equity_symbols(
-            UNIVERSE_SIZE
+        symbols = (
+            get_nse_equity_symbols(
+                UNIVERSE_SIZE
+            )
         )
 
     except Exception as exc:
 
         print(
-            f"Unable to load universe: {exc}"
+            f"Universe loading failed: "
+            f"{exc}"
         )
 
         return 1
@@ -323,16 +388,18 @@ def main():
         return 1
 
     print(
-        f"{len(symbols)} symbols selected for scanning"
+        f"{len(symbols)} symbols "
+        "selected for scanning"
     )
 
     # --------------------------------------------------------
-    # DOWNLOAD DATA
+    # DOWNLOAD
     # --------------------------------------------------------
 
     print("")
     print(
-        "Downloading historical market data..."
+        "Downloading historical "
+        "market data..."
     )
 
     try:
@@ -347,7 +414,8 @@ def main():
     except Exception as exc:
 
         print(
-            f"Data download failed: {exc}"
+            f"Data download failed: "
+            f"{exc}"
         )
 
         return 1
@@ -365,24 +433,29 @@ def main():
     )
 
     # --------------------------------------------------------
-    # BENCHMARK
+    # NIFTY BENCHMARK
     # --------------------------------------------------------
 
     print("")
-    print("Downloading NIFTY benchmark...")
+    print(
+        "Downloading NIFTY benchmark..."
+    )
 
     try:
 
-        benchmark = download_index(
-            "^NSEI",
-            period=PERIOD,
-            interval=INTERVAL,
+        benchmark = (
+            download_index(
+                "^NSEI",
+                period=PERIOD,
+                interval=INTERVAL,
+            )
         )
 
     except Exception as exc:
 
         print(
-            f"Benchmark unavailable: {exc}"
+            f"Benchmark unavailable: "
+            f"{exc}"
         )
 
         benchmark = None
@@ -393,15 +466,19 @@ def main():
 
     print("")
     print(
-        "Running institutional scoring engine..."
+        "Running high-quality "
+        "scoring engine..."
     )
 
     results = []
 
     processed = 0
-    qualified = 0
 
-    for symbol, data in data_map.items():
+    classified = 0
+
+    for symbol, data in (
+        data_map.items()
+    ):
 
         processed += 1
 
@@ -414,68 +491,108 @@ def main():
         if result is None:
             continue
 
-        if safe_float(
-            result.get("Score")
-        ) < MIN_SCORE:
+        classified += 1
 
+        if (
+            safe_float(
+                result.get(
+                    "Score"
+                )
+            )
+            < MIN_SCORE
+        ):
             continue
 
-        results.append(result)
-        qualified += 1
+        results.append(
+            result
+        )
 
     print(
-        f"Charts processed: {processed}"
+        f"Charts processed: "
+        f"{processed}"
     )
 
     print(
-        f"Qualifying stocks: {qualified}"
+        f"Setup candidates before "
+        f"quality threshold: "
+        f"{classified}"
+    )
+
+    print(
+        f"Stocks above quality "
+        f"score {MIN_SCORE}: "
+        f"{len(results)}"
     )
 
     # --------------------------------------------------------
-    # DEDUPLICATE
+    # DEDUPLICATION
     # --------------------------------------------------------
 
-    results = deduplicate_results(
-        results
+    results = (
+        deduplicate_results(
+            results
+        )
     )
 
     # --------------------------------------------------------
-    # SORT
+    # RANKING
     # --------------------------------------------------------
 
     results.sort(
         key=lambda row: (
-            safe_float(row.get("Score")),
-            safe_float(row.get("StockRS")),
-            safe_float(row.get("RS60")),
-            safe_float(row.get("RS20")),
-            safe_float(row.get("RVOL")),
+            safe_float(
+                row.get(
+                    "Score"
+                )
+            ),
+
+            safe_float(
+                row.get(
+                    "StockRS"
+                )
+            ),
+
+            safe_float(
+                row.get(
+                    "RS60"
+                )
+            ),
+
+            safe_float(
+                row.get(
+                    "RS20"
+                )
+            ),
+
+            safe_float(
+                row.get(
+                    "RVOL"
+                )
+            ),
         ),
+
         reverse=True,
     )
 
     # --------------------------------------------------------
-    # TOP 30
+    # MAXIMUM 30
     # --------------------------------------------------------
 
     results = results[
-        :TOP_RESULTS
+        :MAX_RESULTS
     ]
 
     # --------------------------------------------------------
     # DATAFRAME
     # --------------------------------------------------------
 
-    df = pd.DataFrame(results)
+    df = pd.DataFrame(
+        results
+    )
 
     if df.empty:
 
-        print("")
-        print(
-            "No stocks qualified today."
-        )
-
-        empty_columns = [
+        columns = [
             "Rank",
             "Symbol",
             "Setup",
@@ -501,7 +618,7 @@ def main():
         ]
 
         df = pd.DataFrame(
-            columns=empty_columns
+            columns=columns
         )
 
     else:
@@ -512,7 +629,7 @@ def main():
             range(
                 1,
                 len(df) + 1
-            ),
+            )
         )
 
     # --------------------------------------------------------
@@ -526,42 +643,28 @@ def main():
 
     print("")
     print(
-        f"CSV report saved: {CSV_FILE}"
+        f"CSV saved: "
+        f"{CSV_FILE}"
     )
 
     # --------------------------------------------------------
-    # SAVE MARKDOWN
+    # MARKDOWN
     # --------------------------------------------------------
 
-    report_text = build_markdown(
+    report = build_markdown(
         df,
         market_regime
     )
 
     MD_FILE.write_text(
-        report_text,
+        report,
         encoding="utf-8"
     )
 
     print(
-        f"Markdown report saved: {MD_FILE}"
+        f"Report saved: "
+        f"{MD_FILE}"
     )
-
-    # --------------------------------------------------------
-    # ENVIRONMENT INFO
-    # --------------------------------------------------------
-
-    os.environ[
-        "TRADING_OS_GENERATED"
-    ] = datetime.now().isoformat()
-
-    os.environ[
-        "TRADING_OS_MARKET"
-    ] = str(market_regime)
-
-    os.environ[
-        "TRADING_OS_CANDIDATES"
-    ] = str(len(df))
 
     # --------------------------------------------------------
     # TELEGRAM
@@ -569,7 +672,9 @@ def main():
 
     try:
 
-        from telegram_push import send_scan_alert
+        from telegram_push import (
+            send_scan_alert
+        )
 
         print("")
         print(
@@ -583,21 +688,37 @@ def main():
     except Exception as exc:
 
         print(
-            f"Telegram alert failed: {exc}"
+            f"Telegram failed: "
+            f"{exc}"
         )
 
     # --------------------------------------------------------
-    # FINAL CONSOLE SUMMARY
+    # FINAL
     # --------------------------------------------------------
 
     print("")
-    print("=" * 60)
-    print(
-        f"FINAL WATCHLIST: {len(df)} STOCKS"
-    )
-    print("=" * 60)
+    print("=" * 65)
 
-    if not df.empty:
+    if df.empty:
+
+        print(
+            "NO HIGH-QUALITY SETUPS TODAY."
+        )
+
+        print(
+            "This is intentional. "
+            "The scanner does not fill "
+            "the watchlist artificially."
+        )
+
+    else:
+
+        print(
+            f"FINAL HIGH-QUALITY "
+            f"WATCHLIST: {len(df)}"
+        )
+
+        print("=" * 65)
 
         print(
             df[
@@ -620,7 +741,7 @@ def main():
 
     print("")
     print(
-        "Scanner completed successfully."
+        "Scanner completed."
     )
 
     return 0
@@ -637,7 +758,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
 
         print(
-            "\nScanner interrupted."
+            "Scanner interrupted."
         )
 
         sys.exit(1)
@@ -645,7 +766,8 @@ if __name__ == "__main__":
     except Exception as exc:
 
         print(
-            f"\nFatal scanner error: {exc}"
+            f"Fatal scanner error: "
+            f"{exc}"
         )
 
         sys.exit(1)
