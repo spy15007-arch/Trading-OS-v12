@@ -5,337 +5,420 @@ import pandas as pd
 import requests
 
 
-DEFAULT_REPORT = Path(
-    "reports/swing_scan.csv"
-)
+# ============================================================
+# TRADING OS v12 — TELEGRAM PUSH
+# ============================================================
 
-MAX_MESSAGE_LENGTH = 3900
+TELEGRAM_API = "https://api.telegram.org/bot{}/sendMessage"
 
-
-def _send_message(
-    token,
-    chat_id,
-    message,
-):
-
-    url = (
-        f"https://api.telegram.org/"
-        f"bot{token}/sendMessage"
-    )
-
-    response = requests.post(
-        url,
-        data={
-            "chat_id": chat_id,
-            "text": message,
-            "disable_web_page_preview": True,
-        },
-        timeout=30,
-    )
-
-    response.raise_for_status()
+DEFAULT_CSV = Path("reports/swing_scan.csv")
 
 
-def _split_message(
-    message,
-    max_length=MAX_MESSAGE_LENGTH,
-):
+# ============================================================
+# TELEGRAM CREDENTIALS
+# ============================================================
 
-    if len(message) <= max_length:
-        return [message]
+def get_credentials():
+    """
+    Read Telegram credentials from environment variables.
 
-    lines = message.splitlines()
+    GitHub Actions should provide:
 
-    chunks = []
+        TELEGRAM_BOT_TOKEN
+        TELEGRAM_CHAT_ID
+    """
 
-    current = ""
+    token = os.getenv(
+        "TELEGRAM_BOT_TOKEN",
+        "",
+    ).strip()
 
-    for line in lines:
+    chat_id = os.getenv(
+        "TELEGRAM_CHAT_ID",
+        "",
+    ).strip()
 
-        candidate = (
-            current
-            + line
-            + "\n"
-        )
-
-        if len(candidate) > max_length:
-
-            if current.strip():
-
-                chunks.append(
-                    current.rstrip()
-                )
-
-            current = (
-                line
-                + "\n"
-            )
-
-        else:
-
-            current = candidate
-
-    if current.strip():
-
-        chunks.append(
-            current.rstrip()
-        )
-
-    return chunks
+    return token, chat_id
 
 
-def _fmt(
-    value,
-    decimals=2,
-):
+# ============================================================
+# FORMAT NUMBER
+# ============================================================
+
+def fmt(value, decimals=2):
 
     try:
-
-        return (
-            f"{float(value):."
-            f"{decimals}f"
-        )
-
+        return f"{float(value):.{decimals}f}"
     except Exception:
-
         return "-"
 
 
-def _icon(
-    setup
-):
+# ============================================================
+# LOAD CSV
+# ============================================================
 
-    if setup == "FRESH BREAKOUT":
-        return "🚀"
+def load_results(csv_path):
 
-    if setup == "PRE-BREAKOUT":
-        return "👀"
-
-    return "📊"
-
-
-def _stock_message(
-    row
-):
-
-    symbol = str(
-        row["Symbol"]
+    path = Path(
+        csv_path
     )
 
-    setup = str(
-        row["Setup"]
-    )
-
-    return (
-        f"{_icon(setup)} "
-        f"{symbol} | {setup}\n"
-        f"Score: "
-        f"{_fmt(row['Score'], 0)}/100\n"
-        f"Breakout: "
-        f"{_fmt(row['BreakoutPct'])}% | "
-        f"RSI: "
-        f"{_fmt(row['RSI'])} | "
-        f"RVOL: "
-        f"{_fmt(row['RVOL'])}\n"
-        f"Entry: ₹{_fmt(row['Entry'])}\n"
-        f"SL: ₹{_fmt(row['SL'])}\n"
-        f"T1: ₹{_fmt(row['T1'])}\n"
-        f"T2: ₹{_fmt(row['T2'])}\n"
-        f"T3: ₹{_fmt(row['T3'])}\n"
-        f"T4: ₹{_fmt(row['T4'])}\n"
-        f"Extension: "
-        f"{_fmt(row['Extension'])}%"
-    )
-
-
-def _compact_message(
-    row
-):
-
-    return (
-        f"{_icon(row['Setup'])} "
-        f"{row['Symbol']} | "
-        f"{row['Setup']} | "
-        f"S{_fmt(row['Score'], 0)} | "
-        f"E{_fmt(row['Entry'])} | "
-        f"SL{_fmt(row['SL'])} | "
-        f"T1 {_fmt(row['T1'])} | "
-        f"T2 {_fmt(row['T2'])} | "
-        f"T3 {_fmt(row['T3'])} | "
-        f"T4 {_fmt(row['T4'])}"
-    )
-
-
-def send_scan_alert(
-    report_path=DEFAULT_REPORT
-):
-
-    token = os.getenv(
-        "TELEGRAM_BOT_TOKEN"
-    )
-
-    chat_id = os.getenv(
-        "TELEGRAM_CHAT_ID"
-    )
-
-    if not token or not chat_id:
+    if not path.exists():
 
         print(
-            "Telegram credentials "
-            "not configured."
+            f"Telegram: CSV not found: {path}"
         )
 
-        return False
+        return pd.DataFrame()
 
-    report_path = Path(
-        report_path
-    )
+    try:
 
-    if not report_path.exists():
+        df = pd.read_csv(
+            path
+        )
+
+        return df
+
+    except Exception as exc:
 
         print(
-            "Telegram report not found."
+            f"Telegram: unable to read CSV: {exc}"
         )
 
-        return False
+        return pd.DataFrame()
 
-    df = pd.read_csv(
-        report_path
+
+# ============================================================
+# BUILD TELEGRAM MESSAGE
+# ============================================================
+
+def build_telegram_message(df):
+
+    lines = []
+
+    lines.append(
+        "📊 TRADING OS v12"
+    )
+
+    lines.append(
+        "TOP SWING SETUPS"
+    )
+
+    lines.append(
+        "━━━━━━━━━━━━━━━━━━━━"
     )
 
     if df.empty:
 
-        message = (
-            "📊 TRADING OS v12\n\n"
-            "NO HIGH-QUALITY SETUPS "
-            "TODAY.\n\n"
-            "The scanner intentionally "
-            "did not fill the watchlist."
+        lines.append(
+            "No high-quality swing setups today."
         )
 
-        _send_message(
-            token,
-            chat_id,
-            message
+        lines.append("")
+        lines.append(
+            "Scanner did not fill the list with weak candidates."
         )
+
+        return "\n".join(lines)
+
+    lines.append(
+        f"Qualified: {len(df)}"
+    )
+
+    lines.append("")
+
+    # --------------------------------------------------------
+    # TOP 30
+    # --------------------------------------------------------
+
+    for index, row in df.head(30).iterrows():
+
+        try:
+
+            rank = int(
+                row.get(
+                    "rank",
+                    index + 1,
+                )
+            )
+
+        except Exception:
+
+            rank = index + 1
+
+        symbol = str(
+            row.get(
+                "symbol",
+                "",
+            )
+        ).strip()
+
+        setup = str(
+            row.get(
+                "setup",
+                "",
+            )
+        ).strip()
+
+        score = fmt(
+            row.get(
+                "score",
+                0,
+            ),
+            1,
+        )
+
+        price = fmt(
+            row.get(
+                "price",
+                0,
+            ),
+            2,
+        )
+
+        rsi = fmt(
+            row.get(
+                "rsi",
+                0,
+            ),
+            1,
+        )
+
+        rvol = fmt(
+            row.get(
+                "rvol",
+                0,
+            ),
+            2,
+        )
+
+        entry = fmt(
+            row.get(
+                "entry",
+                0,
+            ),
+            2,
+        )
+
+        stop = fmt(
+            row.get(
+                "stop_loss",
+                0,
+            ),
+            2,
+        )
+
+        t1 = fmt(
+            row.get(
+                "target_1",
+                0,
+            ),
+            2,
+        )
+
+        t2 = fmt(
+            row.get(
+                "target_2",
+                0,
+            ),
+            2,
+        )
+
+        t3 = fmt(
+            row.get(
+                "target_3",
+                0,
+            ),
+            2,
+        )
+
+        t4 = fmt(
+            row.get(
+                "target_4",
+                0,
+            ),
+            2,
+        )
+
+        lines.append(
+            f"{rank}. {symbol} | "
+            f"{setup}"
+        )
+
+        lines.append(
+            f"Score {score} | "
+            f"Price ₹{price} | "
+            f"RSI {rsi} | "
+            f"RVOL {rvol}"
+        )
+
+        lines.append(
+            f"Entry ₹{entry} | "
+            f"SL ₹{stop}"
+        )
+
+        lines.append(
+            f"T1 ₹{t1} | "
+            f"T2 ₹{t2} | "
+            f"T3 ₹{t3} | "
+            f"T4 ₹{t4}"
+        )
+
+        lines.append(
+            "━━━━━━━━━━━━━━━━━━━━"
+        )
+
+    lines.append("")
+    lines.append(
+        "T1=1R | T2=2R | T3=3R | T4=4R"
+    )
+
+    lines.append(
+        "R = Entry − Stop Loss"
+    )
+
+    return "\n".join(lines)
+
+
+# ============================================================
+# SEND TELEGRAM MESSAGE
+# ============================================================
+
+def send_telegram_message(
+    message,
+    token=None,
+    chat_id=None,
+):
+
+    if token is None or chat_id is None:
+
+        env_token, env_chat_id = get_credentials()
+
+        if token is None:
+            token = env_token
+
+        if chat_id is None:
+            chat_id = env_chat_id
+
+    if not token:
+
+        print(
+            "Telegram: TELEGRAM_BOT_TOKEN is not configured."
+        )
+
+        return False
+
+    if not chat_id:
+
+        print(
+            "Telegram: TELEGRAM_CHAT_ID is not configured."
+        )
+
+        return False
+
+    url = TELEGRAM_API.format(
+        token
+    )
+
+    payload = {
+        "chat_id": chat_id,
+        "text": message,
+        "disable_web_page_preview": True,
+    }
+
+    try:
+
+        response = requests.post(
+            url,
+            json=payload,
+            timeout=30,
+        )
+
+        if response.status_code != 200:
+
+            print(
+                "Telegram API error:"
+            )
+
+            print(
+                response.text
+            )
+
+            return False
+
+        data = response.json()
+
+        if not data.get(
+            "ok",
+            False,
+        ):
+
+            print(
+                "Telegram rejected message:"
+            )
+
+            print(
+                response.text
+            )
+
+            return False
 
         return True
 
-    pre_count = len(
-        df[
-            df["Setup"]
-            == "PRE-BREAKOUT"
-        ]
+    except Exception as exc:
+
+        print(
+            f"Telegram connection failed: {exc}"
+        )
+
+        return False
+
+
+# ============================================================
+# SEND REPORT
+# ============================================================
+
+def send_telegram_report(
+    csv_path=DEFAULT_CSV,
+):
+
+    print(
+        "Preparing Telegram report..."
     )
 
-    fresh_count = len(
-        df[
-            df["Setup"]
-            == "FRESH BREAKOUT"
-        ]
+    df = load_results(
+        csv_path
     )
 
-    top_score = float(
-        df["Score"].max()
+    message = build_telegram_message(
+        df
     )
 
-    header = (
-        "📊 TRADING OS v12\n"
-        "HIGH-QUALITY SWING SETUPS\n"
-        "━━━━━━━━━━━━━━━━━━━━\n"
-        f"Qualified: {len(df)}\n"
-        f"Pre-Breakout: {pre_count}\n"
-        f"Fresh Breakout: {fresh_count}\n"
-        f"Top Score: "
-        f"{top_score:.0f}/100\n"
-        "━━━━━━━━━━━━━━━━━━━━\n"
-        "T1=1R | T2=2R | "
-        "T3=3R | T4=4R\n"
-        "R = Entry - Stop Loss\n"
+    success = send_telegram_message(
+        message
     )
 
-    messages = []
+    if success:
 
-    # Show every stock in detail when there
-    # are only a few candidates.
-    if len(df) <= 10:
-
-        parts = [header]
-
-        for _, row in df.iterrows():
-
-            parts.append(
-                "\n"
-                + _stock_message(row)
-                + "\n"
-            )
-
-        messages.extend(
-            _split_message(
-                "\n".join(parts)
-            )
+        print(
+            "Telegram report sent successfully."
         )
 
     else:
 
-        parts = [
-            header,
-            "\n🏆 TOP SETUPS\n",
-        ]
-
-        for _, row in (
-            df.head(10).iterrows()
-        ):
-
-            parts.append(
-                "\n"
-                + _stock_message(row)
-                + "\n"
-            )
-
-        messages.extend(
-            _split_message(
-                "\n".join(parts)
-            )
+        print(
+            "Telegram report was not sent."
         )
 
-        remaining = df.iloc[10:]
+    return success
 
-        compact = [
-            "📋 REMAINING "
-            "QUALIFIED SETUPS\n"
-        ]
 
-        for _, row in (
-            remaining.iterrows()
-        ):
-
-            compact.append(
-                _compact_message(row)
-            )
-
-        messages.extend(
-            _split_message(
-                "\n".join(compact)
-            )
-        )
-
-    for message in messages:
-
-        _send_message(
-            token,
-            chat_id,
-            message
-        )
-
-    print(
-        f"Telegram sent: "
-        f"{len(messages)} message(s)"
-    )
-
-    return True
-
+# ============================================================
+# MAIN
+# ============================================================
 
 if __name__ == "__main__":
 
-    send_scan_alert()
+    send_telegram_report(
+        DEFAULT_CSV
+    )
