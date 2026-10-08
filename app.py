@@ -1,22 +1,13 @@
-import os
 from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 
 
-# ============================================================
-# CONFIG
-# ============================================================
-
 REPORT_FILE = Path(
     "reports/swing_scan.csv"
 )
 
-
-# ============================================================
-# PAGE
-# ============================================================
 
 st.set_page_config(
     page_title="Trading OS v12",
@@ -25,32 +16,24 @@ st.set_page_config(
 )
 
 
-# ============================================================
-# HEADER
-# ============================================================
-
 st.title(
-    "📊 Trading OS v12 — Swing Trading Dashboard"
+    "📊 Trading OS v12"
+)
+
+st.subheader(
+    "High-Quality Swing Setups"
 )
 
 st.caption(
-    "PRE-BREAKOUT + FRESH BREAKOUT | TOP 30"
+    "PRE-BREAKOUT + FRESH BREAKOUT | "
+    "Maximum 30 — not forced to 30"
 )
 
-
-# ============================================================
-# LOAD DATA
-# ============================================================
 
 if not REPORT_FILE.exists():
 
     st.error(
-        "No scan report found."
-    )
-
-    st.info(
-        "Run the scanner first to create "
-        "reports/swing_scan.csv"
+        "Latest scanner report not found."
     )
 
     st.stop()
@@ -64,15 +47,18 @@ df = pd.read_csv(
 if df.empty:
 
     st.warning(
-        "No qualifying swing setups in the latest scan."
+        "NO HIGH-QUALITY SETUPS "
+        "PASSED TODAY'S FILTER."
+    )
+
+    st.info(
+        "This is intentional. "
+        "The scanner does not manufacture "
+        "a TOP 30 list."
     )
 
     st.stop()
 
-
-# ============================================================
-# CLEAN DATA
-# ============================================================
 
 numeric_columns = [
     "Score",
@@ -96,6 +82,7 @@ numeric_columns = [
     "RiskPct",
 ]
 
+
 for column in numeric_columns:
 
     if column in df.columns:
@@ -106,75 +93,62 @@ for column in numeric_columns:
         )
 
 
-# ============================================================
-# COUNTS
-# ============================================================
-
 pre = df[
-    df["Setup"] == "PRE-BREAKOUT"
+    df["Setup"]
+    == "PRE-BREAKOUT"
 ]
 
 fresh = df[
-    df["Setup"] == "FRESH BREAKOUT"
+    df["Setup"]
+    == "FRESH BREAKOUT"
 ]
-
-
-top_score = (
-    float(df["Score"].max())
-    if not df.empty
-    else 0
-)
 
 
 # ============================================================
 # SUMMARY
 # ============================================================
 
-st.subheader(
-    "Market Snapshot"
-)
+a, b, c, d = st.columns(4)
 
-col1, col2, col3, col4 = st.columns(4)
-
-with col1:
+with a:
 
     st.metric(
-        "Final Watchlist",
+        "Qualified Stocks",
         len(df)
     )
 
-with col2:
+with b:
 
     st.metric(
         "Pre-Breakout",
         len(pre)
     )
 
-with col3:
+with c:
 
     st.metric(
         "Fresh Breakout",
         len(fresh)
     )
 
-with col4:
+with d:
 
     st.metric(
         "Top Score",
-        f"{top_score:.0f}/100"
+        f"{df['Score'].max():.0f}/100"
     )
 
 
-# ============================================================
-# MASTER RANKING
-# ============================================================
-
 st.divider()
 
-st.subheader(
-    "🏆 TOP 30 — MASTER RANKING"
-)
 
+# ============================================================
+# MASTER
+# ============================================================
+
+st.header(
+    "🏆 Master Ranking"
+)
 
 master_columns = [
     "Rank",
@@ -192,21 +166,14 @@ master_columns = [
     "T4",
 ]
 
-
-available_master = [
-    col
-    for col in master_columns
-    if col in df.columns
+master_columns = [
+    c
+    for c in master_columns
+    if c in df.columns
 ]
 
-
-master_display = df[
-    available_master
-].copy()
-
-
 st.dataframe(
-    master_display,
+    df[master_columns],
     use_container_width=True,
     hide_index=True,
 )
@@ -218,19 +185,19 @@ st.dataframe(
 
 st.divider()
 
-st.subheader(
+st.header(
     "👀 PRE-BREAKOUT"
 )
 
 if pre.empty:
 
     st.info(
-        "No pre-breakout setups today."
+        "No qualifying pre-breakout setup."
     )
 
 else:
 
-    pre_columns = [
+    columns = [
         "Rank",
         "Symbol",
         "Score",
@@ -246,14 +213,14 @@ else:
         "T4",
     ]
 
-    available_pre = [
-        col
-        for col in pre_columns
-        if col in pre.columns
+    columns = [
+        c
+        for c in columns
+        if c in pre.columns
     ]
 
     st.dataframe(
-        pre[available_pre],
+        pre[columns],
         use_container_width=True,
         hide_index=True,
     )
@@ -265,19 +232,19 @@ else:
 
 st.divider()
 
-st.subheader(
+st.header(
     "🚀 FRESH BREAKOUT"
 )
 
 if fresh.empty:
 
     st.info(
-        "No fresh-breakout setups today."
+        "No qualifying fresh-breakout setup."
     )
 
 else:
 
-    fresh_columns = [
+    columns = [
         "Rank",
         "Symbol",
         "Score",
@@ -293,160 +260,135 @@ else:
         "T4",
     ]
 
-    available_fresh = [
-        col
-        for col in fresh_columns
-        if col in fresh.columns
+    columns = [
+        c
+        for c in columns
+        if c in fresh.columns
     ]
 
     st.dataframe(
-        fresh[available_fresh],
+        fresh[columns],
         use_container_width=True,
         hide_index=True,
     )
 
 
 # ============================================================
-# STOCK DETAILS
+# DETAILS
 # ============================================================
 
 st.divider()
 
-st.subheader(
+st.header(
     "🔎 Stock Details"
 )
 
-
-symbols = df[
-    "Symbol"
-].astype(str).tolist()
-
-
 selected_symbol = st.selectbox(
-    "Select a stock",
-    symbols
+    "Select stock",
+    df["Symbol"].astype(str).tolist()
 )
 
-
-selected = df[
+row = df[
     df["Symbol"].astype(str)
     == selected_symbol
 ].iloc[0]
 
 
-# ------------------------------------------------------------
-# BASIC INFO
-# ------------------------------------------------------------
+x1, x2, x3, x4 = st.columns(4)
 
-info1, info2, info3, info4 = st.columns(4)
-
-with info1:
+with x1:
 
     st.metric(
         "Setup",
-        str(selected["Setup"])
+        row["Setup"]
     )
 
-with info2:
+with x2:
 
     st.metric(
         "Score",
-        f"{selected['Score']:.0f}/100"
+        f"{row['Score']:.0f}/100"
     )
 
-with info3:
+with x3:
 
     st.metric(
         "RSI",
-        f"{selected['RSI']:.1f}"
+        f"{row['RSI']:.1f}"
     )
 
-with info4:
+with x4:
 
     st.metric(
         "RVOL",
-        f"{selected['RVOL']:.2f}"
+        f"{row['RVOL']:.2f}"
     )
 
-
-# ------------------------------------------------------------
-# TECHNICAL DETAILS
-# ------------------------------------------------------------
 
 st.markdown(
     "### Technical Structure"
 )
 
+technical = pd.DataFrame(
+    {
+        "Metric": [
+            "Breakout %",
+            "RS20",
+            "RS60",
+            "Stock vs NIFTY",
+            "Base Range",
+            "Compression",
+            "Extension",
+            "Resistance",
+        ],
 
-tech_columns = [
-    "BreakoutPct",
-    "RS20",
-    "RS60",
-    "StockRS",
-    "BaseRange",
-    "Compression",
-    "Extension",
-    "Resistance",
-    "ClosingStrength",
-]
+        "Value": [
+            row["BreakoutPct"],
+            row["RS20"],
+            row["RS60"],
+            row["StockRS"],
+            row["BaseRange"],
+            row["Compression"],
+            row["Extension"],
+            row["Resistance"],
+        ],
+    }
+)
 
+st.dataframe(
+    technical,
+    use_container_width=True,
+    hide_index=True,
+)
 
-tech_data = {}
-
-for column in tech_columns:
-
-    if column in selected.index:
-
-        tech_data[column] = [
-            selected[column]
-        ]
-
-
-if tech_data:
-
-    tech_df = pd.DataFrame(
-        tech_data
-    )
-
-    st.dataframe(
-        tech_df,
-        use_container_width=True,
-        hide_index=True,
-    )
-
-
-# ============================================================
-# TRADE PLAN
-# ============================================================
 
 st.markdown(
     "### 🎯 Trade Plan"
 )
 
-
-trade_data = pd.DataFrame(
+trade_plan = pd.DataFrame(
     {
         "Level": [
             "Entry",
             "Stop Loss",
-            "Target 1",
-            "Target 2",
-            "Target 3",
-            "Target 4",
+            "T1",
+            "T2",
+            "T3",
+            "T4",
         ],
 
         "Price": [
-            selected["Entry"],
-            selected["SL"],
-            selected["T1"],
-            selected["T2"],
-            selected["T3"],
-            selected["T4"],
+            row["Entry"],
+            row["SL"],
+            row["T1"],
+            row["T2"],
+            row["T3"],
+            row["T4"],
         ],
 
-        "Meaning": [
-            "Reference entry",
-            "Risk control",
+        "Risk Multiple": [
+            "Entry",
+            "Risk Control",
             "1R",
             "2R",
             "3R",
@@ -455,30 +397,26 @@ trade_data = pd.DataFrame(
     }
 )
 
-
 st.dataframe(
-    trade_data,
+    trade_plan,
     use_container_width=True,
     hide_index=True,
 )
 
 
-# ============================================================
-# FOOTER
-# ============================================================
-
 st.divider()
 
 st.caption(
-    "T1 = 1R | T2 = 2R | T3 = 3R | T4 = 4R"
+    "T1 = 1R | T2 = 2R | "
+    "T3 = 3R | T4 = 4R"
 )
 
 st.caption(
-    "R = Entry − Stop Loss"
+    "The scanner uses a maximum of 30 "
+    "stocks but does not force 30 stocks."
 )
 
 st.caption(
-    "Trading OS v12 is a screening and "
-    "decision-support system, not a guarantee "
-    "of future price movement."
+    "A scanner score is a ranking measure, "
+    "not a prediction or guarantee."
 )
