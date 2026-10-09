@@ -1,192 +1,387 @@
+"""Reliable, rate-limit-aware Yahoo Finance downloader for Trading OS v12."""
+
+from __future__ import annotations
+
 import io
 import time
+from typing import Dict, Iterable, Optional
 
 import pandas as pd
 import requests
 import yfinance as yf
 
-BROAD_UNIVERSE_URLS = [
-    "https://archives.nseindia.com/content/equities/EQUITY_L.csv",
-    "https://archives.nseindia.com/content/equities/EQUITY_L_N.csv",
-]
+NIFTY50_URL = "https://www.niftyindices.com/IndexConstituent/ind_nifty50list.csv"
+NIFTY_NEXT50_URL = "https://www.niftyindices.com/IndexConstituent/ind_niftynext50list.csv"
 
-FALLBACK_SYMBOLS = [
-    "RELIANCE", "HDFCBANK", "ICICIBANK", "SBIN", "INFY", "TCS",
-    "LT", "AXISBANK", "KOTAKBANK", "BHARTIARTL", "ITC", "MARUTI",
-    "SUNPHARMA", "TITAN", "M&M", "HINDUNILVR", "BAJFINANCE", "DIXON",
-    "POLYCAB", "TRENT", "CGPOWER", "PERSISTENT", "KEI", "BSE",
-]
+HTTP_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 Chrome/126.0 Safari/537.36"
+    ),
+    "Accept": "text/csv,text/plain,*/*",
+    "Referer": "https://www.niftyindices.com/",
+}
 
-
-def _clean_symbol(symbol):
-    s = str(symbol).strip().upper()
-    return s if s and s not in {"NAN", "NONE"} else None
+OHLCV = ("Open", "High", "Low", "Close", "Volume")
 
 
-def _normalize_yf(df, ticker=None):
-    if df is None:
+def _clean_symbol(value) -> Optional[str]:
+    symbol = str(value).strip().upper()
+
+    if not symbol or symbol in {"NAN", "NONE", "NULL"}:
+        return None
+
+    return symbol.removesuffix(".NS")
+
+
+def _read_constituents(url: str) -> list[str]:
+    response = requests.get(
+        url,
+        headers=HTTP_HEADERS,
+        timeout=25,
+    )
+    response.raise_for_status()
+
+    if not response.content:
+        raise RuntimeError(f"Empty response from {url}")
+
+    frame = pd.read_csv(io.BytesIO(response.content))
+
+    symbol_col = next(
+        (
+            column
+            for column in frame.columns
+            if str(column).strip().upper() == "SYMBOL"
+        ),
+        None,
+    )
+
+    if symbol_col is None:
+        raise RuntimeError(f"SYMBOL column missing from {url}")
+
+    symbols = [_clean_symbol(value) for value in frame[symbol_col].tolist()]
+
+    return list(
+        dict.fromkeys(
+            f"{symbol}.NS"
+            for symbol in symbols
+            if symbol
+        )
+    )
+
+
+def get_nifty50_next50_symbols() -> list[str]:
+    """Return the official Nifty 50 + Nifty Next 50 universe.
+
+    Fails closed if either constituent file cannot be loaded. It does not
+    silently substitute a partial or broad NSE universe.
+    """
+    print("Loading official Nifty 50 and Nifty Next 50 constituents...")
+
+    nifty50 = _read_constituents(NIFTY50_URL)
+    next50 = _read_constituents(NIFTY_NEXT50_URL)
+
+    if not 45 <= len(nifty50) <= 55:
+        raise RuntimeError(
+            f"Unexpected Nifty 50 constituent count: {len(nifty50)}"
+        )
+
+    if not 45 <= len(next50) <= 55:
+        raise RuntimeError(
+            f"Unexpected Nifty Next 50 constituent count: {len(next50)}"
+        )
+
+    symbols = list(dict.fromkeys(nifty50 + next50))
+
+    if not 90 <= len(symbols) <= 110:
+        raise RuntimeError(
+            f"Unexpected combined universe count: {len(symbols)}"
+        )
+
+    print(
+        f"Universe loaded: {len(nifty50)} Nifty 50 + "
+        f"{len(next50)} Next 50; {len(symbols)} unique symbols"
+    )
+
+    return symbols
+
+
+def get_nse_equity_symbols(limit: int = 1800) -> list[str]:
+    """Compatibility alias; returns the Nifty 100 universe for this project."""
+    symbols = get_nifty50_next50_symbols()
+    return symbols[:limit] if limit else symbols
+
+
+def get_fno_symbols() -> list[str]:
+    return get_nifty50_next50_symbols()
+
+
+def get_nse500() -> list[str]:
+    """Compatibility function; Trading OS v12 uses the Nifty 100 universe."""
+    return get_nifty50_next50_symbols()
+
+
+def _normalise_yf(
+    frame: pd.DataFrame,
+    ticker: Optional[str] = None,
+) -> pd.DataFrame:
+    if frame is None or not isinstance(frame, pd.DataFrame) or frame.empty:
         return pd.DataFrame()
 
-    if not isinstance(df, pd.DataFrame):
-        return pd.DataFrame()
-
-    if df.empty:
-        return pd.DataFrame()
+    df = frame.copy()
 
     if isinstance(df.columns, pd.MultiIndex):
+        # yfinance may return (Ticker, Price) or (Price, Ticker).
         if ticker:
+            ticker_variants = {
+                ticker,
+                ticker.upper(),
+                ticker.replace(".NS", ""),
+                ticker.replace(".NS", "").upper(),
+            }
+
             for level in range(df.columns.nlevels):
-                vals = [str(x) for x in df.columns.get_level_values(level)]
-                if ticker in vals:
+                values = {
+                    str(value)
+                    for value in df.columns.get_level_values(level)
+                }
+
+                match = next(
+                    (value for value in ticker_variants if value in values),
+                    None,
+                )
+
+                if match is not None:
                     try:
-                        df = df.xs(ticker, axis=1, level=level, drop_level=True)
+                        df = df.xs(
+                            match,
+                            axis=1,
+                            level=level,
+                            drop_level=True,
+                        )
                         break
-                    except Exception:
+                    except (KeyError, ValueError, TypeError):
                         pass
 
         if isinstance(df.columns, pd.MultiIndex):
-            df.columns = [str(c[0]) for c in df.columns]
+            flattened = []
+            known = {field.lower(): field for field in OHLCV}
 
-    if df.empty:
-        return pd.DataFrame()
+            for column in df.columns:
+                parts = [
+                    str(part).strip()
+                    for part in (
+                        column if isinstance(column, tuple) else (column,)
+                    )
+                ]
 
-    rename = {str(c).strip().title(): str(c).strip().title() for c in df.columns}
+                field = next(
+                    (
+                        known[part.lower()]
+                        for part in parts
+                        if part.lower() in known
+                    ),
+                    parts[0],
+                )
+
+                flattened.append(field)
+
+            df.columns = flattened
+
+    rename = {}
+    known = {field.lower(): field for field in OHLCV}
+
+    for column in df.columns:
+        name = str(column).strip()
+
+        if name.lower() in known:
+            rename[column] = known[name.lower()]
+
     df = df.rename(columns=rename)
+    df = df.loc[:, ~df.columns.duplicated(keep="first")]
 
-    needed = ["Open", "High", "Low", "Close", "Volume"]
-    if not all(c in df.columns for c in needed):
+    if not all(column in df.columns for column in OHLCV):
         return pd.DataFrame()
 
-    normalized = df[needed].apply(pd.to_numeric, errors="coerce").dropna()
-    return normalized if not normalized.empty else pd.DataFrame()
+    df = df.loc[:, list(OHLCV)].copy()
+
+    for column in OHLCV:
+        df[column] = pd.to_numeric(df[column], errors="coerce")
+
+    df = df.dropna(
+        subset=["Open", "High", "Low", "Close", "Volume"]
+    )
+
+    return df.sort_index() if not df.empty else pd.DataFrame()
 
 
-def get_nse_equity_symbols(limit=1800):
-    print("Downloading NSE equity universe...")
-    for url in BROAD_UNIVERSE_URLS:
+def _download_batch(
+    batch: list[str],
+    period: str,
+    interval: str,
+) -> dict[str, pd.DataFrame]:
+    """Download a small batch, retrying transient errors."""
+    last_error = None
+
+    for attempt in range(3):
         try:
-            response = requests.get(url, timeout=25, headers={"User-Agent": "Mozilla/5.0"})
-            response.raise_for_status()
-            if not response.content:
-                continue
-
-            df = pd.read_csv(io.BytesIO(response.content))
-            if df.empty:
-                continue
-
-            column = next((c for c in df.columns if str(c).strip().upper() == "SYMBOL"), None)
-            if not column:
-                continue
-
-            symbols = []
-            for symbol in df[column].tolist():
-                cleaned = _clean_symbol(symbol)
-                if cleaned:
-                    symbols.append(f"{cleaned}.NS")
-
-            symbols = list(dict.fromkeys(symbols))
-            if len(symbols) >= 500:
-                symbols = symbols[:limit]
-                print(f"broad nse universe: {len(symbols)} symbols")
-                return symbols
-
-        except Exception as exc:
-            print(f"universe source failed: {exc}")
-
-    fallback_symbols = [f"{symbol}.NS" for symbol in FALLBACK_SYMBOLS]
-    fallback_symbols = fallback_symbols[:limit]
-    print(f"using fallback universe: {len(fallback_symbols)} symbols")
-    return fallback_symbols
-
-
-def get_fno_symbols():
-    return get_nse_equity_symbols(1800)
-
-
-def get_nse500():
-    return get_nse_equity_symbols(500)
-
-
-def download_all(tickers, period="1y", interval="1d", chunk=75):
-    tickers = [str(t).strip() for t in (tickers or []) if str(t).strip()]
-    database = {}
-    total = len(tickers)
-
-    if total == 0:
-        print("No tickers supplied for download.")
-        return database
-
-    print(f"Downloading {total} symbols...")
-
-    for start in range(0, total, chunk):
-        batch = tickers[start:start + chunk]
-
-        try:
-            data = yf.download(
+            raw = yf.download(
                 tickers=batch,
                 period=period,
                 interval=interval,
                 group_by="ticker",
                 auto_adjust=True,
-                threads=True,
+                threads=False,
                 progress=False,
                 prepost=False,
+                timeout=30,
             )
 
-            if isinstance(data, dict):
-                mapping = data
-            elif isinstance(data, pd.DataFrame):
-                mapping = {}
-                for ticker in batch:
-                    try:
-                        mapping[ticker] = data[ticker]
-                    except Exception:
-                        pass
-            else:
-                mapping = {}
+            output: dict[str, pd.DataFrame] = {}
 
             for ticker in batch:
-                try:
-                    frame = mapping.get(ticker)
-                    if frame is None and isinstance(data, pd.DataFrame):
-                        frame = data[ticker]
-                    df = _normalize_yf(frame, ticker)
-                    if len(df) >= 220:
-                        database[ticker] = df
-                except Exception:
-                    continue
+                frame = None
+
+                if isinstance(raw, pd.DataFrame):
+                    if isinstance(raw.columns, pd.MultiIndex):
+                        for level in range(raw.columns.nlevels):
+                            values = {
+                                str(value)
+                                for value in raw.columns.get_level_values(level)
+                            }
+
+                            if ticker in values:
+                                try:
+                                    frame = raw.xs(
+                                        ticker,
+                                        axis=1,
+                                        level=level,
+                                        drop_level=True,
+                                    )
+                                    break
+                                except Exception:
+                                    pass
+
+                    elif len(batch) == 1:
+                        frame = raw
+
+                normalized = _normalise_yf(frame, ticker)
+
+                if len(normalized) >= 220:
+                    output[ticker] = normalized
+
+            return output
 
         except Exception as exc:
-            print(f"download batch failed: {exc}")
+            last_error = exc
+            message = str(exc).lower()
 
-        print(f"Progress: {min(start + len(batch), total)}/{total} | Charts: {len(database)}")
-        time.sleep(0.05)
+            if "rate" in message or "429" in message or "too many" in message:
+                wait = 5 * (2 ** attempt)
+            else:
+                wait = 2 * (attempt + 1)
 
-    return database
+            print(
+                f"Download attempt {attempt + 1}/3 failed "
+                f"for batch of {len(batch)}: {exc}"
+            )
+
+            if attempt < 2:
+                time.sleep(wait)
+
+    print(f"Batch abandoned after retries: {last_error}")
+    return {}
 
 
-def download_stock(symbol, period="1y", interval="1d"):
+def download_all(
+    tickers: Iterable[str],
+    period: str = "1y",
+    interval: str = "1d",
+    chunk: int = 10,
+) -> Dict[str, pd.DataFrame]:
+    """Download symbols in serial batches to reduce Yahoo Finance throttling."""
+    cleaned = list(
+        dict.fromkeys(
+            str(ticker).strip()
+            for ticker in (tickers or [])
+            if str(ticker).strip()
+        )
+    )
+
+    if not cleaned:
+        print("No tickers supplied for download.")
+        return {}
+
+    chunk = max(1, min(int(chunk or 10), 15))
+    results: Dict[str, pd.DataFrame] = {}
+
+    print(
+        f"Downloading {len(cleaned)} symbols "
+        f"in serial batches of up to {chunk}..."
+    )
+
+    for start in range(0, len(cleaned), chunk):
+        batch = cleaned[start:start + chunk]
+        batch_data = _download_batch(batch, period, interval)
+        results.update(batch_data)
+
+        print(
+            f"Progress: {min(start + len(batch), len(cleaned))}/"
+            f"{len(cleaned)} | Valid charts: {len(results)}"
+        )
+
+        if start + chunk < len(cleaned):
+            time.sleep(2.0)
+
+    return results
+
+
+def download_stock(
+    symbol: str,
+    period: str = "1y",
+    interval: str = "1d",
+) -> pd.DataFrame:
     symbol = str(symbol).strip()
+
     if not symbol:
         return pd.DataFrame()
 
     try:
-        data = yf.download(
+        raw = yf.download(
             symbol,
             period=period,
             interval=interval,
             progress=False,
             auto_adjust=True,
             threads=False,
+            timeout=30,
         )
-        return _normalize_yf(data, symbol)
-    except Exception:
-        return pd.DataFrame()
+
+        df = _normalise_yf(raw, symbol)
+
+        if len(df) >= 1:
+            return df
+
+    except Exception as exc:
+        print(f"Single-symbol download failed for {symbol}: {exc}")
+
+    return pd.DataFrame()
 
 
-def download_index(symbol, period="2y", interval="1d"):
+def download_index(
+    symbol: str,
+    period: str = "2y",
+    interval: str = "1d",
+) -> pd.DataFrame:
     return download_stock(symbol, period=period, interval=interval)
 
 
-def download_watchlist(watchlist):
-    return download_all(watchlist, period="1y", interval="1d", chunk=50)
+def download_watchlist(
+    watchlist: Iterable[str],
+) -> dict[str, pd.DataFrame]:
+    return download_all(
+        watchlist,
+        period="1y",
+        interval="1d",
+        chunk=10,
+    )
