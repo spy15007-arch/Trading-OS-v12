@@ -1,5 +1,4 @@
-"""Trading OS v12: selective Nifty 50 + Nifty Next 50 swing scanner."""
-
+"""Trading OS v12: selective Nifty 500 swing scanner."""
 from pathlib import Path
 import math
 
@@ -7,7 +6,7 @@ import pandas as pd
 
 from scanner.core.downloader import (
     download_all,
-    get_nifty50_next50_symbols,
+    get_nifty500_symbols,
 )
 from scanner.core.market import get_market_regime
 from scanner.core.scoring import score_stock
@@ -48,35 +47,35 @@ ALLOWED_SETUPS = {"PRE-BREAKOUT", "FRESH BREAKOUT"}
 
 
 def normalise_dataframe(data):
-    if data is None or not isinstance(data, pd.DataFrame) or data.empty:
+    """Normalize downloaded OHLCV data into a consistent format."""
+    if (
+        data is None
+        or not isinstance(data, pd.DataFrame)
+        or data.empty
+    ):
         return None
 
     df = data.copy()
 
     if isinstance(df.columns, pd.MultiIndex):
-        names = []
+        flattened = []
 
         for column in df.columns:
-            parts = [
-                str(value).strip()
-                for value in (
-                    column if isinstance(column, tuple) else (column,)
-                )
-            ]
+            parts = column if isinstance(column, tuple) else (column,)
 
-            wanted = next(
+            match = next(
                 (
-                    value
-                    for value in parts
-                    if value.lower()
+                    str(part).strip()
+                    for part in parts
+                    if str(part).strip().lower()
                     in {"open", "high", "low", "close", "volume"}
                 ),
-                parts[0],
+                str(parts[0]),
             )
 
-            names.append(wanted)
+            flattened.append(match)
 
-        df.columns = names
+        df.columns = flattened
 
     rename = {
         column: {
@@ -98,7 +97,10 @@ def normalise_dataframe(data):
         return None
 
     for column in required:
-        df[column] = pd.to_numeric(df[column], errors="coerce")
+        df[column] = pd.to_numeric(
+            df[column],
+            errors="coerce",
+        )
 
     df = df.dropna(subset=required).sort_index()
 
@@ -106,24 +108,28 @@ def normalise_dataframe(data):
 
 
 def get_benchmark_data():
+    """Download Nifty 50 benchmark history."""
     try:
-        benchmark_map = download_all(
+        data = download_all(
             ["^NSEI"],
             period="2y",
             interval=INTERVAL,
             chunk=1,
         )
 
-        benchmark = normalise_dataframe(benchmark_map.get("^NSEI"))
+        benchmark = normalise_dataframe(data.get("^NSEI"))
 
         if benchmark is None or len(benchmark) < 100:
             print(
                 "Benchmark unavailable or insufficient; "
-                "scan will be marked incomplete."
+                "scan is incomplete."
             )
             return None
 
-        print(f"NIFTY 50 benchmark loaded: {len(benchmark)} sessions")
+        print(
+            f"NIFTY 50 benchmark loaded: {len(benchmark)} sessions"
+        )
+
         return benchmark
 
     except Exception as exc:
@@ -132,6 +138,7 @@ def get_benchmark_data():
 
 
 def _num(value, default=0.0):
+    """Convert a value to a finite float safely."""
     try:
         number = float(value)
         return number if math.isfinite(number) else default
@@ -140,6 +147,7 @@ def _num(value, default=0.0):
 
 
 def clean_result(result, symbol):
+    """Normalize scorer output and calculate four risk-based targets."""
     if not isinstance(result, dict):
         return None
 
@@ -179,30 +187,35 @@ def clean_result(result, symbol):
     )
 
     out["stop_loss"] = _num(
-        out.get("stop_loss", out.get("stop", out.get("sl", 0)))
+        out.get(
+            "stop_loss",
+            out.get("stop", out.get("sl", 0)),
+        )
     )
 
     out["risk"] = out["entry"] - out["stop_loss"]
 
-    if out["risk"] > 0:
-        for multiple in range(1, 5):
-            out[f"target_{multiple}"] = (
-                out["entry"] + multiple * out["risk"]
-            )
-    else:
-        for multiple in range(1, 5):
-            out[f"target_{multiple}"] = 0.0
+    for multiple in range(1, 5):
+        out[f"target_{multiple}"] = (
+            out["entry"] + multiple * out["risk"]
+            if out["risk"] > 0
+            else 0.0
+        )
 
     return out
 
 
 def remove_duplicates(results):
+    """Keep only the highest-scoring result for each symbol."""
     best = {}
 
     for result in results:
         symbol = str(result.get("symbol", "")).strip().upper()
 
-        if symbol and (
+        if not symbol:
+            continue
+
+        if (
             symbol not in best
             or _num(result.get("score"))
             > _num(best[symbol].get("score"))
@@ -213,21 +226,26 @@ def remove_duplicates(results):
 
 
 def final_quality_filter(results):
+    """Apply minimum score, setup and risk validation."""
     accepted = []
 
     for result in results:
-        score = _num(result.get("score"))
-        setup = str(result.get("setup", "")).strip().upper()
         entry = _num(result.get("entry"))
         stop = _num(result.get("stop_loss"))
+        score = _num(result.get("score"))
+        setup = str(result.get("setup", "")).strip().upper()
 
-        if score < MIN_SCORE or setup not in ALLOWED_SETUPS:
+        if score < MIN_SCORE:
+            continue
+
+        if setup not in ALLOWED_SETUPS:
             continue
 
         if entry <= 0 or stop <= 0 or stop >= entry:
             continue
 
         risk = entry - stop
+
         result["risk"] = risk
 
         for multiple in range(1, 5):
@@ -240,6 +258,7 @@ def final_quality_filter(results):
 
 def _fmt(value):
     number = _num(value, float("nan"))
+
     return f"{number:.2f}" if math.isfinite(number) else "-"
 
 
@@ -252,14 +271,17 @@ def build_markdown(results, market_regime, status, coverage_text):
         f"**Data coverage:** {coverage_text}",
         f"**Qualified setups:** {len(results)}",
         "",
-        "> Universe: official Nifty 50 + Nifty Next 50 constituents.",
+        (
+            "> Universe: official Nifty 50 + Nifty Next 50 "
+            "+ Nifty Midcap 150 + Nifty Smallcap 250 constituents."
+        ),
         "> Maximum 30 candidates; weak setups are not added to fill the list.",
         "> R = Entry − Stop Loss; targets are T1=1R, T2=2R, T3=3R, T4=4R.",
         "",
     ]
 
     if status != "COMPLETE":
-        lines.extend([
+        lines += [
             "## Important: scan incomplete",
             "",
             (
@@ -271,38 +293,53 @@ def build_markdown(results, market_regime, status, coverage_text):
                 "Retry after data access is restored."
             ),
             "",
-        ])
+        ]
 
     elif not results:
-        lines.extend([
-            "No PRE-BREAKOUT or FRESH BREAKOUT setup met the quality threshold today.",
+        lines += [
+            (
+                "No PRE-BREAKOUT or FRESH BREAKOUT setup met "
+                "the quality threshold today."
+            ),
             "",
-        ])
+        ]
 
     else:
-        lines.extend([
-            "| Rank | Symbol | Setup | Score | Price | Breakout % | RSI | RVOL | Entry | SL | R | T1 | T2 | T3 | T4 |",
-            "|---:|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
-        ])
+        lines += [
+            (
+                "| Rank | Symbol | Setup | Score | Price | Breakout % "
+                "| RSI | RVOL | Entry | SL | R | T1 | T2 | T3 | T4 |"
+            ),
+            (
+                "|---:|---|---|---:|---:|---:|---:|---:|---:|---:|"
+                "---:|---:|---:|---:|---:|"
+            ),
+        ]
 
         for rank, result in enumerate(results, 1):
             values = [
                 str(rank),
                 str(result.get("symbol", "")),
                 str(result.get("setup", "")),
-                _fmt(result.get("score")),
-                _fmt(result.get("price")),
-                _fmt(result.get("breakout_pct")),
-                _fmt(result.get("rsi")),
-                _fmt(result.get("rvol")),
-                _fmt(result.get("entry")),
-                _fmt(result.get("stop_loss")),
-                _fmt(result.get("risk")),
-                _fmt(result.get("target_1")),
-                _fmt(result.get("target_2")),
-                _fmt(result.get("target_3")),
-                _fmt(result.get("target_4")),
             ]
+
+            values.extend(
+                _fmt(result.get(column))
+                for column in (
+                    "score",
+                    "price",
+                    "breakout_pct",
+                    "rsi",
+                    "rvol",
+                    "entry",
+                    "stop_loss",
+                    "risk",
+                    "target_1",
+                    "target_2",
+                    "target_3",
+                    "target_4",
+                )
+            )
 
             lines.append("| " + " | ".join(values) + " |")
 
@@ -329,7 +366,11 @@ def save_reports(
 
     df = df[
         REPORT_COLUMNS
-        + [column for column in df.columns if column not in REPORT_COLUMNS]
+        + [
+            column
+            for column in df.columns
+            if column not in REPORT_COLUMNS
+        ]
     ]
 
     df.to_csv(CSV_FILE, index=False)
@@ -352,10 +393,13 @@ def print_results(results, market_regime, status, coverage_text):
     print("\n" + "=" * 78)
     print("TRADING OS v12 — HIGH QUALITY SWING SCANNER")
     print(
-        f"Status: {status} | Market regime: {market_regime} | "
-        f"Coverage: {coverage_text}"
+        f"Status: {status} | Market regime: {market_regime} "
+        f"| Coverage: {coverage_text}"
     )
-    print(f"Qualified candidates: {len(results)} | Maximum: {MAX_RESULTS}")
+    print(
+        f"Qualified candidates: {len(results)} "
+        f"| Maximum: {MAX_RESULTS}"
+    )
     print("=" * 78)
 
     if status != "COMPLETE":
@@ -377,32 +421,41 @@ def print_results(results, market_regime, status, coverage_text):
         f"{'SCORE':>7}{'PRICE':>11}{'RSI':>7}{'RVOL':>7}"
     )
 
-    for rank, result in enumerate(results, 1):
+    for result_rank, result in enumerate(results, 1):
         print(
-            f"{rank:<4}{result['symbol']:<16}{result['setup']:<19}"
+            f"{result_rank:<4}"
+            f"{result['symbol']:<16}"
+            f"{result['setup']:<19}"
             f"{_num(result['score']):>7.1f}"
             f"{_num(result['price']):>11.2f}"
             f"{_num(result['rsi']):>7.1f}"
             f"{_num(result['rvol']):>7.2f}"
         )
 
-    print("Targets: T1=1R | T2=2R | T3=3R | T4=4R; R=Entry−Stop Loss")
+    print(
+        "Targets: T1=1R | T2=2R | T3=3R | T4=4R; "
+        "R=Entry−Stop Loss"
+    )
 
 
 def main():
     print(
         "\n"
         + "=" * 78
-        + "\nTRADING OS v12 — SELECTIVE NIFTY 100 SWING SCANNER\n"
+        + "\nTRADING OS v12 — SELECTIVE NIFTY 500 SWING SCANNER\n"
         + "=" * 78
     )
 
-    market_regime = get_market_regime()
+    try:
+        market_regime = get_market_regime()
+    except Exception as exc:
+        market_regime = "UNKNOWN"
+        print(f"Market regime unavailable: {exc}")
+
     print(f"Market regime: {market_regime}")
 
-    # Fail closed if either official constituents file cannot be loaded.
     try:
-        symbols = get_nifty50_next50_symbols()
+        symbols = get_nifty500_symbols()
 
     except Exception as exc:
         print(f"Universe loading failed: {exc}")
@@ -495,11 +548,12 @@ def main():
 
     results = []
 
-    print("Scanning for PRE-BREAKOUT and FRESH BREAKOUT setups...")
+    print(
+        "Scanning for PRE-BREAKOUT and FRESH BREAKOUT setups..."
+    )
 
     for symbol in symbols:
-        raw = data_map.get(symbol)
-        df = normalise_dataframe(raw)
+        df = normalise_dataframe(data_map.get(symbol))
 
         if df is None or len(df) < MIN_HISTORY_BARS:
             continue
@@ -530,10 +584,12 @@ def main():
 
     print(f"Raw qualifying results: {len(results)}")
 
-    results = final_quality_filter(remove_duplicates(results))
+    results = final_quality_filter(
+        remove_duplicates(results)
+    )
 
     results.sort(
-        key=lambda item: _num(item.get("score")),
+        key=lambda result: _num(result.get("score")),
         reverse=True,
     )
 
@@ -556,7 +612,6 @@ def main():
         coverage_text,
     )
 
-    # Only send a shortlist when data coverage is sufficient.
     try:
         send_telegram_report(csv_path=str(CSV_FILE))
         print("Telegram report sent.")
