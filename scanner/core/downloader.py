@@ -1,5 +1,4 @@
-"""Reliable, rate-limit-aware Yahoo Finance downloader for Trading OS v12."""
-
+"""Reliable, rate-limit-aware market data downloader for Trading OS v12."""
 from __future__ import annotations
 
 import io
@@ -12,6 +11,8 @@ import yfinance as yf
 
 NIFTY50_URL = "https://www.niftyindices.com/IndexConstituent/ind_nifty50list.csv"
 NIFTY_NEXT50_URL = "https://www.niftyindices.com/IndexConstituent/ind_niftynext50list.csv"
+NIFTY_MIDCAP150_URL = "https://www.niftyindices.com/IndexConstituent/ind_niftymidcap150list.csv"
+NIFTY_SMALLCAP250_URL = "https://www.niftyindices.com/IndexConstituent/ind_niftysmallcap250list.csv"
 
 HTTP_HEADERS = {
     "User-Agent": (
@@ -71,13 +72,7 @@ def _read_constituents(url: str) -> list[str]:
 
 
 def get_nifty50_next50_symbols() -> list[str]:
-    """Return the official Nifty 50 + Nifty Next 50 universe.
-
-    Fails closed if either constituent file cannot be loaded. It does not
-    silently substitute a partial or broad NSE universe.
-    """
-    print("Loading official Nifty 50 and Nifty Next 50 constituents...")
-
+    """Compatibility function: official Nifty 50 + Nifty Next 50."""
     nifty50 = _read_constituents(NIFTY50_URL)
     next50 = _read_constituents(NIFTY_NEXT50_URL)
 
@@ -91,49 +86,88 @@ def get_nifty50_next50_symbols() -> list[str]:
             f"Unexpected Nifty Next 50 constituent count: {len(next50)}"
         )
 
-    symbols = list(dict.fromkeys(nifty50 + next50))
+    combined = list(dict.fromkeys(nifty50 + next50))
 
-    if not 90 <= len(symbols) <= 110:
+    if not 90 <= len(combined) <= 110:
         raise RuntimeError(
-            f"Unexpected combined universe count: {len(symbols)}"
+            f"Unexpected combined Nifty 100 count: {len(combined)}"
+        )
+
+    print(f"Nifty 100 universe loaded: {len(combined)} unique symbols")
+    return combined
+
+
+def get_nifty500_symbols() -> list[str]:
+    """Official Nifty 50 + Next 50 + Midcap 150 + Smallcap 250 universe."""
+    groups = [
+        ("Nifty 50", NIFTY50_URL, 45, 55),
+        ("Nifty Next 50", NIFTY_NEXT50_URL, 45, 55),
+        ("Nifty Midcap 150", NIFTY_MIDCAP150_URL, 140, 160),
+        ("Nifty Smallcap 250", NIFTY_SMALLCAP250_URL, 240, 260),
+    ]
+
+    combined: list[str] = []
+    summary = []
+
+    for name, url, minimum, maximum in groups:
+        symbols = _read_constituents(url)
+
+        if not minimum <= len(symbols) <= maximum:
+            raise RuntimeError(
+                f"Unexpected {name} constituent count: {len(symbols)}"
+            )
+
+        summary.append(f"{name}={len(symbols)}")
+        combined.extend(symbols)
+
+    unique = list(dict.fromkeys(combined))
+
+    if not 480 <= len(unique) <= 520:
+        raise RuntimeError(
+            f"Unexpected combined Nifty 500 count: {len(unique)}"
         )
 
     print(
-        f"Universe loaded: {len(nifty50)} Nifty 50 + "
-        f"{len(next50)} Next 50; {len(symbols)} unique symbols"
+        "Nifty 500 universe loaded: "
+        + ", ".join(summary)
+        + f"; {len(unique)} unique symbols"
     )
 
-    return symbols
+    return unique
 
 
 def get_nse_equity_symbols(limit: int = 1800) -> list[str]:
-    """Compatibility alias; returns the Nifty 100 universe for this project."""
-    symbols = get_nifty50_next50_symbols()
+    """Compatibility function; returns the expanded Nifty 500 universe."""
+    symbols = get_nifty500_symbols()
     return symbols[:limit] if limit else symbols
 
 
 def get_fno_symbols() -> list[str]:
-    return get_nifty50_next50_symbols()
+    """Compatibility function for older scanner modules."""
+    return get_nifty500_symbols()
 
 
 def get_nse500() -> list[str]:
-    """Compatibility function; Trading OS v12 uses the Nifty 100 universe."""
-    return get_nifty50_next50_symbols()
+    """Compatibility function for older scanner modules."""
+    return get_nifty500_symbols()
 
 
 def _normalise_yf(
     frame: pd.DataFrame,
     ticker: Optional[str] = None,
 ) -> pd.DataFrame:
-    if frame is None or not isinstance(frame, pd.DataFrame) or frame.empty:
+    if (
+        frame is None
+        or not isinstance(frame, pd.DataFrame)
+        or frame.empty
+    ):
         return pd.DataFrame()
 
     df = frame.copy()
 
     if isinstance(df.columns, pd.MultiIndex):
-        # yfinance may return (Ticker, Price) or (Price, Ticker).
         if ticker:
-            ticker_variants = {
+            variants = {
                 ticker,
                 ticker.upper(),
                 ticker.replace(".NS", ""),
@@ -147,7 +181,7 @@ def _normalise_yf(
                 }
 
                 match = next(
-                    (value for value in ticker_variants if value in values),
+                    (value for value in variants if value in values),
                     None,
                 )
 
@@ -164,40 +198,35 @@ def _normalise_yf(
                         pass
 
         if isinstance(df.columns, pd.MultiIndex):
-            flattened = []
             known = {field.lower(): field for field in OHLCV}
+            flattened = []
 
             for column in df.columns:
-                parts = [
-                    str(part).strip()
-                    for part in (
-                        column if isinstance(column, tuple) else (column,)
-                    )
-                ]
-
-                field = next(
+                parts = column if isinstance(column, tuple) else (column,)
+                match = next(
                     (
-                        known[part.lower()]
+                        known[str(part).lower()]
                         for part in parts
-                        if part.lower() in known
+                        if str(part).lower() in known
                     ),
-                    parts[0],
+                    None,
                 )
-
-                flattened.append(field)
+                flattened.append(
+                    match or str(parts[0])
+                )
 
             df.columns = flattened
 
-    rename = {}
     known = {field.lower(): field for field in OHLCV}
 
-    for column in df.columns:
-        name = str(column).strip()
+    df = df.rename(
+        columns={
+            column: known[str(column).strip().lower()]
+            for column in df.columns
+            if str(column).strip().lower() in known
+        }
+    )
 
-        if name.lower() in known:
-            rename[column] = known[name.lower()]
-
-    df = df.rename(columns=rename)
     df = df.loc[:, ~df.columns.duplicated(keep="first")]
 
     if not all(column in df.columns for column in OHLCV):
@@ -208,9 +237,7 @@ def _normalise_yf(
     for column in OHLCV:
         df[column] = pd.to_numeric(df[column], errors="coerce")
 
-    df = df.dropna(
-        subset=["Open", "High", "Low", "Close", "Volume"]
-    )
+    df = df.dropna(subset=list(OHLCV))
 
     return df.sort_index() if not df.empty else pd.DataFrame()
 
@@ -220,7 +247,6 @@ def _download_batch(
     period: str,
     interval: str,
 ) -> dict[str, pd.DataFrame]:
-    """Download a small batch, retrying transient errors."""
     last_error = None
 
     for attempt in range(3):
@@ -237,7 +263,7 @@ def _download_batch(
                 timeout=30,
             )
 
-            output: dict[str, pd.DataFrame] = {}
+            output = {}
 
             for ticker in batch:
                 frame = None
@@ -245,12 +271,10 @@ def _download_batch(
                 if isinstance(raw, pd.DataFrame):
                     if isinstance(raw.columns, pd.MultiIndex):
                         for level in range(raw.columns.nlevels):
-                            values = {
+                            if ticker in {
                                 str(value)
                                 for value in raw.columns.get_level_values(level)
-                            }
-
-                            if ticker in values:
+                            }:
                                 try:
                                     frame = raw.xs(
                                         ticker,
@@ -259,7 +283,11 @@ def _download_batch(
                                         drop_level=True,
                                     )
                                     break
-                                except Exception:
+                                except (
+                                    KeyError,
+                                    ValueError,
+                                    TypeError,
+                                ):
                                     pass
 
                     elif len(batch) == 1:
@@ -276,10 +304,15 @@ def _download_batch(
             last_error = exc
             message = str(exc).lower()
 
-            if "rate" in message or "429" in message or "too many" in message:
-                wait = 5 * (2 ** attempt)
-            else:
-                wait = 2 * (attempt + 1)
+            wait = (
+                5 * (2 ** attempt)
+                if (
+                    "rate" in message
+                    or "429" in message
+                    or "too many" in message
+                )
+                else 2 * (attempt + 1)
+            )
 
             print(
                 f"Download attempt {attempt + 1}/3 failed "
@@ -299,7 +332,6 @@ def download_all(
     interval: str = "1d",
     chunk: int = 10,
 ) -> Dict[str, pd.DataFrame]:
-    """Download symbols in serial batches to reduce Yahoo Finance throttling."""
     cleaned = list(
         dict.fromkeys(
             str(ticker).strip()
@@ -322,12 +354,11 @@ def download_all(
 
     for start in range(0, len(cleaned), chunk):
         batch = cleaned[start:start + chunk]
-        batch_data = _download_batch(batch, period, interval)
-        results.update(batch_data)
+        results.update(_download_batch(batch, period, interval))
 
         print(
-            f"Progress: {min(start + len(batch), len(cleaned))}/"
-            f"{len(cleaned)} | Valid charts: {len(results)}"
+            f"Progress: {min(start + len(batch), len(cleaned))}"
+            f"/{len(cleaned)} | Valid charts: {len(results)}"
         )
 
         if start + chunk < len(cleaned):
@@ -373,7 +404,11 @@ def download_index(
     period: str = "2y",
     interval: str = "1d",
 ) -> pd.DataFrame:
-    return download_stock(symbol, period=period, interval=interval)
+    return download_stock(
+        symbol,
+        period=period,
+        interval=interval,
+    )
 
 
 def download_watchlist(
