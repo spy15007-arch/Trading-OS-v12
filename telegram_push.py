@@ -131,48 +131,62 @@ def _prepare_results(df):
 
 
 def build_telegram_message(df):
-    """Build a compact report suitable for reading on a phone."""
+    """Build a compact, phone-friendly report grouped by setup category."""
     data = _prepare_results(df)
     lines = [
         "📊 TRADING OS v12",
-        "PRE-BREAKOUT / FRESH BREAKOUT",
+        "STRICT QUALITY FILTERS | PRE-BREAKOUT / FRESH BREAKOUT",
         "━━━━━━━━━━━━━━━━━━━━",
+        f"Qualified: {len(data)} (max {MAX_RESULTS})",
+        "Weak setups are never added just to fill the list.",
+        "",
     ]
 
-    if data.empty:
-        lines.extend([
-            "No qualified setups today.",
-            "Weak candidates are not added to fill the list.",
-        ])
-        return "\n".join(lines)
+    sections = [
+        ("BREAKOUT STOCKS", "BREAKOUT"),
+        ("PRE-BREAKOUT", "PRE-BREAKOUT"),
+        ("FRESH BREAKOUT", "FRESH BREAKOUT"),
+    ]
 
-    lines.append(f"Qualified: {len(data)} (max {MAX_RESULTS})")
-    lines.append("")
+    rank = 0
+    for heading, setup in sections:
+        lines.extend([f"🔹 {heading}", "━━━━━━━━━━━━━━━━━━━━"])
+        matches = data[data["setup"].eq(setup)] if not data.empty else data
 
-    for index, row in data.iterrows():
-        rank = index + 1
-        symbol = str(row.get("symbol", "")).strip()
-        setup = str(row.get("setup", "")).strip()
-        lines.append(f"{rank}. {symbol} | {setup}")
-        lines.append(
-            f"Score {fmt(row.get('score'), 1)} | "
-            f"Price ₹{fmt(row.get('price', row.get('entry')))}"
-        )
-        lines.append(
-            f"RSI {fmt(row.get('rsi'), 1)} | RVOL {fmt(row.get('rvol'))}"
-        )
-        lines.append(
-            f"Entry ₹{fmt(row.get('entry'))} | SL ₹{fmt(row.get('stop_loss'))}"
-        )
-        lines.append(
-            f"T1 ₹{fmt(row.get('target_1'))} | T2 ₹{fmt(row.get('target_2'))} | "
-            f"T3 ₹{fmt(row.get('target_3'))} | T4 ₹{fmt(row.get('target_4'))}"
-        )
-        lines.append("━━━━━━━━━━━━━━━━━━━━")
+        if matches.empty:
+            if setup == "BREAKOUT":
+                lines.append("No candidates — current strict scorer has no separate generic BREAKOUT category.")
+            else:
+                lines.append("No qualified setups in this category today.")
+            lines.append("")
+            continue
 
-    lines.extend(["", "Targets: T1=1R | T2=2R | T3=3R | T4=4R", "R = Entry − Stop Loss"])
+        for _, row in matches.iterrows():
+            rank += 1
+            symbol = str(row.get("symbol", "")).strip()
+            lines.append(f"{rank}. {symbol} | {setup}")
+            lines.append(
+                f"Score {fmt(row.get('score'), 1)} | "
+                f"Price ₹{fmt(row.get('price', row.get('entry')))}"
+            )
+            lines.append(
+                f"RSI {fmt(row.get('rsi'), 1)} | RVOL {fmt(row.get('rvol'))}"
+            )
+            lines.append(
+                f"Entry ₹{fmt(row.get('entry'))} | SL ₹{fmt(row.get('stop_loss'))}"
+            )
+            lines.append(
+                f"T1 ₹{fmt(row.get('target_1'))} | T2 ₹{fmt(row.get('target_2'))} | "
+                f"T3 ₹{fmt(row.get('target_3'))} | T4 ₹{fmt(row.get('target_4'))}"
+            )
+            lines.append("━━━━━━━━━━━━━━━━━━━━")
+        lines.append("")
+
+    lines.extend([
+        "Targets: T1=1R | T2=2R | T3=3R | T4=4R",
+        "R = Entry − Stop Loss",
+    ])
     return "\n".join(lines)
-
 
 def split_telegram_message(message, max_length=MAX_MESSAGE_LENGTH):
     """Split long reports at line boundaries to respect Telegram's limit."""
