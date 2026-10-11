@@ -845,15 +845,37 @@ def score_stock(
             ),
         )
 
+        # Keep legacy capitalized keys for existing consumers and also
+        # expose canonical lowercase keys for the scanner/report pipeline.
         return {
             "Symbol": symbol or "",
             "Setup": setup,
             "Score": score,
+            "BreakoutPct": round(breakout_pct, 2),
+            "RSI": round(momentum["rsi"], 2),
+            "RVOL": round(volume["rvol"], 2),
+            "Entry": trade["entry"],
+            "SL": trade["sl"],
+            "T1": trade["t1"],
+            "T2": trade["t2"],
+            "T3": trade["t3"],
+            "T4": trade["t4"],
+            "RiskPct": trade["risk_pct"],
 
-            "BreakoutPct": round(
-                breakout_pct,
-                2
-            ),
+            "symbol": symbol or "",
+            "setup": setup,
+            "score": score,
+            "breakout_pct": round(breakout_pct, 2),
+            "rsi": round(momentum["rsi"], 2),
+            "rvol": round(volume["rvol"], 2),
+            "price": trade["entry"],
+            "entry": trade["entry"],
+            "stop_loss": trade["sl"],
+            "target_1": trade["t1"],
+            "target_2": trade["t2"],
+            "target_3": trade["t3"],
+            "target_4": trade["t4"],
+            "risk_pct": trade["risk_pct"],
 
             "RS20": round(
                 rs20,
