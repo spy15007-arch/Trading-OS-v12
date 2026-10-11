@@ -297,8 +297,8 @@ def build_markdown(results, market_regime, status, coverage_text, summary=None):
             "> Universe: official Nifty 50 + Nifty Next 50 "
             "+ Nifty Midcap 150 + Nifty Smallcap 250 constituents."
         ),
-        "> Strict quality filters remain enabled: score >= 75, valid risk levels, and PRE-BREAKOUT/FRESH BREAKOUT only.",
-        "> Maximum 30 unique candidates; the scanner will not add weak setups to fill the list.",
+        "> Strict filters: score >= 75, valid risk levels, and PRE-BREAKOUT/FRESH BREAKOUT only.",
+        f"> Shortlist capacity: {MAX_RESULTS}; only qualified stocks are listed below.",
         "> R = Entry − Stop Loss; targets are T1=1R, T2=2R, T3=3R, T4=4R.",
         "",
     ]
@@ -368,11 +368,11 @@ def build_markdown(results, market_regime, status, coverage_text, summary=None):
         matches = [item for item in results if str(item.get("setup", "")).upper() == setup]
         if not matches:
             if setup == "BREAKOUT":
-                lines.append(
-                    "No candidates. The current strict scorer does not generate a separate generic BREAKOUT label."
-                )
+                lines.append("No candidates cleared the BREAKOUT category.")
+            elif setup == "FRESH BREAKOUT":
+                lines.append("No candidates cleared the FRESH BREAKOUT category.")
             else:
-                lines.append("No candidates met the strict quality filters today.")
+                lines.append("No candidates cleared the PRE-BREAKOUT category.")
             lines.append("")
             continue
 
@@ -663,7 +663,8 @@ def main():
         if cleaned:
             results.append(cleaned)
 
-    print(f"Raw qualifying results: {len(results)}")
+    raw_setup_count = len(results)
+    print(f"Raw setup candidates: {raw_setup_count}")
 
     results = final_quality_filter(
         remove_duplicates(results)
@@ -679,11 +680,18 @@ def main():
     for rank, result in enumerate(results, 1):
         result["rank"] = rank
 
+    scan_summary = {
+        "stocks_in_universe": len(symbols),
+        "valid_data_count": valid_count,
+        "raw_setup_count": raw_setup_count,
+    }
+
     save_reports(
         results,
         market_regime,
         "COMPLETE",
         coverage_text,
+        scan_summary,
     )
 
     print_results(
