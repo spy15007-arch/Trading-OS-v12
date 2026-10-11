@@ -845,15 +845,22 @@ def score_stock(
             ),
         )
 
-        # Keep legacy capitalized keys for existing consumers and also
-        # expose canonical lowercase keys for the scanner/report pipeline.
+        # Keep legacy keys for existing consumers and expose canonical fields.
         return {
             "Symbol": symbol or "",
             "Setup": setup,
             "Score": score,
             "BreakoutPct": round(breakout_pct, 2),
+            "RS20": round(rs20, 2),
+            "RS60": round(rs60, 2),
+            "StockRS": round(stock_rs, 2),
             "RSI": round(momentum["rsi"], 2),
             "RVOL": round(volume["rvol"], 2),
+            "BaseRange": round(base_range, 2),
+            "Compression": round(compression, 2),
+            "Extension": round(trend["extension"], 2),
+            "Resistance": round(resistance, 2),
+            "ClosingStrength": round(candle["closing_strength"], 2),
             "Entry": trade["entry"],
             "SL": trade["sl"],
             "T1": trade["t1"],
@@ -866,8 +873,16 @@ def score_stock(
             "setup": setup,
             "score": score,
             "breakout_pct": round(breakout_pct, 2),
+            "rs20": round(rs20, 2),
+            "rs60": round(rs60, 2),
+            "stock_rs": round(stock_rs, 2),
             "rsi": round(momentum["rsi"], 2),
             "rvol": round(volume["rvol"], 2),
+            "base_range": round(base_range, 2),
+            "compression": round(compression, 2),
+            "extension": round(trend["extension"], 2),
+            "resistance": round(resistance, 2),
+            "closing_strength": round(candle["closing_strength"], 2),
             "price": trade["entry"],
             "entry": trade["entry"],
             "stop_loss": trade["sl"],
@@ -876,64 +891,6 @@ def score_stock(
             "target_3": trade["t3"],
             "target_4": trade["t4"],
             "risk_pct": trade["risk_pct"],
-
-            "RS20": round(
-                rs20,
-                2
-            ),
-
-            "RS60": round(
-                rs60,
-                2
-            ),
-
-            "StockRS": round(
-                stock_rs,
-                2
-            ),
-
-            "RSI": round(
-                momentum["rsi"],
-                2
-            ),
-
-            "RVOL": round(
-                volume["rvol"],
-                2
-            ),
-
-            "BaseRange": round(
-                base_range,
-                2
-            ),
-
-            "Compression": round(
-                compression,
-                2
-            ),
-
-            "Extension": round(
-                trend["extension"],
-                2
-            ),
-
-            "Resistance": round(
-                resistance,
-                2
-            ),
-
-            "ClosingStrength": round(
-                candle["closing_strength"],
-                2
-            ),
-
-            "Entry": trade["entry"],
-            "SL": trade["sl"],
-            "T1": trade["t1"],
-            "T2": trade["t2"],
-            "T3": trade["t3"],
-            "T4": trade["t4"],
-            "RiskPct": trade["risk_pct"],
         }
 
     except Exception:
