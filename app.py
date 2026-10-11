@@ -1,422 +1,189 @@
+"""Streamlit dashboard for the latest Trading OS v12 scan."""
+import json
 from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 
 
-REPORT_FILE = Path(
-    "reports/swing_scan.csv"
-)
+REPORT_DIR = Path("reports")
+REPORT_FILE = REPORT_DIR / "swing_scan.csv"
+SUMMARY_FILE = REPORT_DIR / "scan_summary.json"
+MAX_RESULTS = 30
+
+st.set_page_config(page_title="Trading OS v12", page_icon="📊", layout="wide")
+st.title("📊 Trading OS v12")
+st.subheader("High-Quality Swing Setups")
+st.caption("PRE-BREAKOUT + FRESH BREAKOUT | Maximum 30 qualified stocks; no forced list")
 
 
-st.set_page_config(
-    page_title="Trading OS v12",
-    page_icon="📊",
-    layout="wide",
-)
+def load_summary():
+    try:
+        return json.loads(SUMMARY_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
 
 
-st.title(
-    "📊 Trading OS v12"
-)
+def normalize_columns(frame):
+    """Accept current lowercase CSV headers and older mixed-case headers."""
+    frame = frame.copy()
+    frame.columns = [str(column).strip().lower() for column in frame.columns]
+    frame = frame.loc[:, ~frame.columns.duplicated(keep="first")].copy()
+    aliases = {
+        "symbol": ("symbol", "ticker"),
+        "setup": ("setup", "setup_type"),
+        "score": ("score", "total_score"),
+        "price": ("price", "close"),
+        "breakout_pct": ("breakout_pct", "breakoutdistance_pct"),
+        "rsi": ("rsi",),
+        "rvol": ("rvol", "relative_volume"),
+        "entry": ("entry", "entry_price"),
+        "stop_loss": ("stop_loss", "sl", "stop"),
+        "target_1": ("target_1", "t1"),
+        "target_2": ("target_2", "t2"),
+        "target_3": ("target_3", "t3"),
+        "target_4": ("target_4", "t4"),
+        "rs20": ("rs20",),
+        "rs60": ("rs60",),
+        "stockrs": ("stockrs", "stock_rs"),
+        "base_range": ("base_range", "baserange"),
+        "compression": ("compression",),
+        "extension": ("extension",),
+        "resistance": ("resistance",),
+        "closing_strength": ("closing_strength", "closingstrength"),
+        "risk_pct": ("risk_pct", "riskpct"),
+        "rank": ("rank",),
+    }
+    for target, choices in aliases.items():
+        if target not in frame.columns:
+            source = next((name for name in choices if name in frame.columns), None)
+            if source:
+                frame[target] = frame[source]
+    for col in ("symbol", "setup", "score"):
+        if col not in frame.columns:
+            frame[col] = "" if col != "score" else 0
+    frame["symbol"] = frame["symbol"].fillna("").astype(str).str.strip().str.upper()
+    frame["setup"] = (
+        frame["setup"].fillna("").astype(str).str.strip().str.upper()
+        .str.replace("_", "-", regex=False)
+    )
+    for col in frame.columns:
+        if col not in ("symbol", "setup"):
+            frame[col] = pd.to_numeric(frame[col], errors="coerce")
+    frame = frame[frame["symbol"].ne("") & frame["setup"].isin(["PRE-BREAKOUT", "FRESH BREAKOUT"])]
+    frame = frame.sort_values("score", ascending=False).drop_duplicates("symbol").head(MAX_RESULTS)
+    return frame.reset_index(drop=True)
 
-st.subheader(
-    "High-Quality Swing Setups"
-)
 
-st.caption(
-    "PRE-BREAKOUT + FRESH BREAKOUT | "
-    "Maximum 30 — not forced to 30"
-)
-
-
+summary = load_summary()
 if not REPORT_FILE.exists():
-
-    st.error(
-        "Latest scanner report not found."
-    )
-
+    st.error("No scan report is available yet. Run the Trading OS v12 scanner first.")
     st.stop()
 
-
-df = pd.read_csv(
-    REPORT_FILE
-)
-
-
-if df.empty:
-
-    st.warning(
-        "NO HIGH-QUALITY SETUPS "
-        "PASSED TODAY'S FILTER."
-    )
-
-    st.info(
-        "This is intentional. "
-        "The scanner does not manufacture "
-        "a TOP 30 list."
-    )
-
+try:
+    df = normalize_columns(pd.read_csv(REPORT_FILE))
+except Exception as exc:
+    st.error(f"Could not read the latest scan report: {exc}")
     st.stop()
 
+market = str(summary.get("market_sentiment", "UNKNOWN")).replace("_", " ").upper()
+status = str(summary.get("status", "UNKNOWN")).upper()
+generated_at = summary.get("generated_at")
+if generated_at:
+    try:
+        stamp = pd.to_datetime(generated_at, utc=True).tz_convert("Asia/Kolkata")
+        st.caption(f"Market regime: {market} | Scan status: {status} | Generated: {stamp:%d %b %Y, %I:%M %p IST}")
+    except (TypeError, ValueError):
+        st.caption(f"Market regime: {market} | Scan status: {status}")
+else:
+    st.caption(f"Market regime: {market} | Scan status: {status} | Scan timestamp unavailable")
 
-numeric_columns = [
-    "Score",
-    "BreakoutPct",
-    "RS20",
-    "RS60",
-    "StockRS",
-    "RSI",
-    "RVOL",
-    "BaseRange",
-    "Compression",
-    "Extension",
-    "Resistance",
-    "ClosingStrength",
-    "Entry",
-    "SL",
-    "T1",
-    "T2",
-    "T3",
-    "T4",
-    "RiskPct",
-]
-
-
-for column in numeric_columns:
-
-    if column in df.columns:
-
-        df[column] = pd.to_numeric(
-            df[column],
-            errors="coerce"
-        )
-
-
-pre = df[
-    df["Setup"]
-    == "PRE-BREAKOUT"
-]
-
-fresh = df[
-    df["Setup"]
-    == "FRESH BREAKOUT"
-]
-
-
-# ============================================================
-# SUMMARY
-# ============================================================
-
+total = summary.get("stocks_in_universe", "—")
+valid = summary.get("valid_data_count", "—")
+raw = summary.get("raw_setup_count", "—")
 a, b, c, d = st.columns(4)
+a.metric("Stocks Scanned", total)
+b.metric("Valid History", valid)
+c.metric("Raw Setups", raw)
+d.metric("Qualified Stocks", len(df))
 
-with a:
-
-    st.metric(
-        "Qualified Stocks",
-        len(df)
-    )
-
-with b:
-
-    st.metric(
-        "Pre-Breakout",
-        len(pre)
-    )
-
-with c:
-
-    st.metric(
-        "Fresh Breakout",
-        len(fresh)
-    )
-
-with d:
-
-    st.metric(
-        "Top Score",
-        f"{df['Score'].max():.0f}/100"
-    )
-
+pre = df[df["setup"].eq("PRE-BREAKOUT")]
+fresh = df[df["setup"].eq("FRESH BREAKOUT")]
 
 st.divider()
-
-
-# ============================================================
-# MASTER
-# ============================================================
-
-st.header(
-    "🏆 Master Ranking"
-)
-
-master_columns = [
-    "Rank",
-    "Symbol",
-    "Setup",
-    "Score",
-    "BreakoutPct",
-    "RSI",
-    "RVOL",
-    "Entry",
-    "SL",
-    "T1",
-    "T2",
-    "T3",
-    "T4",
-]
-
-master_columns = [
-    c
-    for c in master_columns
-    if c in df.columns
-]
-
-st.dataframe(
-    df[master_columns],
-    use_container_width=True,
-    hide_index=True,
-)
-
-
-# ============================================================
-# PRE-BREAKOUT
-# ============================================================
-
-st.divider()
-
-st.header(
-    "👀 PRE-BREAKOUT"
-)
-
-if pre.empty:
-
-    st.info(
-        "No qualifying pre-breakout setup."
-    )
-
+if df.empty:
+    st.warning("NO HIGH-QUALITY SETUPS PASSED TODAY'S FILTER.")
+    st.info("This is intentional. The scanner will not fill the shortlist with weak stocks.")
 else:
+    e, f, g = st.columns(3)
+    e.metric("Pre-Breakout", len(pre))
+    f.metric("Fresh Breakout", len(fresh))
+    g.metric("Top Score", f"{df['score'].max():.0f}/100")
 
-    columns = [
-        "Rank",
-        "Symbol",
-        "Score",
-        "BreakoutPct",
-        "RSI",
-        "RVOL",
-        "Extension",
-        "Entry",
-        "SL",
-        "T1",
-        "T2",
-        "T3",
-        "T4",
+    st.header("🏆 Master Ranking")
+    master_columns = [
+        "rank", "symbol", "setup", "score", "price", "breakout_pct", "rsi", "rvol",
+        "entry", "stop_loss", "target_1", "target_2", "target_3", "target_4",
     ]
+    st.dataframe(df[[col for col in master_columns if col in df.columns]],
+                 use_container_width=True, hide_index=True)
 
-    columns = [
-        c
-        for c in columns
-        if c in pre.columns
+    st.divider()
+    st.header("👀 PRE-BREAKOUT")
+    if pre.empty:
+        st.info("No candidates cleared for the PRE-BREAKOUT category.")
+    else:
+        cols = ["rank", "symbol", "score", "breakout_pct", "rsi", "rvol", "entry",
+                "stop_loss", "target_1", "target_2", "target_3", "target_4"]
+        st.dataframe(pre[[col for col in cols if col in pre.columns]],
+                     use_container_width=True, hide_index=True)
+
+    st.divider()
+    st.header("🚀 FRESH BREAKOUT")
+    if fresh.empty:
+        st.info("No candidates cleared for the FRESH BREAKOUT category.")
+    else:
+        cols = ["rank", "symbol", "score", "breakout_pct", "rsi", "rvol", "entry",
+                "stop_loss", "target_1", "target_2", "target_3", "target_4"]
+        st.dataframe(fresh[[col for col in cols if col in fresh.columns]],
+                     use_container_width=True, hide_index=True)
+
+    st.divider()
+    st.header("🔎 Stock Details")
+    selected_symbol = st.selectbox("Select stock", df["symbol"].tolist())
+    row = df[df["symbol"].eq(selected_symbol)].iloc[0]
+
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Setup", row.get("setup", "—"))
+    m2.metric("Score", f"{row.get('score', 0):.0f}/100")
+    m3.metric("RSI", f"{row.get('rsi', float('nan')):.1f}" if pd.notna(row.get("rsi")) else "—")
+    m4.metric("RVOL", f"{row.get('rvol', float('nan')):.2f}" if pd.notna(row.get("rvol")) else "—")
+
+    technical_fields = [
+        ("Breakout %", "breakout_pct"), ("RS20", "rs20"), ("RS60", "rs60"),
+        ("Stock vs NIFTY", "stockrs"), ("Base Range", "base_range"),
+        ("Compression", "compression"), ("Extension", "extension"),
+        ("Resistance", "resistance"), ("Closing Strength", "closing_strength"),
     ]
+    technical = [{"Metric": label, "Value": row[field]} for label, field in technical_fields
+                 if field in row.index and pd.notna(row[field])]
+    if technical:
+        st.markdown("### Technical Structure")
+        st.dataframe(pd.DataFrame(technical), use_container_width=True, hide_index=True)
 
-    st.dataframe(
-        pre[columns],
-        use_container_width=True,
-        hide_index=True,
-    )
-
-
-# ============================================================
-# FRESH BREAKOUT
-# ============================================================
+    trade_fields = [
+        ("Entry", "entry", "Entry"), ("Stop Loss", "stop_loss", "Risk Control"),
+        ("T1", "target_1", "1R"), ("T2", "target_2", "2R"),
+        ("T3", "target_3", "3R"), ("T4", "target_4", "4R"),
+    ]
+    trade_plan = [{"Level": label, "Price": row[field], "Risk Multiple": multiple}
+                  for label, field, multiple in trade_fields
+                  if field in row.index and pd.notna(row[field])]
+    if trade_plan:
+        st.markdown("### 🎯 Trade Plan")
+        st.dataframe(pd.DataFrame(trade_plan), use_container_width=True, hide_index=True)
+        st.caption("Targets: T1=1R | T2=2R | T3=3R | T4=4R. R = Entry − Stop Loss.")
 
 st.divider()
-
-st.header(
-    "🚀 FRESH BREAKOUT"
-)
-
-if fresh.empty:
-
-    st.info(
-        "No qualifying fresh-breakout setup."
-    )
-
-else:
-
-    columns = [
-        "Rank",
-        "Symbol",
-        "Score",
-        "BreakoutPct",
-        "RSI",
-        "RVOL",
-        "Extension",
-        "Entry",
-        "SL",
-        "T1",
-        "T2",
-        "T3",
-        "T4",
-    ]
-
-    columns = [
-        c
-        for c in columns
-        if c in fresh.columns
-    ]
-
-    st.dataframe(
-        fresh[columns],
-        use_container_width=True,
-        hide_index=True,
-    )
-
-
-# ============================================================
-# DETAILS
-# ============================================================
-
-st.divider()
-
-st.header(
-    "🔎 Stock Details"
-)
-
-selected_symbol = st.selectbox(
-    "Select stock",
-    df["Symbol"].astype(str).tolist()
-)
-
-row = df[
-    df["Symbol"].astype(str)
-    == selected_symbol
-].iloc[0]
-
-
-x1, x2, x3, x4 = st.columns(4)
-
-with x1:
-
-    st.metric(
-        "Setup",
-        row["Setup"]
-    )
-
-with x2:
-
-    st.metric(
-        "Score",
-        f"{row['Score']:.0f}/100"
-    )
-
-with x3:
-
-    st.metric(
-        "RSI",
-        f"{row['RSI']:.1f}"
-    )
-
-with x4:
-
-    st.metric(
-        "RVOL",
-        f"{row['RVOL']:.2f}"
-    )
-
-
-st.markdown(
-    "### Technical Structure"
-)
-
-technical = pd.DataFrame(
-    {
-        "Metric": [
-            "Breakout %",
-            "RS20",
-            "RS60",
-            "Stock vs NIFTY",
-            "Base Range",
-            "Compression",
-            "Extension",
-            "Resistance",
-        ],
-
-        "Value": [
-            row["BreakoutPct"],
-            row["RS20"],
-            row["RS60"],
-            row["StockRS"],
-            row["BaseRange"],
-            row["Compression"],
-            row["Extension"],
-            row["Resistance"],
-        ],
-    }
-)
-
-st.dataframe(
-    technical,
-    use_container_width=True,
-    hide_index=True,
-)
-
-
-st.markdown(
-    "### 🎯 Trade Plan"
-)
-
-trade_plan = pd.DataFrame(
-    {
-        "Level": [
-            "Entry",
-            "Stop Loss",
-            "T1",
-            "T2",
-            "T3",
-            "T4",
-        ],
-
-        "Price": [
-            row["Entry"],
-            row["SL"],
-            row["T1"],
-            row["T2"],
-            row["T3"],
-            row["T4"],
-        ],
-
-        "Risk Multiple": [
-            "Entry",
-            "Risk Control",
-            "1R",
-            "2R",
-            "3R",
-            "4R",
-        ],
-    }
-)
-
-st.dataframe(
-    trade_plan,
-    use_container_width=True,
-    hide_index=True,
-)
-
-
-st.divider()
-
-st.caption(
-    "T1 = 1R | T2 = 2R | "
-    "T3 = 3R | T4 = 4R"
-)
-
-st.caption(
-    "The scanner uses a maximum of 30 "
-    "stocks but does not force 30 stocks."
-)
-
-st.caption(
-    "A scanner score is a ranking measure, "
-    "not a prediction or guarantee."
-)
+st.caption("The scanner has a maximum shortlist of 30 stocks but never forces 30.")
+st.caption("A scanner score is a ranking measure, not a prediction or guarantee.")
