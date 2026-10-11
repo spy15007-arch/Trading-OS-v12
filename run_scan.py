@@ -275,19 +275,21 @@ def _fmt(value):
 
 
 def build_markdown(results, market_regime, status, coverage_text):
+    """Build a current-run report with the same strict shortlist as Telegram."""
     lines = [
         "# TRADING OS v12 — SWING SCAN",
         "",
         f"**Status:** {status}",
         f"**Market regime:** {market_regime}",
         f"**Data coverage:** {coverage_text}",
-        f"**Qualified setups:** {len(results)}",
+        f"**Qualified setups:** {len(results)} (maximum {MAX_RESULTS})",
         "",
         (
             "> Universe: official Nifty 50 + Nifty Next 50 "
             "+ Nifty Midcap 150 + Nifty Smallcap 250 constituents."
         ),
-        "> Maximum 30 candidates; weak setups are not added to fill the list.",
+        "> Strict quality filters remain enabled: score >= 75, valid risk levels, and PRE-BREAKOUT/FRESH BREAKOUT only.",
+        "> Maximum 30 unique candidates; the scanner will not add weak setups to fill the list.",
         "> R = Entry − Stop Loss; targets are T1=1R, T2=2R, T3=3R, T4=4R.",
         "",
     ]
@@ -306,18 +308,17 @@ def build_markdown(results, market_regime, status, coverage_text):
             ),
             "",
         ]
+        return "\n".join(lines) + "\n"
 
-    elif not results:
+    if not results:
         lines += [
-            (
-                "No PRE-BREAKOUT or FRESH BREAKOUT setup met "
-                "the quality threshold today."
-            ),
+            "No PRE-BREAKOUT or FRESH BREAKOUT setup met the strict quality threshold today.",
             "",
         ]
-
     else:
         lines += [
+            "## Ranked shortlist",
+            "",
             (
                 "| Rank | Symbol | Setup | Score | Price | Breakout % "
                 "| RSI | RVOL | Entry | SL | R | T1 | T2 | T3 | T4 |"
@@ -334,29 +335,50 @@ def build_markdown(results, market_regime, status, coverage_text):
                 str(result.get("symbol", "")),
                 str(result.get("setup", "")),
             ]
-
             values.extend(
                 _fmt(result.get(column))
                 for column in (
-                    "score",
-                    "price",
-                    "breakout_pct",
-                    "rsi",
-                    "rvol",
-                    "entry",
-                    "stop_loss",
-                    "risk",
-                    "target_1",
-                    "target_2",
-                    "target_3",
-                    "target_4",
+                    "score", "price", "breakout_pct", "rsi", "rvol",
+                    "entry", "stop_loss", "risk", "target_1", "target_2",
+                    "target_3", "target_4",
                 )
             )
-
             lines.append("| " + " | ".join(values) + " |")
 
-    return "\n".join(lines) + "\n"
+        lines.append("")
 
+    # Keep the requested three headings without weakening the scanner filters.
+    # The current scorer emits PRE-BREAKOUT and FRESH BREAKOUT, not generic BREAKOUT.
+    sections = [
+        ("BREAKOUT STOCKS", "BREAKOUT"),
+        ("PRE-BREAKOUT", "PRE-BREAKOUT"),
+        ("FRESH BREAKOUT", "FRESH BREAKOUT"),
+    ]
+    for heading, setup in sections:
+        lines.extend([f"## {heading}", ""])
+        matches = [item for item in results if str(item.get("setup", "")).upper() == setup]
+        if not matches:
+            if setup == "BREAKOUT":
+                lines.append(
+                    "No candidates. The current strict scorer does not generate a separate generic BREAKOUT label."
+                )
+            else:
+                lines.append("No candidates met the strict quality filters today.")
+            lines.append("")
+            continue
+
+        for result in matches:
+            lines.append(
+                f"- **{result.get('symbol', '')}** — score {_fmt(result.get('score'))}, "
+                f"breakout {_fmt(result.get('breakout_pct'))}%, "
+                f"RSI {_fmt(result.get('rsi'))}, RVOL {_fmt(result.get('rvol'))}; "
+                f"Entry {_fmt(result.get('entry'))}, SL {_fmt(result.get('stop_loss'))}, "
+                f"T1 {_fmt(result.get('target_1'))}, T2 {_fmt(result.get('target_2'))}, "
+                f"T3 {_fmt(result.get('target_3'))}, T4 {_fmt(result.get('target_4'))}"
+            )
+        lines.append("")
+
+    return "\n".join(lines) + "\n"
 
 def save_reports(
     results,
