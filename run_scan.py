@@ -147,57 +147,69 @@ def _num(value, default=0.0):
 
 
 def clean_result(result, symbol):
-    """Normalize scorer output and calculate four risk-based targets."""
+    """Normalize scorer output from either lowercase or legacy keys."""
     if not isinstance(result, dict):
         return None
 
     out = dict(result)
 
+    def pick(*keys, default=None):
+        for key in keys:
+            value = out.get(key)
+            if value is not None and value != "":
+                return value
+        return default
+
     out["symbol"] = (
-        str(out.get("symbol") or out.get("ticker") or symbol)
+        str(pick("symbol", "Symbol", "ticker", "Ticker", default=symbol))
         .strip()
         .upper()
         .replace(".NS", "")
     )
 
-    out["setup"] = str(
-        out.get("setup") or out.get("setup_type") or ""
-    ).strip().upper()
-
-    out["score"] = _num(
-        out.get("score", out.get("total_score", 0))
+    out["setup"] = (
+        str(pick("setup", "Setup", "setup_type", default=""))
+        .strip()
+        .upper()
+        .replace("_", "-")
     )
 
+    out["score"] = _num(
+        pick("score", "Score", "total_score", default=0)
+    )
+
+    # The scorer's current output calls its closing price "Entry".
     out["price"] = _num(
-        out.get("price", out.get("close", 0))
+        pick("price", "Price", "close", "Close", "Entry", default=0)
     )
 
     out["breakout_pct"] = _num(
-        out.get("breakout_pct", out.get("breakout_distance_pct", 0))
+        pick(
+            "breakout_pct",
+            "BreakoutPct",
+            "breakout_distance_pct",
+            default=0,
+        )
     )
 
-    out["rsi"] = _num(out.get("rsi", 0))
-
+    out["rsi"] = _num(pick("rsi", "RSI", default=0))
     out["rvol"] = _num(
-        out.get("rvol", out.get("relative_volume", 0))
+        pick("rvol", "RVOL", "relative_volume", default=0)
     )
 
     out["entry"] = _num(
-        out.get("entry", out.get("entry_price", out["price"]))
+        pick("entry", "Entry", "entry_price", default=out["price"])
     )
 
     out["stop_loss"] = _num(
-        out.get(
-            "stop_loss",
-            out.get("stop", out.get("sl", 0)),
-        )
+        pick("stop_loss", "StopLoss", "SL", "stop", "sl", default=0)
     )
 
     out["risk"] = out["entry"] - out["stop_loss"]
 
     for multiple in range(1, 5):
         out[f"target_{multiple}"] = (
-            out["entry"] + multiple * out["risk"]
+            round(out["entry"] + multiple * out["risk"], 2)
             if out["risk"] > 0
             else 0.0
         )
@@ -560,18 +572,10 @@ def main():
 
         try:
             candidate = score_stock(
-                symbol=symbol,
                 data=df,
                 benchmark=benchmark,
+                symbol=symbol,
             )
-
-        except TypeError:
-            try:
-                candidate = score_stock(symbol, df, benchmark)
-
-            except Exception as exc:
-                print(f"Scoring skipped for {symbol}: {exc}")
-                continue
 
         except Exception as exc:
             print(f"Scoring skipped for {symbol}: {exc}")
