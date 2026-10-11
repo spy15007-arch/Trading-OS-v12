@@ -1,5 +1,6 @@
 """Phone-friendly Telegram reporting for Trading OS v12."""
 import argparse
+import json
 import math
 import os
 from pathlib import Path
@@ -130,15 +131,20 @@ def _prepare_results(df):
     return data.head(MAX_RESULTS).reset_index(drop=True)
 
 
-def build_telegram_message(df):
+def build_telegram_message(df, summary=None):
     """Build a compact, phone-friendly report grouped by setup category."""
     data = _prepare_results(df)
+    summary = summary or {}
+    market = str(summary.get("market_sentiment", "UNKNOWN")).upper()
+    total = summary.get("stocks_in_universe", "—")
+    valid = summary.get("valid_data_count", "—")
+    raw = summary.get("raw_setup_count", "—")
     lines = [
         "📊 TRADING OS v12",
-        "STRICT QUALITY FILTERS | PRE-BREAKOUT / FRESH BREAKOUT",
+        f"Market sentiment: {market}",
+        f"Stocks scanned: {total} | Valid history: {valid}",
+        f"Raw setups: {raw} | Qualified: {len(data)} | Max shortlist: {MAX_RESULTS}",
         "━━━━━━━━━━━━━━━━━━━━",
-        f"Qualified: {len(data)} (max {MAX_RESULTS})",
-        "Weak setups are never added just to fill the list.",
         "",
     ]
 
@@ -155,9 +161,11 @@ def build_telegram_message(df):
 
         if matches.empty:
             if setup == "BREAKOUT":
-                lines.append("No candidates — current strict scorer has no separate generic BREAKOUT category.")
+                lines.append("No candidates cleared the BREAKOUT category.")
+            elif setup == "FRESH BREAKOUT":
+                lines.append("No candidates cleared the FRESH BREAKOUT category.")
             else:
-                lines.append("No qualified setups in this category today.")
+                lines.append("No candidates cleared the PRE-BREAKOUT category.")
             lines.append("")
             continue
 
@@ -261,7 +269,12 @@ def send_telegram_report(csv_path=DEFAULT_CSV, token=None, chat_id=None):
     """Send the report in one or more Telegram-safe chunks."""
     print("Preparing Telegram report...")
     df = load_results(csv_path)
-    message = build_telegram_message(df)
+    summary_path = Path(csv_path).with_name("scan_summary.json")
+    try:
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        summary = {}
+    message = build_telegram_message(df, summary=summary)
     chunks = split_telegram_message(message)
 
     resolved_token = (token or os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("BOT_TOKEN") or "").strip()
