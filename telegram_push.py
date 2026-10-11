@@ -80,6 +80,10 @@ def _prepare_results(df):
 
     data = df.copy()
     data.columns = [str(column).strip().lower() for column in data.columns]
+    # The scanner CSV keeps legacy uppercase and canonical lowercase fields.
+    # Lowercasing creates duplicate labels (e.g. Symbol and symbol); keep the
+    # first canonical column so data["symbol"] is a Series, not a DataFrame.
+    data = data.loc[:, ~data.columns.duplicated(keep="first")].copy()
 
     aliases = {
         "symbol": ("symbol", "ticker"),
