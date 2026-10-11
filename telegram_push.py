@@ -190,10 +190,11 @@ def build_telegram_message(df, summary=None):
             lines.append("━━━━━━━━━━━━━━━━━━━━")
         lines.append("")
 
-    lines.extend([
-        "Targets: T1=1R | T2=2R | T3=3R | T4=4R",
-        "R = Entry − Stop Loss",
-    ])
+    if not data.empty:
+        lines.extend([
+            "Targets: T1=1R | T2=2R | T3=3R | T4=4R",
+            "R = Entry − Stop Loss",
+        ])
     return "\n".join(lines)
 
 def split_telegram_message(message, max_length=MAX_MESSAGE_LENGTH):
