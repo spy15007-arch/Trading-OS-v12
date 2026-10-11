@@ -394,6 +394,7 @@ def save_reports(
     market_regime,
     status="COMPLETE",
     coverage_text="not available",
+    summary=None,
 ):
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -424,12 +425,26 @@ def save_reports(
             market_regime,
             status,
             coverage_text,
+            summary,
         ),
         encoding="utf-8",
     )
 
+    report_summary = {
+        "market_sentiment": market_regime,
+        "status": status,
+        "stocks_in_universe": int((summary or {}).get("stocks_in_universe", 0)),
+        "valid_data_count": int((summary or {}).get("valid_data_count", 0)),
+        "raw_setup_count": int((summary or {}).get("raw_setup_count", 0)),
+        "qualified_count": len(results),
+        "max_shortlist": MAX_RESULTS,
+        "coverage": coverage_text,
+    }
+    SUMMARY_FILE.write_text(json.dumps(report_summary, indent=2), encoding="utf-8")
+
     print(f"CSV report saved: {CSV_FILE}")
     print(f"Markdown report saved: {MARKDOWN_FILE}")
+    print(f"Scan summary saved: {SUMMARY_FILE}")
 
 
 def print_results(results, market_regime, status, coverage_text):
