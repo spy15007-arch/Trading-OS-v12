@@ -80,6 +80,14 @@ if not REPORT_FILE.exists():
     st.error("No scan report is available yet. Run the Trading OS v12 scanner first.")
     st.stop()
 
+if not summary.get("generated_at"):
+    st.warning(
+        "The scan summary is missing its scan timestamp. The committed CSV may be an old report, "
+        "so the dashboard is hiding it rather than presenting it as current. Run the Trading OS v12 "
+        "workflow once to publish a fresh CSV, Markdown report, and summary."
+    )
+    st.stop()
+
 try:
     df = normalize_columns(pd.read_csv(REPORT_FILE))
 except Exception as exc:
