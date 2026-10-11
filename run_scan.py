@@ -450,6 +450,16 @@ def print_results(results, market_regime, status, coverage_text):
     )
 
 
+def _send_telegram_if_possible(context_label, reason):
+    """Send a fallback Telegram message even when the scan is incomplete."""
+    try:
+        save_reports([], "UNKNOWN", "INCOMPLETE", reason)
+        send_telegram_report(csv_path=str(CSV_FILE))
+        print(f"Telegram fallback sent for {context_label}.")
+    except Exception as exc:
+        print(f"Telegram fallback failed for {context_label}: {exc}")
+
+
 def main():
     print(
         "\n"
@@ -486,6 +496,12 @@ def main():
             "0% (official universe unavailable)",
         )
 
+        try:
+            send_telegram_report(csv_path=str(CSV_FILE))
+            print("Telegram report sent for incomplete scan.")
+        except Exception as telegram_exc:
+            print(f"Telegram report failed: {telegram_exc}")
+
         print("Telegram shortlist suppressed: scan is incomplete.")
         return
 
@@ -505,6 +521,12 @@ def main():
             "INCOMPLETE",
             "benchmark unavailable",
         )
+
+        try:
+            send_telegram_report(csv_path=str(CSV_FILE))
+            print("Telegram report sent for missing benchmark.")
+        except Exception as telegram_exc:
+            print(f"Telegram report failed: {telegram_exc}")
 
         print("Telegram shortlist suppressed: benchmark unavailable.")
         return
@@ -551,6 +573,12 @@ def main():
             "INCOMPLETE",
             coverage_text,
         )
+
+        try:
+            send_telegram_report(csv_path=str(CSV_FILE))
+            print("Telegram report sent for incomplete coverage.")
+        except Exception as telegram_exc:
+            print(f"Telegram report failed: {telegram_exc}")
 
         print(
             "Telegram shortlist suppressed: "
