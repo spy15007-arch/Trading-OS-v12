@@ -1,5 +1,6 @@
 """Trading OS v12: selective Nifty 500 swing scanner."""
 from pathlib import Path
+from datetime import datetime, timezone
 import json
 import math
 
@@ -433,6 +434,7 @@ def save_reports(
     report_summary = {
         "market_sentiment": market_regime,
         "status": status,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
         "stocks_in_universe": int((summary or {}).get("stocks_in_universe", 0)),
         "valid_data_count": int((summary or {}).get("valid_data_count", 0)),
         "raw_setup_count": int((summary or {}).get("raw_setup_count", 0)),
