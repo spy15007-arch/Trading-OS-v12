@@ -1,4 +1,5 @@
 """Phone-friendly Telegram reporting for Trading OS v12."""
+import argparse
 import math
 import os
 from pathlib import Path
@@ -16,10 +17,37 @@ ALLOWED_SETUPS = {"PRE-BREAKOUT", "FRESH BREAKOUT"}
 
 def get_credentials():
     """Read Telegram credentials from environment variables."""
-    return (
-        os.getenv("TELEGRAM_BOT_TOKEN", "").strip(),
-        os.getenv("TELEGRAM_CHAT_ID", "").strip(),
-    )
+    token = (
+        os.getenv("TELEGRAM_BOT_TOKEN")
+        or os.getenv("BOT_TOKEN")
+        or ""
+    ).strip()
+    chat_id = (
+        os.getenv("TELEGRAM_CHAT_ID")
+        or os.getenv("CHAT_ID")
+        or os.getenv("TELEGRAM_CHAT_USERNAME")
+        or os.getenv("CHAT_USERNAME")
+        or ""
+    ).strip()
+    return token, str(chat_id)
+
+
+def normalize_chat_id(chat_id):
+    """Normalize chat IDs for Telegram; usernames are allowed for groups/channels."""
+    if chat_id is None:
+        return ""
+
+    value = str(chat_id).strip()
+    if not value:
+        return ""
+
+    if value.startswith("@"):
+        return value
+
+    try:
+        return str(int(value))
+    except ValueError:
+        return value
 
 
 def fmt(value, decimals=2):
@@ -53,7 +81,6 @@ def _prepare_results(df):
     data = df.copy()
     data.columns = [str(column).strip().lower() for column in data.columns]
 
-    # Accept common legacy scorer/export column names as well.
     aliases = {
         "symbol": ("symbol", "ticker"),
         "setup": ("setup", "setup_type"),
@@ -158,7 +185,6 @@ def split_telegram_message(message, max_length=MAX_MESSAGE_LENGTH):
             chunks.append(current)
             current = ""
 
-        # A single unusually long line should still be sent in safe pieces.
         while len(line) > max_length:
             chunks.append(line[:max_length])
             line = line[max_length:]
@@ -177,6 +203,9 @@ def send_telegram_message(message, token=None, chat_id=None):
         token = env_token if token is None else token
         chat_id = env_chat_id if chat_id is None else chat_id
 
+    token = (token or "").strip()
+    chat_id = normalize_chat_id(chat_id)
+
     if not token:
         print("Telegram: TELEGRAM_BOT_TOKEN is not configured.")
         return False
@@ -184,14 +213,16 @@ def send_telegram_message(message, token=None, chat_id=None):
         print("Telegram: TELEGRAM_CHAT_ID is not configured.")
         return False
 
+    payload = {
+        "chat_id": chat_id,
+        "text": message,
+        "disable_web_page_preview": True,
+    }
+
     try:
         response = requests.post(
             TELEGRAM_API.format(token),
-            json={
-                "chat_id": chat_id,
-                "text": message,
-                "disable_web_page_preview": True,
-            },
+            json=payload,
             timeout=30,
         )
         if response.status_code != 200:
@@ -208,18 +239,28 @@ def send_telegram_message(message, token=None, chat_id=None):
         return False
 
 
-def send_telegram_report(csv_path=DEFAULT_CSV):
+def send_telegram_report(csv_path=DEFAULT_CSV, token=None, chat_id=None):
     """Send the report in one or more Telegram-safe chunks."""
     print("Preparing Telegram report...")
     df = load_results(csv_path)
     message = build_telegram_message(df)
     chunks = split_telegram_message(message)
 
+    resolved_token = (token or os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("BOT_TOKEN") or "").strip()
+    resolved_chat_id = normalize_chat_id(chat_id if chat_id is not None else (os.getenv("TELEGRAM_CHAT_ID") or os.getenv("CHAT_ID") or os.getenv("TELEGRAM_CHAT_USERNAME") or os.getenv("CHAT_USERNAME") or ""))
+
+    if not resolved_token:
+        print("Telegram: TELEGRAM_BOT_TOKEN is not configured.")
+        return False
+    if not resolved_chat_id:
+        print("Telegram: TELEGRAM_CHAT_ID is not configured.")
+        return False
+
     all_sent = True
     for index, chunk in enumerate(chunks, start=1):
         if len(chunks) > 1:
             chunk = f"📊 TRADING OS v12 ({index}/{len(chunks)})\n" + chunk
-        if not send_telegram_message(chunk):
+        if not send_telegram_message(chunk, token=resolved_token, chat_id=resolved_chat_id):
             all_sent = False
             break
 
@@ -230,5 +271,15 @@ def send_telegram_report(csv_path=DEFAULT_CSV):
     return all_sent
 
 
+def _parse_args():
+    """Support CLI override for bot token and chat id."""
+    parser = argparse.ArgumentParser(description="Send Trading OS Telegram scan report.")
+    parser.add_argument("--token", dest="token", default=None, help="Telegram bot token")
+    parser.add_argument("--chat-id", dest="chat_id", default=None, help="Telegram chat id or @username")
+    parser.add_argument("--csv", dest="csv_path", default=str(DEFAULT_CSV), help="CSV report path")
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    send_telegram_report(DEFAULT_CSV)
+    args = _parse_args()
+    send_telegram_report(csv_path=args.csv_path, token=args.token, chat_id=args.chat_id)
