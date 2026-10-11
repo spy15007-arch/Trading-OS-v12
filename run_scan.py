@@ -454,8 +454,11 @@ def _send_telegram_if_possible(context_label, reason):
     """Send a fallback Telegram message even when the scan is incomplete."""
     try:
         save_reports([], "UNKNOWN", "INCOMPLETE", reason)
-        send_telegram_report(csv_path=str(CSV_FILE))
-        print(f"Telegram fallback sent for {context_label}.")
+        sent = send_telegram_report(csv_path=str(CSV_FILE))
+        if sent:
+            print(f"Telegram fallback sent for {context_label}.")
+        else:
+            print(f"Telegram fallback was NOT sent for {context_label}.")
     except Exception as exc:
         print(f"Telegram fallback failed for {context_label}: {exc}")
 
@@ -497,8 +500,8 @@ def main():
         )
 
         try:
-            send_telegram_report(csv_path=str(CSV_FILE))
-            print("Telegram report sent for incomplete scan.")
+            sent = send_telegram_report(csv_path=str(CSV_FILE))
+            print("Telegram report sent for incomplete scan." if sent else "Telegram report NOT sent for incomplete scan.")
         except Exception as telegram_exc:
             print(f"Telegram report failed: {telegram_exc}")
 
@@ -523,8 +526,8 @@ def main():
         )
 
         try:
-            send_telegram_report(csv_path=str(CSV_FILE))
-            print("Telegram report sent for missing benchmark.")
+            sent = send_telegram_report(csv_path=str(CSV_FILE))
+            print("Telegram report sent for missing benchmark." if sent else "Telegram report NOT sent for missing benchmark.")
         except Exception as telegram_exc:
             print(f"Telegram report failed: {telegram_exc}")
 
@@ -575,8 +578,8 @@ def main():
         )
 
         try:
-            send_telegram_report(csv_path=str(CSV_FILE))
-            print("Telegram report sent for incomplete coverage.")
+            sent = send_telegram_report(csv_path=str(CSV_FILE))
+            print("Telegram report sent for incomplete coverage." if sent else "Telegram report NOT sent for incomplete coverage.")
         except Exception as telegram_exc:
             print(f"Telegram report failed: {telegram_exc}")
 
@@ -645,13 +648,13 @@ def main():
     )
 
     try:
-        send_telegram_report(csv_path=str(CSV_FILE))
-        print("Telegram report sent.")
+        sent = send_telegram_report(csv_path=str(CSV_FILE))
+        print("Telegram report sent." if sent else "Telegram report NOT sent; inspect Telegram diagnostics above.")
 
     except TypeError:
         try:
-            send_telegram_report(str(CSV_FILE))
-            print("Telegram report sent.")
+            sent = send_telegram_report(str(CSV_FILE))
+            print("Telegram report sent." if sent else "Telegram report NOT sent; inspect Telegram diagnostics above.")
 
         except Exception as exc:
             print(f"Telegram report failed: {exc}")
