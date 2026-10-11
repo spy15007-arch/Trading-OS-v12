@@ -143,7 +143,7 @@ def build_telegram_message(df, summary=None):
         "📊 TRADING OS v12",
         f"Market sentiment: {market}",
         f"Stocks scanned: {total} | Valid history: {valid}",
-        f"Raw setups: {raw} | Qualified: {len(data)} | Max shortlist: {MAX_RESULTS}",
+        f"Raw setups: {raw} | Qualified: {len(data)} | Scan.md limit: {MAX_RESULTS}",
         "━━━━━━━━━━━━━━━━━━━━",
         "",
     ]
@@ -161,11 +161,11 @@ def build_telegram_message(df, summary=None):
 
         if matches.empty:
             if setup == "BREAKOUT":
-                lines.append("No candidates cleared the BREAKOUT category.")
+                lines.append("No candidates cleared for the BREAKOUT category.")
             elif setup == "FRESH BREAKOUT":
-                lines.append("No candidates cleared the FRESH BREAKOUT category.")
+                lines.append("No candidates cleared for the FRESH BREAKOUT category.")
             else:
-                lines.append("No candidates cleared the PRE-BREAKOUT category.")
+                lines.append("No candidates cleared for the PRE-BREAKOUT category.")
             lines.append("")
             continue
 
