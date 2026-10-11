@@ -1,5 +1,6 @@
 """Trading OS v12: selective Nifty 500 swing scanner."""
 from pathlib import Path
+import json
 import math
 
 import pandas as pd
@@ -24,6 +25,7 @@ MIN_HISTORY_BARS = 220
 REPORT_DIR = Path("reports")
 CSV_FILE = REPORT_DIR / "swing_scan.csv"
 MARKDOWN_FILE = REPORT_DIR / "swing_scan.md"
+SUMMARY_FILE = REPORT_DIR / "scan_summary.json"
 
 REPORT_COLUMNS = [
     "rank",
@@ -274,14 +276,21 @@ def _fmt(value):
     return f"{number:.2f}" if math.isfinite(number) else "-"
 
 
-def build_markdown(results, market_regime, status, coverage_text):
+def build_markdown(results, market_regime, status, coverage_text, summary=None):
     """Build a current-run report with the same strict shortlist as Telegram."""
+    summary = summary or {}
+    stocks_in_universe = int(summary.get("stocks_in_universe", 0))
+    valid_data_count = int(summary.get("valid_data_count", 0))
+    raw_setup_count = int(summary.get("raw_setup_count", 0))
     lines = [
         "# TRADING OS v12 — SWING SCAN",
         "",
         f"**Status:** {status}",
         f"**Market regime:** {market_regime}",
         f"**Data coverage:** {coverage_text}",
+        f"**Stocks scanned:** {stocks_in_universe}",
+        f"**Stocks with valid history:** {valid_data_count}",
+        f"**Raw setup candidates:** {raw_setup_count}",
         f"**Qualified setups:** {len(results)} (maximum {MAX_RESULTS})",
         "",
         (
