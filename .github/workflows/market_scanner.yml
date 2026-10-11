@@ -10,7 +10,7 @@ on:
 
 
 permissions:
-  contents: read
+  contents: write
 
 
 jobs:
@@ -85,6 +85,25 @@ jobs:
 
 
       # ======================================================
+      # PUBLISH LATEST REPORTS FOR STREAMLIT
+      # ======================================================
+
+      - name: Commit latest scan reports
+        if: success()
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/swing_scan.csv reports/swing_scan.md reports/scan_summary.json
+          if git diff --cached --quiet; then
+            echo "No report changes to commit."
+          else
+            git commit -m "Refresh latest Trading OS v12 scan reports"
+            git push
+          fi
+
+
+      # ======================================================
       # SHOW REPORT
       # ======================================================
 
@@ -122,3 +141,4 @@ jobs:
           path: reports/
 
           if-no-files-found: warn
+          retention-days: 4
