@@ -210,6 +210,7 @@ def update_trade_outcomes(results, histories, output_path="reports/trade_outcome
 
     output = pd.DataFrame(records.values(), columns=TRACKER_COLUMNS)
     if not output.empty:
+        output["score"] = pd.to_numeric(output["score"], errors="coerce").fillna(0)
         output = output.sort_values(["signal_date", "score"], ascending=[False, False])
     output.to_csv(path, index=False)
     print(f"Trade outcome tracker saved: {path} ({len(output)} signals)")
