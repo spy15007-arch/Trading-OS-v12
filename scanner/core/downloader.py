@@ -364,6 +364,55 @@ def download_all(
         if start + chunk < len(cleaned):
             time.sleep(2.0)
 
+    # A successful multi-ticker response can still omit individual symbols.
+    # Retry those symbols one at a time before reporting them as unavailable.
+    missing = [ticker for ticker in cleaned if ticker not in results]
+    if missing:
+        print(
+            f"Retrying {len(missing)} symbols with individual downloads "
+            "to recover missing/short histories..."
+        )
+
+    recovered = []
+    still_missing = []
+
+    for index, ticker in enumerate(missing, 1):
+        single = _download_batch([ticker], period, interval)
+        frame = single.get(ticker)
+
+        if frame is not None and len(frame) >= 220:
+            results[ticker] = frame
+            recovered.append(ticker)
+            print(
+                f"Individual retry recovered {ticker} "
+                f"({len(frame)} sessions; {index}/{len(missing)})."
+            )
+        else:
+            still_missing.append(ticker)
+            print(
+                f"Individual retry could not recover {ticker} "
+                f"({index}/{len(missing)})."
+            )
+
+        if index < len(missing):
+            time.sleep(1.0)
+
+    if recovered:
+        print(
+            f"Recovered {len(recovered)} symbols individually: "
+            + ", ".join(recovered)
+        )
+
+    if still_missing:
+        print(
+            f"WARNING: {len(still_missing)} symbols still lack at least "
+            "220 valid daily bars after retries: "
+            + ", ".join(still_missing)
+        )
+
+    print(
+        f"Final download coverage: {len(results)}/{len(cleaned)} symbols."
+    )
     return results
 
 
