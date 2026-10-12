@@ -11,6 +11,7 @@ from scanner.core.downloader import (
     get_nifty500_symbols,
 )
 from scanner.core.market import get_market_regime
+from scanner.core.outcome_tracker import update_trade_outcomes
 from scanner.core.scoring import score_stock
 from telegram_push import send_telegram_report
 
@@ -681,6 +682,19 @@ def main():
 
     for rank, result in enumerate(results, 1):
         result["rank"] = rank
+
+    # Update the persistent outcome tracker using normalized daily OHLCV history.
+    histories = {}
+    for raw_symbol, raw_history in data_map.items():
+        clean_symbol = str(raw_symbol).strip().upper().replace(".NS", "")
+        normalized_history = normalise_dataframe(raw_history)
+        if clean_symbol and normalized_history is not None:
+            histories[clean_symbol] = normalized_history
+    try:
+        update_trade_outcomes(results, histories)
+    except Exception as exc:
+        # Tracking should never prevent a valid scan report or Telegram message.
+        print(f"Trade outcome tracker update failed: {exc}")
 
     scan_summary = {
         "stocks_in_universe": len(symbols),
