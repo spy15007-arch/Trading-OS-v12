@@ -195,3 +195,60 @@ else:
 st.divider()
 st.caption("The scanner has a maximum shortlist of 30 stocks but never forces 30.")
 st.caption("A scanner score is a ranking measure, not a prediction or guarantee.")
+
+
+# Persistent trade-outcome log (updated after each complete scanner run).
+TRACKER_FILE = REPORT_DIR / "trade_outcomes.csv"
+st.divider()
+st.header("📈 Trade Outcome Tracker")
+st.caption(
+    "Each qualified signal is tracked from its signal date. Target hits are recorded separately; "
+    "a stop and target touched in the same daily candle are treated conservatively."
+)
+if TRACKER_FILE.exists():
+    try:
+        outcomes = pd.read_csv(TRACKER_FILE).fillna("")
+    except Exception as exc:
+        st.warning(f"Could not read the outcome tracker: {exc}")
+    else:
+        if outcomes.empty:
+            st.info("No qualified signals have been recorded yet.")
+        else:
+            for col in ("status", "symbol", "setup"):
+                if col in outcomes.columns:
+                    outcomes[col] = outcomes[col].astype(str)
+            status_series = outcomes.get("status", pd.Series("", index=outcomes.index)).str.upper()
+            t1_series = outcomes.get("t1_hit_date", pd.Series("", index=outcomes.index)).astype(str).str.strip()
+            t2_series = outcomes.get("t2_hit_date", pd.Series("", index=outcomes.index)).astype(str).str.strip()
+            t3_series = outcomes.get("t3_hit_date", pd.Series("", index=outcomes.index)).astype(str).str.strip()
+            t4_series = outcomes.get("t4_hit_date", pd.Series("", index=outcomes.index)).astype(str).str.strip()
+            stop_series = outcomes.get("stop_hit_date", pd.Series("", index=outcomes.index)).astype(str).str.strip()
+            active_count = int((~status_series.isin(["STOP_LOSS", "STOP_AFTER_TARGET", "TARGET_4", "TIMEOUT_20_SESSIONS"])).sum())
+            m1, m2, m3, m4, m5 = st.columns(5)
+            m1.metric("Signals Logged", len(outcomes))
+            m2.metric("Active", active_count)
+            m3.metric("T1 Hit", int(t1_series.ne("").sum()))
+            m4.metric("T2 Hit", int(t2_series.ne("").sum()))
+            m5.metric("Stops Hit", int(stop_series.ne("").sum()))
+
+            display_cols = [
+                "signal_date", "symbol", "setup", "score", "entry", "stop_loss",
+                "last_close", "sessions_tracked", "t1_hit_date", "t2_hit_date",
+                "t3_hit_date", "t4_hit_date", "stop_hit_date", "first_event",
+                "first_event_date", "status",
+            ]
+            available_cols = [col for col in display_cols if col in outcomes.columns]
+            st.dataframe(
+                outcomes[available_cols],
+                use_container_width=True,
+                hide_index=True,
+            )
+            st.caption(
+                "T1–T4 columns show the first date each target was reached. "
+                "ACTIVE records continue tracking up to 20 sessions, unless the stop or T4 is reached first. "
+                "This is historical signal evaluation, not a guarantee of executable fills."
+            )
+else:
+    st.info(
+        "The tracker will appear after the next complete scanner run creates reports/trade_outcomes.csv."
+    )
