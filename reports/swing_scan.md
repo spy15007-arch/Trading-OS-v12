@@ -5,8 +5,8 @@
 **Data coverage:** 489/501 (98%)
 **Stocks scanned:** 501
 **Stocks with valid history:** 489
-**Raw setup candidates:** 2
-**Qualified setups:** 1 (maximum 30)
+**Raw setup candidates:** 3
+**Qualified setups:** 2 (maximum 30)
 
 > Universe: official Nifty 50 + Nifty Next 50 + Nifty Midcap 150 + Nifty Smallcap 250 constituents.
 > Strict filters: score >= 75, valid risk levels, and PRE-BREAKOUT/FRESH BREAKOUT only.
@@ -17,7 +17,8 @@
 
 | Rank | Symbol | Setup | Score | Price | Breakout % | RSI | RVOL | Entry | SL | R | T1 | T2 | T3 | T4 |
 |---:|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1 | RBLBANK | PRE-BREAKOUT | 84.00 | 417.00 | -2.93 | 55.73 | 0.97 | 417.00 | 400.73 | 16.27 | 433.27 | 449.54 | 465.81 | 482.08 |
+| 1 | LAURUSLABS | PRE-BREAKOUT | 92.00 | 2036.60 | -1.38 | 60.75 | 0.80 | 2036.60 | 1959.86 | 76.74 | 2113.34 | 2190.08 | 2266.82 | 2343.56 |
+| 2 | RBLBANK | PRE-BREAKOUT | 84.00 | 418.00 | -2.70 | 56.36 | 1.08 | 418.00 | 401.66 | 16.34 | 434.34 | 450.68 | 467.02 | 483.36 |
 
 ## BREAKOUT STOCKS
 
@@ -25,7 +26,8 @@ No candidates cleared the BREAKOUT category.
 
 ## PRE-BREAKOUT
 
-- **RBLBANK** — score 84.00, breakout -2.93%, RSI 55.73, RVOL 0.97; Entry 417.00, SL 400.73, T1 433.27, T2 449.54, T3 465.81, T4 482.08
+- **LAURUSLABS** — score 92.00, breakout -1.38%, RSI 60.75, RVOL 0.80; Entry 2036.60, SL 1959.86, T1 2113.34, T2 2190.08, T3 2266.82, T4 2343.56
+- **RBLBANK** — score 84.00, breakout -2.70%, RSI 56.36, RVOL 1.08; Entry 418.00, SL 401.66, T1 434.34, T2 450.68, T3 467.02, T4 483.36
 
 ## FRESH BREAKOUT
 
