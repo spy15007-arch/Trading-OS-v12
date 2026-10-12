@@ -73,6 +73,8 @@ def _update_record(record, history):
     terminal = str(record.get("status", "ACTIVE")).upper() in TERMINAL_STATUSES
 
     for idx, bar in frame.iterrows():
+        if terminal:
+            break
         bar_date = _date(idx)
         high = _number(bar.get("High"))
         low = _number(bar.get("Low"))
@@ -85,9 +87,6 @@ def _update_record(record, history):
         min_low = min(min_low, low)
         record["last_update_date"] = bar_date
         record["last_close"] = round(close, 2)
-
-        if terminal:
-            continue
 
         stop_touched = low <= stop
         target_touched = [high >= target for target in targets]
