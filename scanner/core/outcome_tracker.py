@@ -54,7 +54,10 @@ def _update_record(record, history):
 
     frame = history.copy()
     frame = frame.sort_index()
-    frame = frame.loc[[_date(idx) > signal_date for idx in frame.index]]
+    last_update = _date(record.get("last_update_date")) or signal_date
+    if str(record.get("status", "ACTIVE")).upper() in TERMINAL_STATUSES:
+        return record
+    frame = frame.loc[[_date(idx) > last_update for idx in frame.index]]
     if frame.empty:
         return record
 
@@ -158,6 +161,11 @@ def update_trade_outcomes(results, histories, output_path="reports/trade_outcome
         if all(key):
             records[key] = item
 
+    active_keys = {
+        (str(item.get("symbol", "")).upper(), str(item.get("setup", "")).upper())
+        for item in records.values()
+        if str(item.get("status", "ACTIVE")).upper() not in TERMINAL_STATUSES
+    }
     for result in results:
         symbol = str(result.get("symbol", "")).strip().upper().replace(".NS", "")
         setup = str(result.get("setup", "")).strip().upper().replace("_", "-")
@@ -168,7 +176,7 @@ def update_trade_outcomes(results, histories, output_path="reports/trade_outcome
         if not signal_date:
             continue
         key = (signal_date, symbol, setup)
-        if key not in records:
+        if key not in records and (symbol, setup) not in active_keys:
             record = _blank_record()
             record.update({
                 "signal_date": signal_date,
@@ -192,6 +200,7 @@ def update_trade_outcomes(results, histories, output_path="reports/trade_outcome
                 "status": "ACTIVE",
             })
             records[key] = record
+            active_keys.add((symbol, setup))
 
     # Update all records from bars after their signal date, including if a run was missed.
     for key, record in list(records.items()):
