@@ -148,14 +148,6 @@ def build_telegram_message(df, summary=None):
         "",
     ]
 
-    if not data.empty:
-        lines.extend([
-            "Targets: T1=1R | T2=2R | T3=3R | T4=4R",
-            "R = Entry − Stop Loss",
-            "━━━━━━━━━━━━━━━━━━━━",
-            "",
-        ])
-
     sections = [
         ("BREAKOUT STOCKS", "BREAKOUT"),
         ("PRE-BREAKOUT", "PRE-BREAKOUT"),
@@ -180,7 +172,7 @@ def build_telegram_message(df, summary=None):
         for _, row in matches.iterrows():
             rank += 1
             symbol = str(row.get("symbol", "")).strip()
-            lines.append(f"{rank}. {symbol} | {setup}")
+            lines.append(f"<b>{rank}. {symbol}</b> | {setup}")
             lines.append(
                 f"Score {fmt(row.get('score'), 1)} | "
                 f"Price ₹{fmt(row.get('price', row.get('entry')))}"
@@ -246,6 +238,7 @@ def send_telegram_message(message, token=None, chat_id=None):
     payload = {
         "chat_id": chat_id,
         "text": message,
+        "parse_mode": "HTML",
         "disable_web_page_preview": True,
     }
 
