@@ -228,6 +228,37 @@ def _base_metrics(data):
     )
 
 
+def _early_quality_metrics(data):
+    """Measure tightening price ranges and volume dry-up near a base."""
+    ranges = (
+        (data["High"] - data["Low"])
+        / data["Close"].replace(0, np.nan)
+    ).replace([np.inf, -np.inf], np.nan).dropna()
+    volumes = pd.to_numeric(data["Volume"], errors="coerce").fillna(0)
+
+    range_contraction = 1.0
+    volume_dryup_ratio = 1.0
+
+    # Compare the latest 10 sessions with the preceding 10 sessions.
+    if len(ranges) >= 20:
+        previous_range = float(ranges.iloc[-20:-10].mean())
+        recent_range = float(ranges.iloc[-10:].mean())
+        if previous_range > 0:
+            range_contraction = recent_range / previous_range
+
+    # Compare the latest 5-session average volume with the prior 15 sessions.
+    if len(volumes) >= 20:
+        previous_volume = float(volumes.iloc[-20:-5].mean())
+        recent_volume = float(volumes.iloc[-5:].mean())
+        if previous_volume > 0:
+            volume_dryup_ratio = recent_volume / previous_volume
+
+    return {
+        "range_contraction": float(range_contraction),
+        "volume_dryup_ratio": float(volume_dryup_ratio),
+    }
+
+
 def _breakout_metrics(data):
 
     if len(data) < (
@@ -806,6 +837,17 @@ def score_stock(
         elif trade["risk_pct"] <= 8:
             risk_score = 1
 
+        early_quality = _early_quality_metrics(data)
+
+        # Reward, but do not require, a tightening base and quiet-volume
+        # contraction before a breakout. The strict setup and MIN_SCORE
+        # filters in run_scan.py remain unchanged.
+        early_quality_bonus = 0
+        if early_quality["range_contraction"] <= 0.85:
+            early_quality_bonus += 3
+        if early_quality["volume_dryup_ratio"] <= 0.80:
+            early_quality_bonus += 2
+
         raw_score = (
             trend_score
             + rs_score
@@ -814,6 +856,7 @@ def score_stock(
             + volume_score
             + momentum_score
             + risk_score
+            + early_quality_bonus
         )
 
         # ----------------------------------------------------
@@ -858,6 +901,8 @@ def score_stock(
             "RVOL": round(volume["rvol"], 2),
             "BaseRange": round(base_range, 2),
             "Compression": round(compression, 2),
+            "RangeContraction": round(early_quality["range_contraction"], 3),
+            "VolumeDryupRatio": round(early_quality["volume_dryup_ratio"], 3),
             "Extension": round(trend["extension"], 2),
             "Resistance": round(resistance, 2),
             "ClosingStrength": round(candle["closing_strength"], 2),
@@ -880,6 +925,9 @@ def score_stock(
             "rvol": round(volume["rvol"], 2),
             "base_range": round(base_range, 2),
             "compression": round(compression, 2),
+            "range_contraction": round(early_quality["range_contraction"], 3),
+            "volume_dryup_ratio": round(early_quality["volume_dryup_ratio"], 3),
+            "early_quality_bonus": early_quality_bonus,
             "extension": round(trend["extension"], 2),
             "resistance": round(resistance, 2),
             "closing_strength": round(candle["closing_strength"], 2),
