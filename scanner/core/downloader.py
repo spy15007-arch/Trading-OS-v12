@@ -388,11 +388,52 @@ def download_all(
                 f"({len(frame)} sessions; {index}/{len(missing)})."
             )
         else:
-            still_missing.append(ticker)
-            print(
-                f"Individual retry could not recover {ticker} "
-                f"({index}/{len(missing)})."
+            # A one-year response can be short because of listing history or
+            # provider gaps. Request two years before declaring the symbol missing.
+            fallback_period = "2y" if period == "1y" else period
+            fallback = _download_batch(
+                [ticker],
+                fallback_period,
+                interval,
             )
+            frame = fallback.get(ticker)
+
+            if frame is not None and len(frame) >= 220:
+                results[ticker] = frame
+                recovered.append(ticker)
+                print(
+                    f"Extended-history retry recovered {ticker} "
+                    f"({len(frame)} sessions; {index}/{len(missing)})."
+                )
+            else:
+                # Some yfinance batch responses omit single symbols. Its
+                # Ticker.history endpoint is a separate fallback path.
+                try:
+                    history = yf.Ticker(ticker).history(
+                        period=fallback_period,
+                        interval=interval,
+                        auto_adjust=True,
+                        actions=False,
+                        timeout=30,
+                    )
+                    frame = _normalise_yf(history, ticker)
+                except Exception as exc:
+                    print(f"Ticker.history fallback failed for {ticker}: {exc}")
+                    frame = pd.DataFrame()
+
+                if frame is not None and len(frame) >= 220:
+                    results[ticker] = frame
+                    recovered.append(ticker)
+                    print(
+                        f"Ticker.history fallback recovered {ticker} "
+                        f"({len(frame)} sessions; {index}/{len(missing)})."
+                    )
+                else:
+                    still_missing.append(ticker)
+                    print(
+                        f"All retries failed for {ticker} "
+                        f"({index}/{len(missing)})."
+                    )
 
         if index < len(missing):
             time.sleep(1.0)
