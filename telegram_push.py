@@ -155,6 +155,16 @@ def build_telegram_message(df, summary=None):
         "",
     ]
 
+    if "tracked_signal_count" in summary:
+        rate = summary.get("target_before_stop_rate")
+        rate_text = "n/a" if rate is None else f"{fmt(rate, 1)}%"
+        lines.insert(
+            5,
+            f"Outcome log: {summary.get('tracked_signal_count', 0)} tracked | "
+            f"{summary.get('resolved_signal_count', 0)} resolved | "
+            f"T1 before stop {rate_text}",
+        )
+
     sections = [
         ("BREAKOUT STOCKS", "BREAKOUT"),
         ("PRE-BREAKOUT", "PRE-BREAKOUT"),
