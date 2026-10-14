@@ -360,7 +360,7 @@ def download_all(
 
         print(
             f"Progress: {min(start + len(batch), len(cleaned))}"
-            f"/{len(cleaned)} | Valid charts: {len(results)}"
+            f"/{len(cleaned)} | Histories received: {len(results)}"
         )
 
         if start + chunk < len(cleaned):
@@ -473,8 +473,12 @@ def download_all(
             + ", ".join(still_missing)
         )
 
+    usable_count = sum(
+        1 for ticker in cleaned
+        if ticker in results and len(results[ticker]) >= 220
+    )
     print(
-        f"Final download coverage: {len(results)}/{len(cleaned)} symbols."
+        f"Final usable-history coverage: {usable_count}/{len(cleaned)} symbols."
     )
     return results
 
