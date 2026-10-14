@@ -24,7 +24,7 @@ MIN_PRE_RSI = 55.0
 MIN_FRESH_RSI = 58.0
 
 MIN_PRE_RVOL = 0.65
-MIN_FRESH_RVOL = 1.40
+MIN_FRESH_RVOL = 1.50
 
 
 def _prepare_dataframe(df):
@@ -378,11 +378,24 @@ def _volume_metrics(data):
 
 
 def _candle_metrics(data):
+    """Measure whether the latest candle closes decisively, not on rejection."""
+    open_price = float(data["Open"].iloc[-1])
+    high = float(data["High"].iloc[-1])
+    low = float(data["Low"].iloc[-1])
+    close_price = float(data["Close"].iloc[-1])
+    candle_range = max(high - low, 0.0)
+
+    if candle_range <= 0:
+        body_ratio = 0.0
+        upper_wick_ratio = 1.0
+    else:
+        body_ratio = abs(close_price - open_price) / candle_range
+        upper_wick_ratio = (high - max(open_price, close_price)) / candle_range
 
     return {
-        "closing_strength": float(
-            closing_strength(data)
-        )
+        "closing_strength": float(closing_strength(data)),
+        "body_ratio": float(body_ratio),
+        "upper_wick_ratio": float(upper_wick_ratio),
     }
 
 
@@ -394,6 +407,8 @@ def _classify(
     trend,
     base_range,
     compression,
+    body_ratio=1.0,
+    upper_wick_ratio=0.0,
 ):
 
     if not trend["aligned"]:
@@ -411,6 +426,8 @@ def _classify(
         and rvol >= MIN_FRESH_RVOL
         and rsi_value >= MIN_FRESH_RSI
         and closing_strength_value >= 0.65
+        and body_ratio >= 0.30
+        and upper_wick_ratio <= 0.40
         and compression >= -5
     ):
 
@@ -787,6 +804,8 @@ def score_stock(
             trend,
             base_range,
             compression,
+            candle["body_ratio"],
+            candle["upper_wick_ratio"],
         )
 
         if setup is None:
@@ -906,6 +925,8 @@ def score_stock(
             "Extension": round(trend["extension"], 2),
             "Resistance": round(resistance, 2),
             "ClosingStrength": round(candle["closing_strength"], 2),
+            "CandleBodyRatio": round(candle["body_ratio"], 3),
+            "UpperWickRatio": round(candle["upper_wick_ratio"], 3),
             "Entry": trade["entry"],
             "SL": trade["sl"],
             "T1": trade["t1"],
@@ -931,6 +952,8 @@ def score_stock(
             "extension": round(trend["extension"], 2),
             "resistance": round(resistance, 2),
             "closing_strength": round(candle["closing_strength"], 2),
+            "candle_body_ratio": round(candle["body_ratio"], 3),
+            "upper_wick_ratio": round(candle["upper_wick_ratio"], 3),
             "price": trade["entry"],
             "entry": trade["entry"],
             "stop_loss": trade["sl"],
