@@ -100,6 +100,11 @@ def _prepare_results(df):
         "target_3": ("target_3", "t3"),
         "target_4": ("target_4", "t4"),
         "breakout_pct": ("breakout_pct", "breakoutdistance_pct"),
+        "resistance": ("resistance",),
+        "stock_rs": ("stock_rs",),
+        "extension": ("extension",),
+        "closing_strength": ("closing_strength",),
+        "risk_pct": ("risk_pct",),
     }
 
     for canonical, choices in aliases.items():
@@ -178,7 +183,17 @@ def build_telegram_message(df, summary=None):
                 f"Price ₹{fmt(row.get('price', row.get('entry')))}"
             )
             lines.append(
-                f"RSI {fmt(row.get('rsi'), 1)} | RVOL {fmt(row.get('rvol'))}"
+                f"Resistance ₹{fmt(row.get('resistance'))} | "
+                f"Distance {fmt(row.get('breakout_pct'))}%"
+            )
+            lines.append(
+                f"RSI {fmt(row.get('rsi'), 1)} | RVOL {fmt(row.get('rvol'))} | "
+                f"RS vs Nifty {fmt(row.get('stock_rs'))}%"
+            )
+            lines.append(
+                f"Close strength {fmt(row.get('closing_strength'))} | "
+                f"Extension {fmt(row.get('extension'))}% | "
+                f"Risk {fmt(row.get('risk_pct'))}%"
             )
             lines.append(
                 f"Entry ₹{fmt(row.get('entry'))} | SL ₹{fmt(row.get('stop_loss'))}"
