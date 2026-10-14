@@ -5,7 +5,7 @@
 **Data coverage:** 489/501 (98%)
 **Stocks scanned:** 501
 **Stocks with valid history:** 489
-**Raw setup candidates:** 1
+**Raw setup candidates:** 3
 **Qualified setups:** 1 (maximum 30)
 
 > Universe: official Nifty 50 + Nifty Next 50 + Nifty Midcap 150 + Nifty Smallcap 250 constituents.
@@ -17,7 +17,7 @@
 
 | Rank | Symbol | Setup | Score | Price | Breakout % | RSI | RVOL | Entry | SL | R | T1 | T2 | T3 | T4 |
 |---:|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1 | LAURUSLABS | PRE-BREAKOUT | 90.00 | 2059.40 | -0.28 | 63.21 | 0.67 | 2059.40 | 1982.01 | 77.39 | 2136.79 | 2214.18 | 2291.57 | 2368.96 |
+| 1 | LAURUSLABS | PRE-BREAKOUT | 87.00 | 2036.90 | -1.56 | 58.45 | 0.79 | 2036.90 | 1961.99 | 74.91 | 2111.81 | 2186.72 | 2261.63 | 2336.54 |
 
 ## BREAKOUT STOCKS
 
@@ -25,7 +25,7 @@ No candidates cleared the BREAKOUT category.
 
 ## PRE-BREAKOUT
 
-- **LAURUSLABS** — score 90.00, breakout -0.28%, RSI 63.21, RVOL 0.67; Entry 2059.40, SL 1982.01, T1 2136.79, T2 2214.18, T3 2291.57, T4 2368.96
+- **LAURUSLABS** — score 87.00, breakout -1.56%, RSI 58.45, RVOL 0.79; Entry 2036.90, SL 1961.99, T1 2111.81, T2 2186.72, T3 2261.63, T4 2336.54
 
 ## FRESH BREAKOUT
 

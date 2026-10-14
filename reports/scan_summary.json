@@ -1,10 +1,10 @@
 {
   "market_sentiment": "BEARISH",
   "status": "COMPLETE",
-  "generated_at": "2026-10-13T15:21:11.785868+00:00",
+  "generated_at": "2026-10-14T13:09:45.286789+00:00",
   "stocks_in_universe": 501,
   "valid_data_count": 489,
-  "raw_setup_count": 1,
+  "raw_setup_count": 3,
   "qualified_count": 1,
   "max_shortlist": 30,
   "coverage": "489/501 (98%)"
