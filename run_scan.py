@@ -728,6 +728,11 @@ def main():
             market_regime,
             "INCOMPLETE",
             coverage_text,
+            {
+                "stocks_in_universe": len(symbols),
+                "valid_data_count": valid_count,
+                **coverage_diagnostics,
+            },
         )
 
         print_results(
