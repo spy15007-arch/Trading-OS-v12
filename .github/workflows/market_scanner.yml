@@ -4,9 +4,10 @@ on:
   workflow_dispatch:
 
   schedule:
-    # 1:15 PM IST = 07:45 UTC
-    # Monday-Friday (GitHub Actions cron is UTC)
+    # 1:15 PM IST: early radar (daily-bar volume is provisional intraday).
     - cron: '45 7 * * 1-5'
+    # 3:45 PM IST: after-close scan for final daily-candle confirmation.
+    - cron: '15 10 * * 1-5'
 
 
 permissions:
@@ -29,6 +30,7 @@ jobs:
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
       PYTHONUNBUFFERED: '1'
+      SCAN_MODE: ${{ github.event.schedule == '45 7 * * 1-5' && 'MIDDAY_RADAR' || github.event.schedule == '15 10 * * 1-5' && 'CLOSE_CONFIRMATION' || 'MANUAL' }}
 
 
     steps:
