@@ -357,6 +357,12 @@ def build_markdown(results, market_regime, status, coverage_text, summary=None):
         f"**Status:** {status}",
         f"**Market regime:** {market_regime}",
         f"**Scan mode:** {str(summary.get('scan_mode', os.getenv('SCAN_MODE', 'MANUAL'))).upper()}",
+        (
+            f"**Outcome log:** {summary.get('tracked_signal_count', 0)} tracked; "
+            f"{summary.get('resolved_signal_count', 0)} resolved; "
+            f"{summary.get('t1_before_stop_count', 0)} first-target-before-stop; "
+            f"{summary.get('stop_first_count', 0)} stop-first."
+        ),
         f"**Data coverage:** {coverage_text}",
         f"**Stocks scanned:** {stocks_in_universe}",
         f"**Stocks with valid history:** {valid_data_count}",
@@ -501,6 +507,50 @@ def save_data_coverage(symbols, data_map):
     }
 
 
+def summarize_trade_outcomes(path="reports/trade_outcomes.csv"):
+    """Summarize resolved forward-tracked signals without treating open trades as wins/losses."""
+    outcome_path = Path(path)
+    if not outcome_path.exists():
+        return {
+            "tracked_signal_count": 0,
+            "resolved_signal_count": 0,
+            "t1_before_stop_count": 0,
+            "stop_first_count": 0,
+            "ambiguous_same_bar_count": 0,
+            "target_before_stop_rate": None,
+        }
+
+    try:
+        frame = pd.read_csv(outcome_path, dtype=str).fillna("")
+    except (OSError, pd.errors.ParserError, UnicodeDecodeError):
+        return {
+            "tracked_signal_count": 0,
+            "resolved_signal_count": 0,
+            "t1_before_stop_count": 0,
+            "stop_first_count": 0,
+            "ambiguous_same_bar_count": 0,
+            "target_before_stop_rate": None,
+        }
+
+    terminal = {"STOP_LOSS", "STOP_AFTER_TARGET", "TARGET_4", "TIMEOUT_20_SESSIONS"}
+    statuses = frame.get("status", pd.Series(dtype=str)).astype(str).str.upper()
+    resolved = frame[statuses.isin(terminal)]
+    first_event = resolved.get("first_event", pd.Series(dtype=str)).astype(str).str.upper()
+    target_first = int(first_event.str.startswith("T").sum())
+    stop_first = int(first_event.isin({"STOP_LOSS", "STOP_FIRST_AMBIGUOUS_BAR"}).sum())
+    ambiguous = int(first_event.eq("STOP_FIRST_AMBIGUOUS_BAR").sum())
+    decisive = target_first + stop_first
+
+    return {
+        "tracked_signal_count": int(len(frame)),
+        "resolved_signal_count": int(len(resolved)),
+        "t1_before_stop_count": target_first,
+        "stop_first_count": stop_first,
+        "ambiguous_same_bar_count": ambiguous,
+        "target_before_stop_rate": round(100 * target_first / decisive, 1) if decisive else None,
+    }
+
+
 def save_reports(
     results,
     market_regime,
@@ -556,6 +606,17 @@ def save_reports(
         "missing_data_count": int((summary or {}).get("missing_data_count", 0)),
         "missing_data_symbols": list((summary or {}).get("missing_data_symbols", [])),
     }
+    for key in (
+        "tracked_signal_count",
+        "resolved_signal_count",
+        "t1_before_stop_count",
+        "stop_first_count",
+        "ambiguous_same_bar_count",
+        "target_before_stop_rate",
+    ):
+        if key in (summary or {}):
+            report_summary[key] = (summary or {})[key]
+
     SUMMARY_FILE.write_text(json.dumps(report_summary, indent=2), encoding="utf-8")
 
     print(f"CSV report saved: {CSV_FILE}")
@@ -818,7 +879,9 @@ def main():
         # Tracking should never prevent a valid scan report or Telegram message.
         print(f"Trade outcome tracker update failed: {exc}")
 
+    outcome_summary = summarize_trade_outcomes()
     scan_summary = {
+        **outcome_summary,
         "stocks_in_universe": len(symbols),
         "valid_data_count": valid_count,
         "raw_setup_count": raw_setup_count,
