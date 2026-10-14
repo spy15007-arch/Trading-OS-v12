@@ -141,11 +141,13 @@ def build_telegram_message(df, summary=None):
     data = _prepare_results(df)
     summary = summary or {}
     market = str(summary.get("market_sentiment", "UNKNOWN")).upper()
+    scan_mode = str(summary.get("scan_mode", "MANUAL")).upper()
     total = summary.get("stocks_in_universe", "—")
     valid = summary.get("valid_data_count", "—")
     raw = summary.get("raw_setup_count", "—")
     lines = [
         "📊 TRADING OS v12",
+        f"Scan mode: {scan_mode}",
         f"Market sentiment: {market}",
         f"Stocks scanned: {total} | Valid history: {valid}",
         f"Raw setups: {raw} | Qualified: {len(data)} | Scan.md limit: {MAX_RESULTS}",
