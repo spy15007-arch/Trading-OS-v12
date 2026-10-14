@@ -28,6 +28,7 @@ REPORT_DIR = Path("reports")
 CSV_FILE = REPORT_DIR / "swing_scan.csv"
 MARKDOWN_FILE = REPORT_DIR / "swing_scan.md"
 SUMMARY_FILE = REPORT_DIR / "scan_summary.json"
+DATA_COVERAGE_FILE = REPORT_DIR / "data_coverage.csv"
 
 REPORT_COLUMNS = [
     "rank",
@@ -45,6 +46,19 @@ REPORT_COLUMNS = [
     "target_2",
     "target_3",
     "target_4",
+    "resistance",
+    "rs20",
+    "rs60",
+    "stock_rs",
+    "base_range",
+    "compression",
+    "range_contraction",
+    "volume_dryup_ratio",
+    "extension",
+    "closing_strength",
+    "candle_body_ratio",
+    "upper_wick_ratio",
+    "risk_pct",
 ]
 
 ALLOWED_SETUPS = {"PRE-BREAKOUT", "FRESH BREAKOUT"}
@@ -200,6 +214,22 @@ def clean_result(result, symbol):
     out["rvol"] = _num(
         pick("rvol", "RVOL", "relative_volume", default=0)
     )
+    for field, aliases in {
+        "resistance": ("resistance", "Resistance"),
+        "rs20": ("rs20", "RS20"),
+        "rs60": ("rs60", "RS60"),
+        "stock_rs": ("stock_rs", "StockRS"),
+        "base_range": ("base_range", "BaseRange"),
+        "compression": ("compression", "Compression"),
+        "range_contraction": ("range_contraction", "RangeContraction"),
+        "volume_dryup_ratio": ("volume_dryup_ratio", "VolumeDryupRatio"),
+        "extension": ("extension", "Extension"),
+        "closing_strength": ("closing_strength", "ClosingStrength"),
+        "candle_body_ratio": ("candle_body_ratio", "CandleBodyRatio"),
+        "upper_wick_ratio": ("upper_wick_ratio", "UpperWickRatio"),
+        "risk_pct": ("risk_pct", "RiskPct"),
+    }.items():
+        out[field] = _num(pick(*aliases, default=0))
 
     out["entry"] = _num(
         pick("entry", "Entry", "entry_price", default=out["price"])
@@ -259,6 +289,42 @@ def final_quality_filter(results):
 
         if entry <= 0 or stop <= 0 or stop >= entry:
             continue
+
+        breakout_pct = _num(result.get("breakout_pct"))
+        rvol = _num(result.get("rvol"))
+        rsi_value = _num(result.get("rsi"))
+        extension = _num(result.get("extension"))
+        risk_pct = _num(result.get("risk_pct"))
+        resistance = _num(result.get("resistance"))
+        closing_strength = _num(result.get("closing_strength"))
+        body_ratio = _num(result.get("candle_body_ratio"))
+        upper_wick_ratio = _num(result.get("upper_wick_ratio"))
+
+        # Hard gates prevent a high aggregate score from overriding weak
+        # breakout confirmation or an unacceptably wide stop.
+        if risk_pct > 8.0:
+            continue
+
+        if setup == "FRESH BREAKOUT":
+            if not (0 < breakout_pct <= 5.0):
+                continue
+            if resistance <= 0 or rvol < 1.50 or rsi_value < 58:
+                continue
+            if closing_strength < 0.65 or body_ratio < 0.30:
+                continue
+            if upper_wick_ratio > 0.40 or extension > 10.0:
+                continue
+        else:
+            if not (-4.0 <= breakout_pct <= 0):
+                continue
+            if resistance <= 0 or rvol < 0.65 or rsi_value < 55:
+                continue
+            if _num(result.get("base_range")) > 15.0:
+                continue
+            if _num(result.get("compression")) < 5.0:
+                continue
+            if extension > 10.0:
+                continue
 
         risk = entry - stop
 
@@ -391,6 +457,48 @@ def build_markdown(results, market_regime, status, coverage_text, summary=None):
 
     return "\n".join(lines) + "\n"
 
+def save_data_coverage(symbols, data_map):
+    """Write one auditable row per universe symbol, including missing history."""
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    rows = []
+    for raw_symbol in symbols:
+        symbol = str(raw_symbol).strip().upper().replace(".NS", "")
+        frame = normalise_dataframe(data_map.get(raw_symbol))
+        if frame is None:
+            rows.append({
+                "symbol": symbol,
+                "status": "DOWNLOAD_FAILED_OR_EMPTY",
+                "valid_bars": 0,
+                "last_date": "",
+            })
+        elif len(frame) < MIN_HISTORY_BARS:
+            rows.append({
+                "symbol": symbol,
+                "status": "INSUFFICIENT_HISTORY",
+                "valid_bars": len(frame),
+                "last_date": str(frame.index[-1])[:10],
+            })
+        else:
+            rows.append({
+                "symbol": symbol,
+                "status": "VALID",
+                "valid_bars": len(frame),
+                "last_date": str(frame.index[-1])[:10],
+            })
+    report = pd.DataFrame(rows, columns=["symbol", "status", "valid_bars", "last_date"])
+    report.to_csv(DATA_COVERAGE_FILE, index=False)
+    missing = report[report["status"] != "VALID"]
+    missing_symbols = missing["symbol"].astype(str).tolist()
+    print(f"Data coverage diagnostics saved: {DATA_COVERAGE_FILE}")
+    print(f"Unavailable/short-history symbols ({len(missing_symbols)}): "
+          + (", ".join(missing_symbols) if missing_symbols else "none"))
+    return {
+        "data_coverage_file": str(DATA_COVERAGE_FILE),
+        "missing_data_count": len(missing_symbols),
+        "missing_data_symbols": missing_symbols,
+    }
+
+
 def save_reports(
     results,
     market_regime,
@@ -442,6 +550,8 @@ def save_reports(
         "qualified_count": len(results),
         "max_shortlist": MAX_RESULTS,
         "coverage": coverage_text,
+        "missing_data_count": int((summary or {}).get("missing_data_count", 0)),
+        "missing_data_symbols": list((summary or {}).get("missing_data_symbols", [])),
     }
     SUMMARY_FILE.write_text(json.dumps(report_summary, indent=2), encoding="utf-8")
 
@@ -605,6 +715,7 @@ def main():
 
     coverage = valid_count / len(symbols) if symbols else 0.0
     coverage_text = f"{valid_count}/{len(symbols)} ({coverage:.0%})"
+    coverage_diagnostics = save_data_coverage(symbols, data_map)
 
     print(
         f"Valid historical data coverage: {coverage_text}; "
@@ -700,6 +811,7 @@ def main():
         "stocks_in_universe": len(symbols),
         "valid_data_count": valid_count,
         "raw_setup_count": raw_setup_count,
+        **coverage_diagnostics,
     }
 
     save_reports(
