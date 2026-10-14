@@ -3,6 +3,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 import json
 import math
+import os
 
 import pandas as pd
 
@@ -355,6 +356,7 @@ def build_markdown(results, market_regime, status, coverage_text, summary=None):
         "",
         f"**Status:** {status}",
         f"**Market regime:** {market_regime}",
+        f"**Scan mode:** {str(summary.get('scan_mode', os.getenv('SCAN_MODE', 'MANUAL'))).upper()}",
         f"**Data coverage:** {coverage_text}",
         f"**Stocks scanned:** {stocks_in_universe}",
         f"**Stocks with valid history:** {valid_data_count}",
@@ -542,6 +544,7 @@ def save_reports(
 
     report_summary = {
         "market_sentiment": market_regime,
+        "scan_mode": str((summary or {}).get("scan_mode", os.getenv("SCAN_MODE", "MANUAL"))).upper(),
         "status": status,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "stocks_in_universe": int((summary or {}).get("stocks_in_universe", 0)),
@@ -623,10 +626,12 @@ def _send_telegram_if_possible(context_label, reason):
 
 
 def main():
+    scan_mode = os.getenv("SCAN_MODE", "MANUAL").strip().upper()
     print(
         "\n"
         + "=" * 78
         + "\nTRADING OS v12 — SELECTIVE NIFTY 500 SWING SCANNER\n"
+        + f"\nSCAN MODE: {scan_mode}\n"
         + "=" * 78
     )
 
@@ -731,6 +736,7 @@ def main():
             {
                 "stocks_in_universe": len(symbols),
                 "valid_data_count": valid_count,
+                "scan_mode": scan_mode,
                 **coverage_diagnostics,
             },
         )
@@ -816,6 +822,7 @@ def main():
         "stocks_in_universe": len(symbols),
         "valid_data_count": valid_count,
         "raw_setup_count": raw_setup_count,
+        "scan_mode": scan_mode,
         **coverage_diagnostics,
     }
 
