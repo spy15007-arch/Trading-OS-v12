@@ -295,7 +295,9 @@ def _download_batch(
 
                 normalized = _normalise_yf(frame, ticker)
 
-                if len(normalized) >= 220:
+                # Keep short but non-empty histories for diagnostics and let
+                # download_all retry them with a longer lookback.
+                if not normalized.empty:
                     output[ticker] = normalized
 
             return output
@@ -366,7 +368,10 @@ def download_all(
 
     # A successful multi-ticker response can still omit individual symbols.
     # Retry those symbols one at a time before reporting them as unavailable.
-    missing = [ticker for ticker in cleaned if ticker not in results]
+    missing = [
+        ticker for ticker in cleaned
+        if ticker not in results or len(results[ticker]) < 220
+    ]
     if missing:
         print(
             f"Retrying {len(missing)} symbols with individual downloads "
@@ -377,8 +382,11 @@ def download_all(
     still_missing = []
 
     for index, ticker in enumerate(missing, 1):
+        best_short = results.get(ticker, pd.DataFrame())
         single = _download_batch([ticker], period, interval)
         frame = single.get(ticker)
+        if frame is not None and len(frame) > len(best_short):
+            best_short = frame
 
         if frame is not None and len(frame) >= 220:
             results[ticker] = frame
@@ -397,6 +405,8 @@ def download_all(
                 interval,
             )
             frame = fallback.get(ticker)
+            if frame is not None and len(frame) > len(best_short):
+                best_short = frame
 
             if frame is not None and len(frame) >= 220:
                 results[ticker] = frame
@@ -421,6 +431,9 @@ def download_all(
                     print(f"Ticker.history fallback failed for {ticker}: {exc}")
                     frame = pd.DataFrame()
 
+                if frame is not None and len(frame) > len(best_short):
+                    best_short = frame
+
                 if frame is not None and len(frame) >= 220:
                     results[ticker] = frame
                     recovered.append(ticker)
@@ -430,10 +443,19 @@ def download_all(
                     )
                 else:
                     still_missing.append(ticker)
-                    print(
-                        f"All retries failed for {ticker} "
-                        f"({index}/{len(missing)})."
-                    )
+                    if best_short is not None and not best_short.empty:
+                        results[ticker] = best_short
+                        print(
+                            f"Insufficient history for {ticker}: "
+                            f"{len(best_short)} valid bars after retries "
+                            f"({index}/{len(missing)})."
+                        )
+                    else:
+                        results.pop(ticker, None)
+                        print(
+                            f"All retries failed for {ticker} "
+                            f"({index}/{len(missing)})."
+                        )
 
         if index < len(missing):
             time.sleep(1.0)
