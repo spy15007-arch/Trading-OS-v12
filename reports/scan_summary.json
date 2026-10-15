@@ -1,11 +1,33 @@
 {
   "market_sentiment": "BEARISH",
+  "scan_mode": "MANUAL",
   "status": "COMPLETE",
-  "generated_at": "2026-10-14T13:09:45.286789+00:00",
+  "generated_at": "2026-10-15T08:20:08.473109+00:00",
   "stocks_in_universe": 501,
   "valid_data_count": 489,
-  "raw_setup_count": 3,
+  "raw_setup_count": 1,
   "qualified_count": 1,
   "max_shortlist": 30,
-  "coverage": "489/501 (98%)"
+  "coverage": "489/501 (98%)",
+  "missing_data_count": 12,
+  "missing_data_symbols": [
+    "VAML",
+    "ICICIAMC",
+    "MEESHO",
+    "BAGMANE",
+    "BHARATCOAL",
+    "CMPDI",
+    "CLEANMAX",
+    "DUMMYHEG",
+    "FRACTAL",
+    "VISL",
+    "VOGL",
+    "VEDPOWER"
+  ],
+  "tracked_signal_count": 3,
+  "resolved_signal_count": 1,
+  "t1_before_stop_count": 0,
+  "stop_first_count": 1,
+  "ambiguous_same_bar_count": 0,
+  "target_before_stop_rate": 0.0
 }
