@@ -2,6 +2,16 @@ name: Trading OS v12 Scanner
 
 on:
   workflow_dispatch:
+    inputs:
+      scan_mode:
+        description: "Choose what the manual run should do"
+        required: true
+        type: choice
+        default: MANUAL
+        options:
+          - MANUAL
+          - MIDDAY_RADAR
+          - CLOSE_CONFIRMATION
 
   schedule:
     # 1:15 PM IST: early radar (daily-bar volume is provisional intraday).
@@ -30,7 +40,7 @@ jobs:
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
       PYTHONUNBUFFERED: '1'
-      SCAN_MODE: ${{ github.event.schedule == '45 7 * * 1-5' && 'MIDDAY_RADAR' || github.event.schedule == '15 10 * * 1-5' && 'CLOSE_CONFIRMATION' || 'MANUAL' }}
+      SCAN_MODE: ${{ github.event.schedule == '45 7 * * 1-5' && 'MIDDAY_RADAR' || github.event.schedule == '15 10 * * 1-5' && 'CLOSE_CONFIRMATION' || inputs.scan_mode || 'MANUAL' }}
 
 
     steps:
