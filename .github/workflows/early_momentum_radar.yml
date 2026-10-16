@@ -1,0 +1,83 @@
+name: Early Momentum Radar
+
+on:
+  workflow_dispatch:
+    inputs:
+      radar_mode:
+        description: "Choose radar snapshot"
+        required: true
+        type: choice
+        default: MANUAL
+        options:
+          - MANUAL
+          - EARLY_WATCH
+          - PRE_CLOSE_CHECK
+  schedule:
+    # 2:15 PM IST = 08:45 UTC; daily-bar snapshot may be provisional.
+    - cron: '45 8 * * 1-5'
+    # 3:20 PM IST = 09:50 UTC; pre-close snapshot may still change.
+    - cron: '50 9 * * 1-5'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: early-momentum-radar
+  cancel-in-progress: false
+
+jobs:
+  radar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      PYTHONUNBUFFERED: '1'
+      RADAR_MODE: ${{ github.event.schedule == '45 8 * * 1-5' && 'EARLY_WATCH' || github.event.schedule == '50 9 * * 1-5' && 'PRE_CLOSE_CHECK' || inputs.radar_mode || 'MANUAL' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Check Python syntax
+        run: python -m compileall -q early_momentum_radar.py scanner telegram_push.py
+      - name: Run radar unit tests
+        run: python -m unittest discover -s tests -p 'test_early_momentum_radar.py' -v
+      - name: Run Early Momentum Radar
+        run: python early_momentum_radar.py
+      - name: Commit radar reports
+        if: success()
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reports/early_momentum_radar.csv reports/early_momentum_radar.md reports/early_momentum_summary.json reports/early_momentum_diagnostics.csv
+          if git diff --cached --quiet; then
+            echo "No radar report changes to commit."
+          else
+            git commit -m "Refresh Early Momentum Radar reports"
+            git push
+          fi
+      - name: Show radar report
+        if: always()
+        run: |
+          if [ -f reports/early_momentum_radar.md ]; then
+            cat reports/early_momentum_radar.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Early Momentum Radar report was not created." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload radar reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: early-momentum-radar-${{ github.run_number }}
+          path: reports/early_momentum_*
+          if-no-files-found: warn
+          retention-days: 7
