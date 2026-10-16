@@ -20,7 +20,7 @@ def make_history(kind="watch", n=250):
         low[-22:-1] = close[-22:-1] * 0.994
         close[-1], open_[-1], high[-1], low[-1], volume[-1] = 110.0, 109.5, 110.6, 109.2, 100_000
     elif kind == "breakout":
-        close[-22:-1] = np.linspace(108.0, 110.0, 21)
+        close[-22:-1] = np.linspace(108.0, 109.5, 21) + 0.6 * np.sin(np.arange(21) * 1.7)
         high[-22:-1] = close[-22:-1] * 1.004
         low[-22:-1] = close[-22:-1] * 0.996
         close[-1], open_[-1], high[-1], low[-1], volume[-1] = 111.0, 109.8, 111.2, 109.5, 150_000
