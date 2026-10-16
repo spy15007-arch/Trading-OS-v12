@@ -9,6 +9,7 @@ import json
 import math
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 import numpy as np
@@ -226,7 +227,7 @@ def build_message(results, summary):
 def main():
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     mode = os.getenv("RADAR_MODE", "MANUAL").strip().upper()
-    now = datetime.now().astimezone()
+    now = datetime.now(ZoneInfo("Asia/Kolkata"))
     print(f"EARLY MOMENTUM RADAR | mode={mode} | runner time={now.isoformat()}")
     symbols = get_nifty500_symbols()
     frames = download_all(symbols, period="1y", interval="1d", chunk=10)
