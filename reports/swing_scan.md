@@ -2,7 +2,7 @@
 
 **Status:** COMPLETE
 **Market regime:** BEARISH
-**Scan mode:** MANUAL
+**Scan mode:** MIDDAY_RADAR
 **Outcome log:** 5 tracked; 1 resolved; 0 first-target-before-stop; 1 stop-first.
 **Data coverage:** 489/501 (98%)
 **Stocks scanned:** 501
