@@ -2,12 +2,12 @@
 
 **Status:** COMPLETE
 **Market regime:** BEARISH
-**Scan mode:** CLOSE_CONFIRMATION
-**Outcome log:** 4 tracked; 1 resolved; 0 first-target-before-stop; 1 stop-first.
+**Scan mode:** MANUAL
+**Outcome log:** 5 tracked; 1 resolved; 0 first-target-before-stop; 1 stop-first.
 **Data coverage:** 489/501 (98%)
 **Stocks scanned:** 501
 **Stocks with valid history:** 489
-**Raw setup candidates:** 2
+**Raw setup candidates:** 1
 **Qualified setups:** 1 (maximum 30)
 
 > Universe: official Nifty 50 + Nifty Next 50 + Nifty Midcap 150 + Nifty Smallcap 250 constituents.
@@ -19,7 +19,7 @@
 
 | Rank | Symbol | Setup | Score | Price | Breakout % | RSI | RVOL | Entry | SL | R | T1 | T2 | T3 | T4 |
 |---:|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1 | SAGILITY | PRE-BREAKOUT | 76.00 | 45.30 | -3.00 | 55.78 | 1.09 | 45.30 | 43.41 | 1.89 | 47.19 | 49.08 | 50.97 | 52.86 |
+| 1 | CASTROLIND | PRE-BREAKOUT | 85.00 | 196.79 | -3.25 | 55.03 | 0.71 | 196.79 | 192.80 | 3.99 | 200.78 | 204.77 | 208.76 | 212.75 |
 
 ## BREAKOUT STOCKS
 
@@ -27,7 +27,7 @@ No candidates cleared the BREAKOUT category.
 
 ## PRE-BREAKOUT
 
-- **SAGILITY** — score 76.00, breakout -3.00%, RSI 55.78, RVOL 1.09; Entry 45.30, SL 43.41, T1 47.19, T2 49.08, T3 50.97, T4 52.86
+- **CASTROLIND** — score 85.00, breakout -3.25%, RSI 55.03, RVOL 0.71; Entry 196.79, SL 192.80, T1 200.78, T2 204.77, T3 208.76, T4 212.75
 
 ## FRESH BREAKOUT
 
