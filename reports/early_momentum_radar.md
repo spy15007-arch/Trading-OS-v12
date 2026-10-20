@@ -1,7 +1,7 @@
 # Early Momentum Radar — Trading OS v12
 
-- **Mode:** PRE_CLOSE_CHECK
-- **Generated:** 2026-10-19 22:09:21 IST
+- **Mode:** EARLY_WATCH
+- **Generated:** 2026-10-20 19:22:27 IST
 - **Universe / valid histories:** 501 / 489
 - **Candidates:** 30 (EARLY WATCH 29; FIRST-CANDLE 1)
 - **Data note:** yfinance daily OHLCV is not a guaranteed real-time broker feed; intraday snapshots may be delayed or provisional.
@@ -119,7 +119,7 @@
 
 ## 23. AIIL — EARLY WATCH (score 66.0)
 - Price ₹548.95; resistance ₹575.25; breakout distance -4.57%
-- RSI 50.4; RVOL 0.56; RS vs Nifty +5.64%; extension 0.01%
+- RSI 50.4; RVOL 0.57; RS vs Nifty +5.64%; extension 0.01%
 - Reference entry ₹548.95; reference stop ₹536.85; risk 2.20%
 
 ## 24. JINDALSAW — EARLY WATCH (score 66.0)
