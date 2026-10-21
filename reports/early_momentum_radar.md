@@ -1,7 +1,7 @@
 # Early Momentum Radar — Trading OS v12
 
-- **Mode:** EARLY_WATCH
-- **Generated:** 2026-10-21 19:39:08 IST
+- **Mode:** PRE_CLOSE_CHECK
+- **Generated:** 2026-10-21 20:11:36 IST
 - **Universe / valid histories:** 501 / 489
 - **Candidates:** 30 (EARLY WATCH 29; FIRST-CANDLE 1)
 - **Data note:** yfinance daily OHLCV is not a guaranteed real-time broker feed; intraday snapshots may be delayed or provisional.
