@@ -1,8 +1,8 @@
 {
   "market_sentiment": "BEARISH",
-  "scan_mode": "MIDDAY_RADAR",
+  "scan_mode": "CLOSE_CONFIRMATION",
   "status": "COMPLETE",
-  "generated_at": "2026-10-21T13:20:01.633377+00:00",
+  "generated_at": "2026-10-21T15:22:51.681418+00:00",
   "stocks_in_universe": 501,
   "valid_data_count": 489,
   "raw_setup_count": 2,
