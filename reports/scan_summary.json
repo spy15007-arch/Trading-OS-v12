@@ -1,11 +1,11 @@
 {
   "market_sentiment": "BEARISH",
-  "scan_mode": "CLOSE_CONFIRMATION",
+  "scan_mode": "MIDDAY_RADAR",
   "status": "COMPLETE",
-  "generated_at": "2026-10-20T15:12:05.338421+00:00",
+  "generated_at": "2026-10-21T13:20:01.633377+00:00",
   "stocks_in_universe": 501,
   "valid_data_count": 489,
-  "raw_setup_count": 1,
+  "raw_setup_count": 2,
   "qualified_count": 1,
   "max_shortlist": 30,
   "coverage": "489/501 (98%)",
@@ -24,10 +24,10 @@
     "VOGL",
     "VEDPOWER"
   ],
-  "tracked_signal_count": 5,
-  "resolved_signal_count": 1,
+  "tracked_signal_count": 6,
+  "resolved_signal_count": 2,
   "t1_before_stop_count": 0,
-  "stop_first_count": 1,
+  "stop_first_count": 2,
   "ambiguous_same_bar_count": 0,
   "target_before_stop_rate": 0.0
 }
