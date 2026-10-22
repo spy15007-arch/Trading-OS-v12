@@ -1,9 +1,13 @@
 """Phone-friendly Telegram reporting for Trading OS v12."""
 import argparse
+import hashlib
 import json
 import math
 import os
+import re
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests
@@ -289,6 +293,47 @@ def send_telegram_message(message, token=None, chat_id=None):
         return False
 
 
+def _dedupe_state_path(csv_path):
+    """Store the last successfully sent report beside the scan CSV."""
+    return Path(csv_path).with_name("telegram_dedupe_state.json")
+
+
+def _report_signature(message):
+    """Ignore only the scheduled mode label; keep every actual report detail."""
+    comparable = re.sub(
+        r"(?m)^Scan mode: .*?$",
+        "Scan mode: <same-day duplicate check>",
+        message,
+    )
+    return hashlib.sha256(comparable.encode("utf-8")).hexdigest()
+
+
+def _is_duplicate_report(message, csv_path):
+    """Return True only when this same report was sent earlier today."""
+    state_path = _dedupe_state_path(csv_path)
+    try:
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+
+    today = datetime.now(ZoneInfo("Asia/Kolkata")).date().isoformat()
+    return (
+        state.get("date_ist") == today
+        and state.get("signature") == _report_signature(message)
+    )
+
+
+def _save_report_signature(message, csv_path):
+    """Persist the report signature after Telegram confirms successful delivery."""
+    state_path = _dedupe_state_path(csv_path)
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    state = {
+        "date_ist": datetime.now(ZoneInfo("Asia/Kolkata")).date().isoformat(),
+        "signature": _report_signature(message),
+    }
+    state_path.write_text(json.dumps(state, indent=2) + "\\n", encoding="utf-8")
+
+
 def send_telegram_report(csv_path=DEFAULT_CSV, token=None, chat_id=None):
     """Send the report in one or more Telegram-safe chunks."""
     print("Preparing Telegram report...")
@@ -299,6 +344,12 @@ def send_telegram_report(csv_path=DEFAULT_CSV, token=None, chat_id=None):
     except (OSError, json.JSONDecodeError):
         summary = {}
     message = build_telegram_message(df, summary=summary)
+    if _is_duplicate_report(message, csv_path):
+        print(
+            "Telegram: identical report already sent today; "
+            "skipping duplicate scheduled notification."
+        )
+        return True
     chunks = split_telegram_message(message)
 
     resolved_token = (token or os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("BOT_TOKEN") or "").strip()
@@ -320,6 +371,7 @@ def send_telegram_report(csv_path=DEFAULT_CSV, token=None, chat_id=None):
             break
 
     if all_sent:
+        _save_report_signature(message, csv_path)
         print(f"Telegram report sent successfully ({len(chunks)} message(s)).")
     else:
         print("Telegram report was not sent completely.")
