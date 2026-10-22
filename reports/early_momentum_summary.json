@@ -1,11 +1,11 @@
 {
-  "scan_mode": "PRE_CLOSE_CHECK",
-  "generated_at_ist": "2026-10-21 20:11:36 IST",
+  "scan_mode": "EARLY_WATCH",
+  "generated_at_ist": "2026-10-22 19:37:47 IST",
   "stocks_in_universe": 501,
   "valid_data_count": 489,
   "candidate_count": 30,
-  "early_watch_count": 29,
-  "first_candle_count": 1,
+  "early_watch_count": 27,
+  "first_candle_count": 3,
   "diagnostic_count": 501,
   "data_source": "yfinance daily OHLCV; not a guaranteed real-time broker feed"
 }
