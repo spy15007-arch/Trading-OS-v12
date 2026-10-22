@@ -2,8 +2,8 @@
 
 **Status:** COMPLETE
 **Market regime:** BEARISH
-**Scan mode:** CLOSE_CONFIRMATION
-**Outcome log:** 6 tracked; 2 resolved; 0 first-target-before-stop; 2 stop-first.
+**Scan mode:** MIDDAY_RADAR
+**Outcome log:** 6 tracked; 3 resolved; 0 first-target-before-stop; 3 stop-first.
 **Data coverage:** 489/501 (98%)
 **Stocks scanned:** 501
 **Stocks with valid history:** 489
@@ -19,7 +19,7 @@
 
 | Rank | Symbol | Setup | Score | Price | Breakout % | RSI | RVOL | Entry | SL | R | T1 | T2 | T3 | T4 |
 |---:|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1 | PETRONET | PRE-BREAKOUT | 82.00 | 295.00 | -1.54 | 56.59 | 1.58 | 295.00 | 288.00 | 7.00 | 302.00 | 309.00 | 316.00 | 323.00 |
+| 1 | CASTROLIND | PRE-BREAKOUT | 90.00 | 197.38 | -2.96 | 56.21 | 1.10 | 197.38 | 192.80 | 4.58 | 201.96 | 206.54 | 211.12 | 215.70 |
 
 ## BREAKOUT STOCKS
 
@@ -27,7 +27,7 @@ No candidates cleared the BREAKOUT category.
 
 ## PRE-BREAKOUT
 
-- **PETRONET** — score 82.00, breakout -1.54%, RSI 56.59, RVOL 1.58; Entry 295.00, SL 288.00, T1 302.00, T2 309.00, T3 316.00, T4 323.00
+- **CASTROLIND** — score 90.00, breakout -2.96%, RSI 56.21, RVOL 1.10; Entry 197.38, SL 192.80, T1 201.96, T2 206.54, T3 211.12, T4 215.70
 
 ## FRESH BREAKOUT
 
