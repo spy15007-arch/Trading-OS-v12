@@ -5,9 +5,11 @@ intraday current-day values may be delayed or provisional.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import os
+import re
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from pathlib import Path
@@ -23,6 +25,7 @@ REPORT_DIR = Path("reports")
 CSV_FILE = REPORT_DIR / "early_momentum_radar.csv"
 DIAGNOSTICS_FILE = REPORT_DIR / "early_momentum_diagnostics.csv"
 SUMMARY_FILE = REPORT_DIR / "early_momentum_summary.json"
+RADAR_DEDUPE_STATE_FILE = REPORT_DIR / "early_momentum_telegram_dedupe_state.json"
 MARKDOWN_FILE = REPORT_DIR / "early_momentum_radar.md"
 MAX_RESULTS = 30
 MIN_WATCH_SCORE = 55
@@ -31,6 +34,35 @@ MAX_PREBREAKOUT_DISTANCE = 6.0
 MAX_FIRST_CANDLE_BREAKOUT = 2.5
 MAX_EXTENSION = 8.0
 MIN_HISTORY = 220
+
+
+def _radar_signature(message):
+    """Ignore only radar mode and snapshot timestamp when comparing same-day reports."""
+    comparable = re.sub(
+        r"(?m)^Scan: .*?$",
+        "Scan: <mode and timestamp omitted for duplicate check>",
+        message,
+    )
+    return hashlib.sha256(comparable.encode("utf-8")).hexdigest()
+
+
+def _radar_report_already_sent(message, state_path=RADAR_DEDUPE_STATE_FILE):
+    try:
+        state = json.loads(Path(state_path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    today = datetime.now(ZoneInfo("Asia/Kolkata")).date().isoformat()
+    return state.get("date_ist") == today and state.get("signature") == _radar_signature(message)
+
+
+def _save_radar_report_signature(message, state_path=RADAR_DEDUPE_STATE_FILE):
+    path = Path(state_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    state = {
+        "date_ist": datetime.now(ZoneInfo("Asia/Kolkata")).date().isoformat(),
+        "signature": _radar_signature(message),
+    }
+    path.write_text(json.dumps(state, indent=2) + "\\n", encoding="utf-8")
 
 
 def _num(value, default=0.0):
@@ -281,7 +313,11 @@ def main():
         ]
     MARKDOWN_FILE.write_text("\n".join(report) + "\n", encoding="utf-8")
     print(f"Radar complete: {len(symbols)} scanned; {valid_count} valid; {len(candidates)} candidates.")
-    message_chunks = split_telegram_message(build_message(candidates, summary), max_length=3800)
+    full_message = build_message(candidates, summary)
+    if _radar_report_already_sent(full_message):
+        print("Radar: identical report already sent today; skipping duplicate Telegram notification.")
+        return
+    message_chunks = split_telegram_message(full_message, max_length=3800)
     sent_all = True
     for i, chunk in enumerate(message_chunks, 1):
         if len(message_chunks) > 1:
@@ -290,6 +326,7 @@ def main():
             sent_all = False
             break
     if sent_all:
+        _save_radar_report_signature(full_message)
         print(f"Early Momentum Radar Telegram report sent successfully ({len(message_chunks)} message(s)).")
     else:
         print("Early Momentum Radar Telegram delivery failed.")
