@@ -59,6 +59,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add reports/early_momentum_radar.csv reports/early_momentum_radar.md reports/early_momentum_summary.json reports/early_momentum_diagnostics.csv
+          if [ -f reports/early_momentum_telegram_dedupe_state.json ]; then git add reports/early_momentum_telegram_dedupe_state.json; fi
           if git diff --cached --quiet; then
             echo "No radar report changes to commit."
           else
