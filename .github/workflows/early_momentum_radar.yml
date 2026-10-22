@@ -13,8 +13,8 @@ on:
           - EARLY_WATCH
           - PRE_CLOSE_CHECK
   schedule:
-    # One automatic Telegram report at 2:15 PM IST = 08:45 UTC.
-    - cron: '45 8 * * 1-5'
+    # Start at 1:00 PM IST to allow time for scan completion before 2:15 PM.
+    - cron: '30 7 * * 1-5'
 
 permissions:
   contents: write
@@ -31,7 +31,7 @@ jobs:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
       PYTHONUNBUFFERED: '1'
-      RADAR_MODE: ${{ github.event.schedule == '45 8 * * 1-5' && 'EARLY_WATCH' || inputs.radar_mode || 'MANUAL' }}
+      RADAR_MODE: ${{ github.event.schedule == '30 7 * * 1-5' && 'EARLY_WATCH' || inputs.radar_mode || 'MANUAL' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
