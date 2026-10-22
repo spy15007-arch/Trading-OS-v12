@@ -62,7 +62,7 @@ def _save_radar_report_signature(message, state_path=RADAR_DEDUPE_STATE_FILE):
         "date_ist": datetime.now(ZoneInfo("Asia/Kolkata")).date().isoformat(),
         "signature": _radar_signature(message),
     }
-    path.write_text(json.dumps(state, indent=2) + "\\n", encoding="utf-8")
+    path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
 
 
 def _num(value, default=0.0):
