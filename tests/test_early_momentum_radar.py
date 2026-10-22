@@ -1,9 +1,11 @@
+import tempfile
 import unittest
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from early_momentum_radar import evaluate_stock
+from early_momentum_radar import evaluate_stock, _radar_report_already_sent, _save_radar_report_signature
 
 
 def make_history(kind="watch", n=250):
@@ -31,6 +33,23 @@ def make_history(kind="watch", n=250):
 
 
 class EarlyMomentumRadarTests(unittest.TestCase):
+    def test_unchanged_radar_report_is_suppressed_across_modes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            state = Path(tmp) / "radar_state.json"
+            first = "EARLY RADAR\\nScan: EARLY_WATCH | Snapshot: 18:00\\nCandidate: ABC | Price 100"
+            second = "EARLY RADAR\\nScan: PRE_CLOSE_CHECK | Snapshot: 20:00\\nCandidate: ABC | Price 100"
+            self.assertFalse(_radar_report_already_sent(first, state))
+            _save_radar_report_signature(first, state)
+            self.assertTrue(_radar_report_already_sent(second, state))
+
+    def test_changed_radar_candidate_is_not_suppressed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            state = Path(tmp) / "radar_state.json"
+            first = "EARLY RADAR\\nScan: EARLY_WATCH | Snapshot: 18:00\\nCandidate: ABC | Price 100"
+            changed = "EARLY RADAR\\nScan: PRE_CLOSE_CHECK | Snapshot: 20:00\\nCandidate: ABC | Price 103"
+            _save_radar_report_signature(first, state)
+            self.assertFalse(_radar_report_already_sent(changed, state))
+
     def test_early_watch_near_resistance_is_detected(self):
         candidate, reason = evaluate_stock("TEST.NS", make_history("watch"))
         self.assertIsNone(reason)
