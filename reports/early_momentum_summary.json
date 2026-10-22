@@ -1,6 +1,6 @@
 {
-  "scan_mode": "EARLY_WATCH",
-  "generated_at_ist": "2026-10-22 19:37:47 IST",
+  "scan_mode": "PRE_CLOSE_CHECK",
+  "generated_at_ist": "2026-10-22 20:11:32 IST",
   "stocks_in_universe": 501,
   "valid_data_count": 489,
   "candidate_count": 30,
