@@ -331,7 +331,7 @@ def _save_report_signature(message, csv_path):
         "date_ist": datetime.now(ZoneInfo("Asia/Kolkata")).date().isoformat(),
         "signature": _report_signature(message),
     }
-    state_path.write_text(json.dumps(state, indent=2) + "\\n", encoding="utf-8")
+    state_path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
 
 
 def send_telegram_report(csv_path=DEFAULT_CSV, token=None, chat_id=None):
