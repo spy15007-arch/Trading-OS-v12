@@ -1,159 +1,159 @@
 # Early Momentum Radar — Trading OS v12
 
-- **Mode:** PRE_CLOSE_CHECK
-- **Generated:** 2026-10-22 20:11:32 IST
-- **Universe / valid histories:** 501 / 489
-- **Candidates:** 30 (EARLY WATCH 27; FIRST-CANDLE 3)
+- **Mode:** MANUAL
+- **Generated:** 2026-10-29 16:22:08 IST
+- **Universe / valid histories:** 501 / 488
+- **Candidates:** 30 (EARLY WATCH 23; FIRST-CANDLE 7)
 - **Data note:** yfinance daily OHLCV is not a guaranteed real-time broker feed; intraday snapshots may be delayed or provisional.
 - **Anti-chase:** candidates above +2.5% from 20-day resistance or >8% above EMA20 are excluded.
 
-## 1. CRISIL — FIRST-CANDLE BREAKOUT (score 82.0)
-- Price ₹4777.20; resistance ₹4706.20; breakout distance +1.51%
-- RSI 64.4; RVOL 5.22; RS vs Nifty +11.94%; extension 5.14%
-- Reference entry ₹4777.20; reference stop ₹4570.62; risk 4.32%
+## 1. BOSCHLTD — EARLY WATCH (score 85.0)
+- Price ₹47565.00; resistance ₹47625.00; breakout distance -0.13%
+- RSI 61.0; RVOL 1.29; RS vs Nifty +23.34%; extension 4.15%
+- Reference entry ₹47565.00; reference stop ₹45862.45; risk 3.58%
 
-## 2. KOTAKBANK — EARLY WATCH (score 82.0)
-- Price ₹437.00; resistance ₹453.10; breakout distance -3.55%
-- RSI 57.7; RVOL 0.66; RS vs Nifty +19.06%; extension 1.18%
-- Reference entry ₹437.00; reference stop ₹432.95; risk 0.93%
+## 2. PNB — EARLY WATCH (score 83.0)
+- Price ₹123.90; resistance ₹125.22; breakout distance -1.05%
+- RSI 63.9; RVOL 1.37; RS vs Nifty +17.06%; extension 4.21%
+- Reference entry ₹123.90; reference stop ₹119.23; risk 3.77%
 
-## 3. CASTROLIND — EARLY WATCH (score 81.0)
-- Price ₹197.38; resistance ₹203.40; breakout distance -2.96%
-- RSI 56.2; RVOL 1.10; RS vs Nifty +16.11%; extension 0.72%
-- Reference entry ₹197.38; reference stop ₹192.80; risk 2.32%
+## 3. KOTAKBANK — FIRST-CANDLE BREAKOUT (score 81.0)
+- Price ₹459.00; resistance ₹453.10; breakout distance +1.30%
+- RSI 68.0; RVOL 1.68; RS vs Nifty +22.89%; extension 5.14%
+- Reference entry ₹459.00; reference stop ₹443.71; risk 3.33%
 
-## 4. PVRINOX — EARLY WATCH (score 81.0)
-- Price ₹1419.90; resistance ₹1432.00; breakout distance -0.84%
-- RSI 65.8; RVOL 1.12; RS vs Nifty +31.87%; extension 5.91%
-- Reference entry ₹1419.90; reference stop ₹1345.83; risk 5.22%
+## 4. UNIONBANK — FIRST-CANDLE BREAKOUT (score 81.0)
+- Price ₹186.50; resistance ₹186.00; breakout distance +0.27%
+- RSI 62.5; RVOL 1.31; RS vs Nifty +14.60%; extension 4.36%
+- Reference entry ₹186.50; reference stop ₹178.72; risk 4.17%
 
-## 5. INDHOTEL — FIRST-CANDLE BREAKOUT (score 79.0)
-- Price ₹782.30; resistance ₹776.15; breakout distance +0.79%
-- RSI 65.6; RVOL 5.06; RS vs Nifty +12.07%; extension 5.88%
-- Reference entry ₹782.30; reference stop ₹751.70; risk 3.91%
+## 5. DIVISLAB — EARLY WATCH (score 81.0)
+- Price ₹9664.00; resistance ₹9699.50; breakout distance -0.37%
+- RSI 61.9; RVOL 0.66; RS vs Nifty +19.99%; extension 3.93%
+- Reference entry ₹9664.00; reference stop ₹9293.98; risk 3.83%
 
-## 6. CRAFTSMAN — EARLY WATCH (score 79.0)
-- Price ₹10998.00; resistance ₹11353.00; breakout distance -3.13%
-- RSI 55.7; RVOL 1.08; RS vs Nifty +23.37%; extension 2.04%
-- Reference entry ₹10998.00; reference stop ₹10456.40; risk 4.92%
+## 6. ETERNAL — FIRST-CANDLE BREAKOUT (score 80.0)
+- Price ₹337.85; resistance ₹333.00; breakout distance +1.46%
+- RSI 59.4; RVOL 1.06; RS vs Nifty +16.23%; extension 4.35%
+- Reference entry ₹337.85; reference stop ₹322.15; risk 4.65%
 
-## 7. DRREDDY — EARLY WATCH (score 78.0)
-- Price ₹1239.00; resistance ₹1252.80; breakout distance -1.10%
-- RSI 58.5; RVOL 1.29; RS vs Nifty +13.12%; extension 1.79%
-- Reference entry ₹1239.00; reference stop ₹1199.43; risk 3.19%
+## 7. NYKAA — FIRST-CANDLE BREAKOUT (score 80.0)
+- Price ₹352.90; resistance ₹348.40; breakout distance +1.29%
+- RSI 61.1; RVOL 1.48; RS vs Nifty +9.74%; extension 5.02%
+- Reference entry ₹352.90; reference stop ₹336.77; risk 4.57%
 
-## 8. COFORGE — EARLY WATCH (score 77.0)
-- Price ₹1908.80; resistance ₹1970.00; breakout distance -3.11%
-- RSI 55.8; RVOL 1.72; RS vs Nifty +30.63%; extension 1.61%
-- Reference entry ₹1908.80; reference stop ₹1818.86; risk 4.71%
+## 8. GESHIP — FIRST-CANDLE BREAKOUT (score 80.0)
+- Price ₹1618.80; resistance ₹1583.00; breakout distance +2.26%
+- RSI 67.8; RVOL 1.72; RS vs Nifty +24.42%; extension 6.04%
+- Reference entry ₹1618.80; reference stop ₹1546.11; risk 4.49%
 
-## 9. ANANDRATHI — FIRST-CANDLE BREAKOUT (score 76.0)
-- Price ₹2223.00; resistance ₹2215.91; breakout distance +0.32%
-- RSI 62.5; RVOL 0.83; RS vs Nifty +13.99%; extension 3.43%
-- Reference entry ₹2223.00; reference stop ₹2145.55; risk 3.48%
+## 9. HAL — EARLY WATCH (score 79.0)
+- Price ₹4869.90; resistance ₹5012.00; breakout distance -2.84%
+- RSI 53.1; RVOL 0.68; RS vs Nifty +11.46%; extension 0.93%
+- Reference entry ₹4869.90; reference stop ₹4688.72; risk 3.72%
 
-## 10. BAJAJHLDNG — EARLY WATCH (score 76.0)
-- Price ₹11293.00; resistance ₹11449.00; breakout distance -1.36%
-- RSI 57.5; RVOL 3.30; RS vs Nifty +10.53%; extension 2.85%
-- Reference entry ₹11293.00; reference stop ₹10854.27; risk 3.88%
+## 10. APLAPOLLO — EARLY WATCH (score 79.0)
+- Price ₹2195.00; resistance ₹2224.50; breakout distance -1.33%
+- RSI 55.5; RVOL 1.85; RS vs Nifty +20.91%; extension 2.67%
+- Reference entry ₹2195.00; reference stop ₹2094.77; risk 4.57%
 
-## 11. PERSISTENT — EARLY WATCH (score 76.0)
-- Price ₹5740.50; resistance ₹6078.00; breakout distance -5.55%
-- RSI 54.9; RVOL 1.11; RS vs Nifty +14.42%; extension 1.54%
-- Reference entry ₹5740.50; reference stop ₹5457.61; risk 4.93%
+## 11. LENSKART — EARLY WATCH (score 79.0)
+- Price ₹681.75; resistance ₹698.10; breakout distance -2.34%
+- RSI 56.8; RVOL 1.08; RS vs Nifty +27.37%; extension 3.10%
+- Reference entry ₹681.75; reference stop ₹647.57; risk 5.01%
 
-## 12. MPHASIS — EARLY WATCH (score 75.0)
-- Price ₹2499.50; resistance ₹2580.00; breakout distance -3.12%
-- RSI 61.7; RVOL 0.91; RS vs Nifty +12.60%; extension 4.18%
-- Reference entry ₹2499.50; reference stop ₹2387.14; risk 4.50%
+## 12. COHANCE — EARLY WATCH (score 78.0)
+- Price ₹481.35; resistance ₹487.40; breakout distance -1.24%
+- RSI 62.3; RVOL 1.86; RS vs Nifty +20.58%; extension 4.70%
+- Reference entry ₹481.35; reference stop ₹456.04; risk 5.26%
 
-## 13. GESHIP — EARLY WATCH (score 75.0)
-- Price ₹1518.60; resistance ₹1583.00; breakout distance -4.07%
-- RSI 54.9; RVOL 0.84; RS vs Nifty +15.20%; extension 0.79%
-- Reference entry ₹1518.60; reference stop ₹1460.00; risk 3.86%
+## 13. DLF — FIRST-CANDLE BREAKOUT (score 77.0)
+- Price ₹694.35; resistance ₹685.85; breakout distance +1.24%
+- RSI 62.0; RVOL 0.99; RS vs Nifty +11.28%; extension 4.16%
+- Reference entry ₹694.35; reference stop ₹668.65; risk 3.70%
 
-## 14. PTCIL — EARLY WATCH (score 74.0)
-- Price ₹24745.00; resistance ₹26085.00; breakout distance -5.14%
-- RSI 60.0; RVOL 0.74; RS vs Nifty +43.51%; extension 2.82%
-- Reference entry ₹24745.00; reference stop ₹24105.00; risk 2.59%
+## 14. BHARTIARTL — EARLY WATCH (score 77.0)
+- Price ₹1972.10; resistance ₹1978.80; breakout distance -0.34%
+- RSI 65.2; RVOL 0.74; RS vs Nifty +7.50%; extension 4.87%
+- Reference entry ₹1972.10; reference stop ₹1904.96; risk 3.40%
 
-## 15. HAL — EARLY WATCH (score 73.0)
-- Price ₹4875.00; resistance ₹5012.00; breakout distance -2.73%
-- RSI 53.3; RVOL 1.35; RS vs Nifty +11.21%; extension 0.99%
-- Reference entry ₹4875.00; reference stop ₹4704.67; risk 3.49%
+## 15. PTCIL — EARLY WATCH (score 77.0)
+- Price ₹24700.00; resistance ₹26085.00; breakout distance -5.31%
+- RSI 57.7; RVOL 0.79; RS vs Nifty +44.78%; extension 2.83%
+- Reference entry ₹24700.00; reference stop ₹23354.78; risk 5.45%
 
-## 16. PNB — EARLY WATCH (score 72.0)
-- Price ₹122.50; resistance ₹125.22; breakout distance -2.17%
-- RSI 64.0; RVOL 1.63; RS vs Nifty +15.20%; extension 4.51%
-- Reference entry ₹122.50; reference stop ₹117.71; risk 3.91%
+## 16. COFORGE — EARLY WATCH (score 76.0)
+- Price ₹1962.00; resistance ₹2008.80; breakout distance -2.33%
+- RSI 59.1; RVOL 0.59; RS vs Nifty +18.39%; extension 2.59%
+- Reference entry ₹1962.00; reference stop ₹1857.19; risk 5.34%
 
-## 17. PETRONET — EARLY WATCH (score 71.0)
-- Price ₹290.40; resistance ₹299.60; breakout distance -3.07%
-- RSI 50.2; RVOL 0.81; RS vs Nifty +11.86%; extension -0.20%
-- Reference entry ₹290.40; reference stop ₹288.00; risk 0.83%
+## 17. GLAND — EARLY WATCH (score 76.0)
+- Price ₹3074.50; resistance ₹3171.00; breakout distance -3.04%
+- RSI 58.6; RVOL 0.90; RS vs Nifty +27.52%; extension 3.32%
+- Reference entry ₹3074.50; reference stop ₹2915.19; risk 5.18%
 
-## 18. ICICIBANK — EARLY WATCH (score 70.0)
-- Price ₹1398.50; resistance ₹1411.80; breakout distance -0.94%
-- RSI 58.7; RVOL 1.38; RS vs Nifty +3.00%; extension 2.47%
-- Reference entry ₹1398.50; reference stop ₹1360.24; risk 2.74%
+## 18. SONACOMS — EARLY WATCH (score 76.0)
+- Price ₹873.60; resistance ₹883.95; breakout distance -1.17%
+- RSI 65.3; RVOL 0.71; RS vs Nifty +18.70%; extension 7.73%
+- Reference entry ₹873.60; reference stop ₹829.86; risk 5.01%
 
-## 19. INDIANB — EARLY WATCH (score 70.0)
-- Price ₹855.70; resistance ₹876.50; breakout distance -2.37%
-- RSI 55.9; RVOL 0.82; RS vs Nifty +8.39%; extension 1.99%
-- Reference entry ₹855.70; reference stop ₹821.95; risk 3.94%
+## 19. PAYTM — EARLY WATCH (score 74.0)
+- Price ₹1686.50; resistance ₹1774.00; breakout distance -4.93%
+- RSI 51.8; RVOL 0.83; RS vs Nifty +27.03%; extension 0.96%
+- Reference entry ₹1686.50; reference stop ₹1590.52; risk 5.69%
 
-## 20. ECLERX — EARLY WATCH (score 68.0)
-- Price ₹1930.30; resistance ₹2022.60; breakout distance -4.56%
-- RSI 53.0; RVOL 1.22; RS vs Nifty +12.06%; extension 0.92%
-- Reference entry ₹1930.30; reference stop ₹1828.80; risk 5.26%
+## 20. PERSISTENT — EARLY WATCH (score 73.0)
+- Price ₹5880.00; resistance ₹6078.00; breakout distance -3.26%
+- RSI 59.6; RVOL 0.59; RS vs Nifty +12.89%; extension 2.72%
+- Reference entry ₹5880.00; reference stop ₹5592.89; risk 4.88%
 
-## 21. SAGILITY — EARLY WATCH (score 66.0)
-- Price ₹45.39; resistance ₹46.24; breakout distance -1.84%
-- RSI 55.5; RVOL 2.57; RS vs Nifty +10.54%; extension 2.13%
-- Reference entry ₹45.39; reference stop ₹43.39; risk 4.42%
+## 21. VIJAYA — EARLY WATCH (score 73.0)
+- Price ₹1464.20; resistance ₹1512.90; breakout distance -3.22%
+- RSI 56.2; RVOL 0.67; RS vs Nifty +15.71%; extension 2.57%
+- Reference entry ₹1464.20; reference stop ₹1394.39; risk 4.77%
 
-## 22. FEDERALBNK — EARLY WATCH (score 65.0)
-- Price ₹347.80; resistance ₹355.50; breakout distance -2.17%
-- RSI 61.8; RVOL 0.90; RS vs Nifty +3.35%; extension 3.91%
-- Reference entry ₹347.80; reference stop ₹332.89; risk 4.29%
+## 22. ICICIBANK — EARLY WATCH (score 72.0)
+- Price ₹1386.60; resistance ₹1411.80; breakout distance -1.78%
+- RSI 54.1; RVOL 0.89; RS vs Nifty +2.39%; extension 0.90%
+- Reference entry ₹1386.60; reference stop ₹1348.72; risk 2.73%
 
-## 23. BHARTIARTL — EARLY WATCH (score 64.0)
-- Price ₹1895.00; resistance ₹1929.60; breakout distance -1.79%
-- RSI 59.2; RVOL 1.66; RS vs Nifty +4.91%; extension 3.08%
-- Reference entry ₹1895.00; reference stop ₹1831.53; risk 3.35%
+## 23. MOTHERSON — EARLY WATCH (score 71.0)
+- Price ₹160.00; resistance ₹164.10; breakout distance -2.50%
+- RSI 52.4; RVOL 1.09; RS vs Nifty +10.64%; extension 1.13%
+- Reference entry ₹160.00; reference stop ₹153.24; risk 4.23%
 
-## 24. DLF — EARLY WATCH (score 64.0)
-- Price ₹663.25; resistance ₹685.85; breakout distance -3.30%
-- RSI 50.2; RVOL 0.70; RS vs Nifty +7.35%; extension -0.01%
-- Reference entry ₹663.25; reference stop ₹637.55; risk 3.88%
+## 24. INDIANB — EARLY WATCH (score 71.0)
+- Price ₹864.10; resistance ₹876.50; breakout distance -1.41%
+- RSI 58.2; RVOL 1.67; RS vs Nifty +9.68%; extension 2.77%
+- Reference entry ₹864.10; reference stop ₹831.69; risk 3.75%
 
-## 25. LAURUSLABS — EARLY WATCH (score 64.0)
-- Price ₹2002.50; resistance ₹2089.00; breakout distance -4.14%
-- RSI 50.8; RVOL 1.08; RS vs Nifty +22.33%; extension -0.55%
-- Reference entry ₹2002.50; reference stop ₹1956.60; risk 2.29%
+## 25. INDUSTOWER — EARLY WATCH (score 71.0)
+- Price ₹384.00; resistance ₹392.30; breakout distance -2.12%
+- RSI 52.8; RVOL 0.73; RS vs Nifty +8.21%; extension 0.96%
+- Reference entry ₹384.00; reference stop ₹370.00; risk 3.65%
 
-## 26. NUVOCO — EARLY WATCH (score 63.0)
-- Price ₹337.70; resistance ₹353.50; breakout distance -4.47%
-- RSI 55.5; RVOL 1.20; RS vs Nifty +1.62%; extension 2.24%
-- Reference entry ₹337.70; reference stop ₹320.46; risk 5.11%
+## 26. INDHOTEL — EARLY WATCH (score 70.0)
+- Price ₹810.00; resistance ₹815.30; breakout distance -0.65%
+- RSI 69.4; RVOL 0.67; RS vs Nifty +15.13%; extension 6.04%
+- Reference entry ₹810.00; reference stop ₹779.05; risk 3.82%
 
-## 27. UNIONBANK — EARLY WATCH (score 61.0)
-- Price ₹182.85; resistance ₹186.00; breakout distance -1.69%
-- RSI 61.0; RVOL 1.90; RS vs Nifty +12.94%; extension 4.00%
-- Reference entry ₹182.85; reference stop ₹174.76; risk 4.43%
+## 27. CUB — EARLY WATCH (score 69.0)
+- Price ₹226.90; resistance ₹235.18; breakout distance -3.52%
+- RSI 52.3; RVOL 3.11; RS vs Nifty +18.29%; extension 1.57%
+- Reference entry ₹226.90; reference stop ₹212.48; risk 6.36%
 
-## 28. LTM — EARLY WATCH (score 60.0)
-- Price ₹4274.00; resistance ₹4419.50; breakout distance -3.29%
-- RSI 54.1; RVOL 0.90; RS vs Nifty +7.44%; extension 1.94%
-- Reference entry ₹4274.00; reference stop ₹4059.46; risk 5.02%
+## 28. BANKBARODA — FIRST-CANDLE BREAKOUT (score 68.0)
+- Price ₹241.31; resistance ₹240.99; breakout distance +0.13%
+- RSI 58.4; RVOL 1.00; RS vs Nifty +5.01%; extension 2.96%
+- Reference entry ₹241.31; reference stop ₹233.25; risk 3.34%
 
-## 29. BLUESTARCO — EARLY WATCH (score 60.0)
-- Price ₹1564.50; resistance ₹1624.00; breakout distance -3.66%
-- RSI 52.1; RVOL 0.71; RS vs Nifty +0.66%; extension 0.61%
-- Reference entry ₹1564.50; reference stop ₹1514.60; risk 3.19%
+## 29. MCX — EARLY WATCH (score 67.0)
+- Price ₹3231.00; resistance ₹3415.00; breakout distance -5.39%
+- RSI 51.7; RVOL 0.88; RS vs Nifty +30.01%; extension 0.98%
+- Reference entry ₹3231.00; reference stop ₹3069.91; risk 4.99%
 
-## 30. INFY — EARLY WATCH (score 57.0)
-- Price ₹1153.35; resistance ₹1170.90; breakout distance -1.50%
-- RSI 63.8; RVOL 1.29; RS vs Nifty +12.32%; extension 6.70%
-- Reference entry ₹1153.35; reference stop ₹1104.58; risk 4.23%
+## 30. SAGILITY — EARLY WATCH (score 67.0)
+- Price ₹44.66; resistance ₹47.00; breakout distance -4.98%
+- RSI 50.4; RVOL 0.60; RS vs Nifty +9.43%; extension 0.02%
+- Reference entry ₹44.66; reference stop ₹42.71; risk 4.37%
 
