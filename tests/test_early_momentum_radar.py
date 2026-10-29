@@ -36,8 +36,8 @@ class EarlyMomentumRadarTests(unittest.TestCase):
     def test_unchanged_radar_report_is_suppressed_across_modes(self):
         with tempfile.TemporaryDirectory() as tmp:
             state = Path(tmp) / "radar_state.json"
-            first = "EARLY RADAR\\nScan: EARLY_WATCH | Snapshot: 18:00\\nCandidate: ABC | Price 100"
-            second = "EARLY RADAR\\nScan: PRE_CLOSE_CHECK | Snapshot: 20:00\\nCandidate: ABC | Price 100"
+            first = "EARLY RADAR\nScan: EARLY_WATCH | Snapshot: 18:00\nCandidate: ABC | Price 100"
+            second = "EARLY RADAR\nScan: PRE_CLOSE_CHECK | Snapshot: 20:00\nCandidate: ABC | Price 100"
             self.assertFalse(_radar_report_already_sent(first, state))
             _save_radar_report_signature(first, state)
             self.assertTrue(_radar_report_already_sent(second, state))
@@ -45,8 +45,8 @@ class EarlyMomentumRadarTests(unittest.TestCase):
     def test_changed_radar_candidate_is_not_suppressed(self):
         with tempfile.TemporaryDirectory() as tmp:
             state = Path(tmp) / "radar_state.json"
-            first = "EARLY RADAR\\nScan: EARLY_WATCH | Snapshot: 18:00\\nCandidate: ABC | Price 100"
-            changed = "EARLY RADAR\\nScan: PRE_CLOSE_CHECK | Snapshot: 20:00\\nCandidate: ABC | Price 103"
+            first = "EARLY RADAR\nScan: EARLY_WATCH | Snapshot: 18:00\nCandidate: ABC | Price 100"
+            changed = "EARLY RADAR\nScan: PRE_CLOSE_CHECK | Snapshot: 20:00\nCandidate: ABC | Price 103"
             _save_radar_report_signature(first, state)
             self.assertFalse(_radar_report_already_sent(changed, state))
 
