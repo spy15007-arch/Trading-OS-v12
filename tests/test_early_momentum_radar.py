@@ -54,7 +54,7 @@ class EarlyMomentumRadarTests(unittest.TestCase):
         candidate, reason = evaluate_stock("TEST.NS", make_history("watch"))
         self.assertIsNone(reason)
         self.assertIsNotNone(candidate)
-        self.assertEqual(candidate["setup"], "EARLY WATCH")
+        self.assertEqual(candidate["setup"], "PRE-BREAKOUT")
 
     def test_first_breakout_candle_is_detected(self):
         candidate, reason = evaluate_stock("TEST.NS", make_history("breakout"))
