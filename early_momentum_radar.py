@@ -301,6 +301,61 @@ def build_message(results, summary):
     return "\n".join(lines)
 
 
+def update_performance_tracker(candidates, frames, scan_date):
+    """Track each signal cohort from its first appearance; daily bars update MFE/MAE."""
+    columns = [
+        "symbol", "signal_date", "setup", "entry_price", "latest_close",
+        "max_favourable_pct", "max_adverse_pct", "hit_5pct", "hit_10pct",
+        "hit_15pct", "hit_20pct", "hit_25pct", "last_updated",
+    ]
+    if PERFORMANCE_FILE.exists():
+        try:
+            tracker = pd.read_csv(PERFORMANCE_FILE)
+        except Exception:
+            tracker = pd.DataFrame(columns=columns)
+    else:
+        tracker = pd.DataFrame(columns=columns)
+    for row in candidates:
+        key = (row["symbol"], scan_date)
+        if tracker.empty or not ((tracker["symbol"] == key[0]) & (tracker["signal_date"].astype(str) == key[1])).any():
+            tracker.loc[len(tracker)] = {
+                "symbol": key[0], "signal_date": key[1], "setup": row["setup"],
+                "entry_price": row["price"], "latest_close": row["price"],
+                "max_favourable_pct": 0.0, "max_adverse_pct": 0.0,
+                "hit_5pct": "", "hit_10pct": "", "hit_15pct": "",
+                "hit_20pct": "", "hit_25pct": "", "last_updated": scan_date,
+            }
+    for idx, trade in tracker.iterrows():
+        frame = frames.get(f"{trade['symbol']}.NS")
+        if frame is None:
+            frame = frames.get(trade["symbol"])
+        clean = _clean_data(frame)
+        if clean is None:
+            continue
+        entry_date = str(trade["signal_date"])[:10]
+        bars = clean.loc[clean.index.astype(str).str[:10] >= entry_date]
+        if bars.empty:
+            continue
+        entry = _num(trade["entry_price"])
+        if entry <= 0:
+            continue
+        mfe = max(0.0, (_num(bars["High"].max()) / entry - 1) * 100)
+        mae = min(0.0, (_num(bars["Low"].min()) / entry - 1) * 100)
+        tracker.at[idx, "latest_close"] = round(_num(bars["Close"].iloc[-1]), 2)
+        tracker.at[idx, "max_favourable_pct"] = round(max(_num(trade["max_favourable_pct"]), mfe), 2)
+        tracker.at[idx, "max_adverse_pct"] = round(min(_num(trade["max_adverse_pct"]), mae), 2)
+        for milestone in (5, 10, 15, 20, 25):
+            col = f"hit_{milestone}pct"
+            if pd.isna(trade.get(col)) or str(trade.get(col, "")).strip() in {"", "nan"}:
+                hit = bars.index[(bars["High"] / entry - 1) * 100 >= milestone]
+                if len(hit):
+                    tracker.at[idx, col] = str(hit[0])[:10]
+        tracker.at[idx, "last_updated"] = scan_date
+    if not tracker.empty:
+        tracker = tracker.sort_values(["signal_date", "symbol"], ascending=[False, True])
+    tracker.to_csv(PERFORMANCE_FILE, index=False)
+
+
 def main():
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     mode = os.getenv("RADAR_MODE", "MANUAL").strip().upper()
@@ -328,6 +383,8 @@ def main():
     category_priority = {"FIRST-CANDLE BREAKOUT": 0, "PRE-BREAKOUT": 1, "EARLY WATCH": 2, "BREAKOUT RETEST": 3}
     candidates.sort(key=lambda row: (category_priority.get(row["setup"], 9), -row["score"], -row["stock_rs"], row["risk_pct"]))
     candidates = candidates[:MAX_RESULTS]
+    scan_date = now.strftime("%Y-%m-%d")
+    update_performance_tracker(candidates, frames, scan_date)
     pd.DataFrame(candidates).to_csv(CSV_FILE, index=False)
     pd.DataFrame(diagnostics).to_csv(DIAGNOSTICS_FILE, index=False)
     summary = {
@@ -357,7 +414,8 @@ def main():
             f"## {i}. {row['symbol']} — {row['setup']} (score {row['score']})",
             f"- Price ₹{row['price']:.2f}; resistance ₹{row['resistance']:.2f}; breakout distance {row['breakout_pct']:+.2f}%",
             f"- RSI {row['rsi']:.1f}; RVOL {row['rvol']:.2f}; RS vs Nifty {row['stock_rs']:+.2f}%; extension {row['extension_pct']:.2f}%; 52W-high room {row['room_to_52w_high_pct']:.1f}%",
-            f"- Reference entry ₹{row['entry_reference']:.2f}; reference stop ₹{row['stop_reference']:.2f}; risk {row['risk_pct']:.2f}%", "",
+            f"- Reference entry ₹{row['entry_reference']:.2f}; reference stop ₹{row['stop_reference']:.2f}; risk {row['risk_pct']:.2f}%",
+            f"- 25% potential screen: {'YES' if row['has_25pct_room_to_52w_high'] else 'NOT CONFIRMED'} (historical 52-week high distance; not a forecast)", "",
         ]
     MARKDOWN_FILE.write_text("\n".join(report) + "\n", encoding="utf-8")
     print(f"Radar complete: {len(symbols)} scanned; {valid_count} valid; {len(candidates)} candidates.")
