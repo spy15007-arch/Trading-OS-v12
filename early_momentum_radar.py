@@ -28,12 +28,14 @@ SUMMARY_FILE = REPORT_DIR / "early_momentum_summary.json"
 RADAR_DEDUPE_STATE_FILE = REPORT_DIR / "early_momentum_telegram_dedupe_state.json"
 MARKDOWN_FILE = REPORT_DIR / "early_momentum_radar.md"
 MAX_RESULTS = 30
-MIN_WATCH_SCORE = 55
-MIN_BREAKOUT_SCORE = 60
-MAX_PREBREAKOUT_DISTANCE = 6.0
+MIN_WATCH_SCORE = 60
+MIN_BREAKOUT_SCORE = 65
+MIN_PREBREAKOUT_DISTANCE = 2.5
+MAX_EARLY_WATCH_DISTANCE = 6.0
 MAX_FIRST_CANDLE_BREAKOUT = 2.5
 MAX_EXTENSION = 8.0
 MIN_HISTORY = 220
+PERFORMANCE_FILE = REPORT_DIR / "early_momentum_performance.csv"
 
 
 def _radar_signature(message):
@@ -157,25 +159,48 @@ def evaluate_stock(symbol, frame, benchmark=None):
     if rsi_value < 48 or rsi_value > 76:
         return None, "RSI_OUTSIDE_EARLY_MOMENTUM_RANGE"
 
-    if 0 <= breakout_pct <= MAX_FIRST_CANDLE_BREAKOUT:
-        candle_ok = close_strength >= 0.55 and body_ratio >= 0.25 and upper_wick_ratio <= 0.50
+    # Detect a first post-breakout retest: a recent close above its own prior
+    # 20-session high, followed by a pullback that tests the old level and holds.
+    atr_value = _num(atr(df, 14).iloc[-1])
+    retest_level = 0.0
+    retest_found = False
+    if atr_value > 0 and len(df) >= 40:
+        prior_20_high = high_s.shift(1).rolling(20, min_periods=20).max()
+        for offset in range(-10, -1):
+            if offset - 20 < -len(df):
+                continue
+            breakout_day = offset
+            if _num(close_s.iloc[breakout_day]) > _num(prior_20_high.iloc[breakout_day]) and _num(volume_s.iloc[breakout_day]) >= _num(volume_s.iloc[max(0, breakout_day-20):breakout_day].mean()) * 1.15:
+                level = _num(prior_20_high.iloc[breakout_day])
+                if level > 0 and low_s.iloc[-1] <= level + 0.35 * atr_value and price >= level and price <= level + 1.25 * atr_value:
+                    retest_level, retest_found = level, True
+                    break
+
+    if retest_found:
+        if not soft_trend or rvol > 1.25 or close_strength < 0.55:
+            return None, "RETEST_NOT_HOLDING_OR_PULLBACK_VOLUME_NOT_CONTRACTING"
+        setup = "BREAKOUT RETEST"
+        resistance = retest_level
+        breakout_pct = ((price / resistance) - 1) * 100
+        distance_below = 0.0
+    elif 0 <= breakout_pct <= MAX_FIRST_CANDLE_BREAKOUT:
+        candle_ok = close_strength >= 0.60 and body_ratio >= 0.30 and upper_wick_ratio <= 0.45
         if not soft_trend:
             return None, "TREND_NOT_READY"
         if not candle_ok:
             return None, "WEAK_BREAKOUT_CANDLE"
-        if rvol < 0.80:
+        if rvol < 1.0:
             return None, "VOLUME_TOO_LOW"
         if rsi_value < 52:
             return None, "MOMENTUM_NOT_READY"
         setup = "FIRST-CANDLE BREAKOUT"
-    elif -MAX_PREBREAKOUT_DISTANCE <= breakout_pct < 0:
-        # Deliberately softer than the main scanner to catch developing bases early.
-        if not soft_trend:
-            return None, "TREND_NOT_READY"
-        if rvol < 0.55:
-            return None, "VOLUME_TOO_LOW"
-        if base_range > 22:
-            return None, "BASE_TOO_WIDE_FOR_WATCH"
+    elif -MIN_PREBREAKOUT_DISTANCE <= breakout_pct < 0:
+        if not soft_trend or rvol < 0.65 or base_range > 20 or stock_rs < 0:
+            return None, "PREBREAKOUT_QUALITY_FILTER"
+        setup = "PRE-BREAKOUT"
+    elif -MAX_EARLY_WATCH_DISTANCE <= breakout_pct < -MIN_PREBREAKOUT_DISTANCE:
+        if not soft_trend or rvol < 0.55 or base_range > 22:
+            return None, "EARLY_WATCH_QUALITY_FILTER"
         setup = "EARLY WATCH"
     else:
         return None, "ALREADY_EXTENDED_ABOVE_RESISTANCE" if breakout_pct > MAX_FIRST_CANDLE_BREAKOUT else "NOT_NEAR_RESISTANCE"
@@ -194,13 +219,17 @@ def evaluate_stock(symbol, frame, benchmark=None):
         score += 8 if rvol >= 1.5 else (6 if rvol >= 1.0 else 3)
         score += 8 if close_strength >= 0.75 else (5 if close_strength >= 0.60 else 2)
         score += 7 if body_ratio >= 0.50 else (4 if body_ratio >= 0.30 else 2)
+    elif setup == "BREAKOUT RETEST":
+        score += 12 if close_strength >= 0.75 else 8
+        score += 8 if rvol <= 0.9 else 3
+        score += 7 if stock_rs >= 4 else (4 if stock_rs >= 0 else 0)
     else:
         score += 12 if distance_below <= 1.5 else (9 if distance_below <= 3.5 else 6)
         score += 8 if 0.65 <= rvol <= 1.4 else (5 if rvol < 0.65 else 3)
         score += 8 if range_contraction <= 0.85 else (5 if range_contraction <= 1.0 else 2)
         score += 7 if 52 <= rsi_value <= 66 else 4
     score = round(min(score, 100.0), 1)
-    threshold = MIN_BREAKOUT_SCORE if setup == "FIRST-CANDLE BREAKOUT" else MIN_WATCH_SCORE
+    threshold = MIN_BREAKOUT_SCORE if setup in {"FIRST-CANDLE BREAKOUT", "BREAKOUT RETEST"} else MIN_WATCH_SCORE
     if score < threshold:
         return None, f"SCORE_BELOW_{threshold}"
 
@@ -226,6 +255,8 @@ def evaluate_stock(symbol, frame, benchmark=None):
         "stop_reference": round(stop, 2), "risk_pct": round(risk_pct, 2),
         "target_1_reference": round(price + risk, 2), "target_2_reference": round(price + 2*risk, 2),
         "target_3_reference": round(price + 3*risk, 2), "target_4_reference": round(price + 4*risk, 2),
+        "room_to_52w_high_pct": round(max(0.0, (_num(high_s.tail(252).max()) / price - 1) * 100), 2),
+        "has_25pct_room_to_52w_high": bool(_num(high_s.tail(252).max()) >= price * 1.25),
         "data_date": str(df.index[-1])[:10],
     }, None
 
@@ -235,24 +266,38 @@ def build_message(results, summary):
         "🛰️ EARLY MOMENTUM RADAR — TRADING OS v12",
         f"Scan: {summary.get('scan_mode', 'MANUAL')} | Snapshot: {summary.get('generated_at_ist', 'unknown IST')}",
         f"Universe: {summary.get('stocks_in_universe', 0)} | Valid histories: {summary.get('valid_data_count', 0)}",
-        f"Candidates: {len(results)} | EARLY WATCH: {sum(r['setup']=='EARLY WATCH' for r in results)} | FIRST-CANDLE: {sum(r['setup']=='FIRST-CANDLE BREAKOUT' for r in results)}",
+        f"Candidates: {len(results)} | BREAKOUT: {sum(r['setup']=='FIRST-CANDLE BREAKOUT' for r in results)} | PRE: {sum(r['setup']=='PRE-BREAKOUT' for r in results)} | WATCH: {sum(r['setup']=='EARLY WATCH' for r in results)} | RETEST: {sum(r['setup']=='BREAKOUT RETEST' for r in results)}",
         "Daily-bar snapshot may be delayed/provisional; verify live price and volume.",
         "Reference levels, not automatic buy instructions. No-trade is valid.",
         "━━━━━━━━━━━━━━━━━━━━",
     ]
     if not results:
         lines.append("No early-momentum candidates met the radar rules today.")
-    for i, row in enumerate(results, 1):
-        label = "👀 EARLY WATCH" if row["setup"] == "EARLY WATCH" else "⚡ FIRST-CANDLE BREAKOUT"
-        lines += [
-            f"<b>{i}. {row['symbol']}</b> | {label}",
-            f"Score {row['score']:.1f} | Price ₹{row['price']:.2f} | Resistance ₹{row['resistance']:.2f}",
-            f"Breakout {row['breakout_pct']:+.2f}% | RSI {row['rsi']:.1f} | RVOL {row['rvol']:.2f} | RS vs Nifty {row['stock_rs']:+.2f}%",
-            f"Extension {row['extension_pct']:.2f}% | Base {row['base_range_pct']:.1f}% | Risk ref {row['risk_pct']:.2f}%",
-            f"Entry ref ₹{row['entry_reference']:.2f} | SL ref ₹{row['stop_reference']:.2f}",
-            f"T1 ₹{row['target_1_reference']:.2f} | T2 ₹{row['target_2_reference']:.2f} | T3 ₹{row['target_3_reference']:.2f} | T4 ₹{row['target_4_reference']:.2f}",
-            "━━━━━━━━━━━━━━━━━━━━",
-        ]
+    category_order = ["FIRST-CANDLE BREAKOUT", "PRE-BREAKOUT", "EARLY WATCH", "BREAKOUT RETEST"]
+    category_titles = {
+        "FIRST-CANDLE BREAKOUT": "⚡ FIRST-CANDLE BREAKOUT",
+        "PRE-BREAKOUT": "🚀 PRE-BREAKOUT",
+        "EARLY WATCH": "👀 EARLY WATCH",
+        "BREAKOUT RETEST": "🔄 BREAKOUT RETEST",
+    }
+    for category in category_order:
+        group = [r for r in results if r["setup"] == category]
+        if not group:
+            continue
+        lines += ["", f"<b>{category_titles[category]} ({len(group)})</b>", "━━━━━━━━━━━━━━━━━━━━"]
+        for row in group:
+            room = row.get("room_to_52w_high_pct", 0)
+            room_tag = "25% ROOM* " if row.get("has_25pct_room_to_52w_high") else ""
+            lines += [
+                f"<b>{row['symbol']}</b> | Score {row['score']:.1f} | {room_tag}52W-high room {room:.1f}%",
+                f"Price ₹{row['price']:.2f} | Level ₹{row['resistance']:.2f} | Distance {row['breakout_pct']:+.2f}%",
+                f"RSI {row['rsi']:.1f} | RVOL {row['rvol']:.2f} | RS vs Nifty {row['stock_rs']:+.2f}%",
+                f"Extension {row['extension_pct']:.2f}% | Base {row['base_range_pct']:.1f}% | Risk ref {row['risk_pct']:.2f}%",
+                f"Entry ref ₹{row['entry_reference']:.2f} | SL ref ₹{row['stop_reference']:.2f}",
+                f"T1 ₹{row['target_1_reference']:.2f} | T2 ₹{row['target_2_reference']:.2f} | T3 ₹{row['target_3_reference']:.2f} | T4 ₹{row['target_4_reference']:.2f}",
+                "━━━━━━━━━━━━━━━━━━━━",
+            ]
+    lines.append("*25% room is only distance to the prior 52-week high, not a forecast or probability.")
     return "\n".join(lines)
 
 
@@ -280,7 +325,8 @@ def main():
             diagnostics.append({"symbol": candidate["symbol"], "status": "CANDIDATE", "reason": candidate["setup"], "score": candidate["score"]})
         else:
             diagnostics.append({"symbol": symbol.replace(".NS", ""), "status": "FILTERED", "reason": reason})
-    candidates.sort(key=lambda row: (row["score"], row["setup"] == "FIRST-CANDLE BREAKOUT"), reverse=True)
+    category_priority = {"FIRST-CANDLE BREAKOUT": 0, "PRE-BREAKOUT": 1, "EARLY WATCH": 2, "BREAKOUT RETEST": 3}
+    candidates.sort(key=lambda row: (category_priority.get(row["setup"], 9), -row["score"], -row["stock_rs"], row["risk_pct"]))
     candidates = candidates[:MAX_RESULTS]
     pd.DataFrame(candidates).to_csv(CSV_FILE, index=False)
     pd.DataFrame(diagnostics).to_csv(DIAGNOSTICS_FILE, index=False)
@@ -289,7 +335,9 @@ def main():
         "stocks_in_universe": len(symbols), "valid_data_count": valid_count,
         "candidate_count": len(candidates),
         "early_watch_count": sum(r["setup"] == "EARLY WATCH" for r in candidates),
+        "pre_breakout_count": sum(r["setup"] == "PRE-BREAKOUT" for r in candidates),
         "first_candle_count": sum(r["setup"] == "FIRST-CANDLE BREAKOUT" for r in candidates),
+        "breakout_retest_count": sum(r["setup"] == "BREAKOUT RETEST" for r in candidates),
         "diagnostic_count": len(diagnostics),
         "data_source": "yfinance daily OHLCV; not a guaranteed real-time broker feed",
     }
@@ -298,7 +346,7 @@ def main():
         "# Early Momentum Radar — Trading OS v12", "",
         f"- **Mode:** {mode}", f"- **Generated:** {summary['generated_at_ist']}",
         f"- **Universe / valid histories:** {len(symbols)} / {valid_count}",
-        f"- **Candidates:** {len(candidates)} (EARLY WATCH {summary['early_watch_count']}; FIRST-CANDLE {summary['first_candle_count']})",
+        f"- **Candidates:** {len(candidates)} (FIRST-CANDLE {summary['first_candle_count']}; PRE-BREAKOUT {summary['pre_breakout_count']}; EARLY WATCH {summary['early_watch_count']}; RETEST {summary['breakout_retest_count']})",
         "- **Data note:** yfinance daily OHLCV is not a guaranteed real-time broker feed; intraday snapshots may be delayed or provisional.",
         "- **Anti-chase:** candidates above +2.5% from 20-day resistance or >8% above EMA20 are excluded.", "",
     ]
@@ -308,7 +356,7 @@ def main():
         report += [
             f"## {i}. {row['symbol']} — {row['setup']} (score {row['score']})",
             f"- Price ₹{row['price']:.2f}; resistance ₹{row['resistance']:.2f}; breakout distance {row['breakout_pct']:+.2f}%",
-            f"- RSI {row['rsi']:.1f}; RVOL {row['rvol']:.2f}; RS vs Nifty {row['stock_rs']:+.2f}%; extension {row['extension_pct']:.2f}%",
+            f"- RSI {row['rsi']:.1f}; RVOL {row['rvol']:.2f}; RS vs Nifty {row['stock_rs']:+.2f}%; extension {row['extension_pct']:.2f}%; 52W-high room {row['room_to_52w_high_pct']:.1f}%",
             f"- Reference entry ₹{row['entry_reference']:.2f}; reference stop ₹{row['stop_reference']:.2f}; risk {row['risk_pct']:.2f}%", "",
         ]
     MARKDOWN_FILE.write_text("\n".join(report) + "\n", encoding="utf-8")
