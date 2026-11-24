@@ -297,7 +297,7 @@ def build_message(results, summary):
                 f"T1 ₹{row['target_1_reference']:.2f} | T2 ₹{row['target_2_reference']:.2f} | T3 ₹{row['target_3_reference']:.2f} | T4 ₹{row['target_4_reference']:.2f}",
                 "━━━━━━━━━━━━━━━━━━━━",
             ]
-    lines.append("*25% room is only distance to the prior 52-week high, not a forecast or probability.")
+    lines += ["*25% room is only distance to the prior 52-week high, not a forecast or probability.", "Trade management concept: at +25%, consider partial profit booking; trail the balance below the higher of a structure-based swing low or a ratcheting 2.5×ATR stop. Never lower a protective stop."]
     return "\n".join(lines)
 
 
@@ -333,7 +333,7 @@ def update_performance_tracker(candidates, frames, scan_date):
         if clean is None:
             continue
         entry_date = str(trade["signal_date"])[:10]
-        bars = clean.loc[clean.index.astype(str).str[:10] >= entry_date]
+        bars = clean.loc[[str(value)[:10] >= entry_date for value in clean.index]]
         if bars.empty:
             continue
         entry = _num(trade["entry_price"])
