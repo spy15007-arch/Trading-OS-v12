@@ -285,11 +285,11 @@ def build_message(results, summary):
         if not group:
             continue
         lines += ["", f"<b>{category_titles[category]} ({len(group)})</b>", "━━━━━━━━━━━━━━━━━━━━"]
-        for row in group:
+        for category_index, row in enumerate(group, 1):
             room = row.get("room_to_52w_high_pct", 0)
             room_tag = "25% ROOM* " if row.get("has_25pct_room_to_52w_high") else ""
             lines += [
-                f"<b>{row['symbol']}</b> | Score {row['score']:.1f} | {room_tag}52W-high room {room:.1f}%",
+                f"<b>{category_index}. {row['symbol']}</b> | Score {row['score']:.1f} | {room_tag}52W-high room {room:.1f}%",
                 f"Price ₹{row['price']:.2f} | Level ₹{row['resistance']:.2f} | Distance {row['breakout_pct']:+.2f}%",
                 f"RSI {row['rsi']:.1f} | RVOL {row['rvol']:.2f} | RS vs Nifty {row['stock_rs']:+.2f}%",
                 f"Extension {row['extension_pct']:.2f}% | Base {row['base_range_pct']:.1f}% | Risk ref {row['risk_pct']:.2f}%",
@@ -409,9 +409,21 @@ def main():
     ]
     if not candidates:
         report.append("No candidates qualified. No-trade is valid.")
-    for i, row in enumerate(candidates, 1):
-        report += [
-            f"## {i}. {row['symbol']} — {row['setup']} (score {row['score']})",
+    category_order = ["FIRST-CANDLE BREAKOUT", "PRE-BREAKOUT", "EARLY WATCH", "BREAKOUT RETEST"]
+    category_titles_md = {
+        "FIRST-CANDLE BREAKOUT": "⚡ First-Candle Breakout",
+        "PRE-BREAKOUT": "🚀 Pre-Breakout",
+        "EARLY WATCH": "👀 Early Watch",
+        "BREAKOUT RETEST": "🔄 Breakout Retest",
+    }
+    for category in category_order:
+        group = [row for row in candidates if row["setup"] == category]
+        if not group:
+            continue
+        report += [f"## {category_titles_md[category]} ({len(group)})", ""]
+        for category_index, row in enumerate(group, 1):
+            report += [
+            f"### {category_index}. {row['symbol']} — score {row['score']}",
             f"- Price ₹{row['price']:.2f}; resistance ₹{row['resistance']:.2f}; breakout distance {row['breakout_pct']:+.2f}%",
             f"- RSI {row['rsi']:.1f}; RVOL {row['rvol']:.2f}; RS vs Nifty {row['stock_rs']:+.2f}%; extension {row['extension_pct']:.2f}%; 52W-high room {row['room_to_52w_high_pct']:.1f}%",
             f"- Reference entry ₹{row['entry_reference']:.2f}; reference stop ₹{row['stop_reference']:.2f}; risk {row['risk_pct']:.2f}%",
