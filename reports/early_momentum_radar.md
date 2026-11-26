@@ -1,195 +1,195 @@
 # Early Momentum Radar — Trading OS v12
 
 - **Mode:** EARLY_WATCH
-- **Generated:** 2026-11-25 21:23:39 IST
+- **Generated:** 2026-11-26 21:04:19 IST
 - **Universe / valid histories:** 501 / 491
-- **Candidates:** 30 (FIRST-CANDLE 4; PRE-BREAKOUT 9; EARLY WATCH 17; RETEST 0)
+- **Candidates:** 30 (FIRST-CANDLE 5; PRE-BREAKOUT 10; EARLY WATCH 15; RETEST 0)
 - **Data note:** yfinance daily OHLCV is not a guaranteed real-time broker feed; intraday snapshots may be delayed or provisional.
 - **Anti-chase:** candidates above +2.5% from 20-day resistance or >8% above EMA20 are excluded.
 
-## ⚡ First-Candle Breakout (4)
+## ⚡ First-Candle Breakout (5)
 
-### 1. TRENT — score 77.0
-- Price ₹3319.60; resistance ₹3280.00; breakout distance +1.21%
-- RSI 70.1; RVOL 1.84; RS vs Nifty +7.49%; extension 6.28%; 52W-high room 30.9%
-- Reference entry ₹3319.60; reference stop ₹3189.36; risk 3.92%
+### 1. ANANDRATHI — score 81.0
+- Price ₹2410.00; resistance ₹2410.00; breakout distance +0.00%
+- RSI 72.5; RVOL 2.98; RS vs Nifty +3.17%; extension 2.99%; 52W-high room 0.8%
+- Reference entry ₹2410.00; reference stop ₹2354.28; risk 2.31%
+- 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
+
+### 2. LAURUSLABS — score 80.0
+- Price ₹2505.00; resistance ₹2488.00; breakout distance +0.68%
+- RSI 66.3; RVOL 1.01; RS vs Nifty +22.44%; extension 7.82%; 52W-high room 0.5%
+- Reference entry ₹2505.00; reference stop ₹2384.06; risk 4.83%
+- 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
+
+### 3. BAJAJHLDNG — score 75.0
+- Price ₹11933.00; resistance ₹11851.00; breakout distance +0.69%
+- RSI 65.4; RVOL 2.00; RS vs Nifty -2.15%; extension 6.25%; 52W-high room 0.7%
+- Reference entry ₹11933.00; reference stop ₹11410.91; risk 4.38%
+- 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
+
+### 4. KFINTECH — score 72.0
+- Price ₹995.00; resistance ₹985.00; breakout distance +1.02%
+- RSI 66.8; RVOL 3.81; RS vs Nifty -3.47%; extension 7.61%; 52W-high room 10.6%
+- Reference entry ₹995.00; reference stop ₹946.04; risk 4.92%
+- 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
+
+### 5. OBEROIRLTY — score 70.0
+- Price ₹1905.20; resistance ₹1890.00; breakout distance +0.80%
+- RSI 69.7; RVOL 1.62; RS vs Nifty -5.60%; extension 6.57%; 52W-high room 4.0%
+- Reference entry ₹1905.20; reference stop ₹1829.75; risk 3.96%
+- 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
+
+## 🚀 Pre-Breakout (10)
+
+### 1. GRAPHITE — score 85.0
+- Price ₹791.75; resistance ₹807.70; breakout distance -1.97%
+- RSI 55.2; RVOL 0.67; RS vs Nifty +8.48%; extension 2.02%; 52W-high room 10.4%
+- Reference entry ₹791.75; reference stop ₹760.00; risk 4.01%
+- 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
+
+### 2. LTTS — score 84.0
+- Price ₹4245.20; resistance ₹4347.40; breakout distance -2.35%
+- RSI 61.3; RVOL 0.77; RS vs Nifty +13.14%; extension 3.24%; 52W-high room 9.5%
+- Reference entry ₹4245.20; reference stop ₹4050.37; risk 4.59%
+- 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
+
+### 3. GAIL — score 83.0
+- Price ₹188.00; resistance ₹192.30; breakout distance -2.24%
+- RSI 61.0; RVOL 0.88; RS vs Nifty +1.89%; extension 2.08%; 52W-high room 2.3%
+- Reference entry ₹188.00; reference stop ₹184.77; risk 1.72%
+- 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
+
+### 4. INFY — score 81.0
+- Price ₹1183.00; resistance ₹1198.80; breakout distance -1.32%
+- RSI 62.7; RVOL 1.49; RS vs Nifty +1.49%; extension 5.03%; 52W-high room 39.8%
+- Reference entry ₹1183.00; reference stop ₹1128.37; risk 4.62%
 - 25% potential screen: YES (historical 52-week high distance; not a forecast)
 
-### 2. APOLLOTYRE — score 75.0
-- Price ₹437.35; resistance ₹435.75; breakout distance +0.37%
-- RSI 66.4; RVOL 1.92; RS vs Nifty -7.94%; extension 5.37%; 52W-high room 21.7%
-- Reference entry ₹437.35; reference stop ₹419.33; risk 4.12%
+### 5. TECHM — score 79.0
+- Price ₹1854.70; resistance ₹1860.00; breakout distance -0.28%
+- RSI 67.1; RVOL 0.96; RS vs Nifty +10.54%; extension 4.93%; 52W-high room 0.3%
+- Reference entry ₹1854.70; reference stop ₹1783.32; risk 3.85%
 - 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
 
-### 3. TORNTPHARM — score 74.0
-- Price ₹4895.50; resistance ₹4866.60; breakout distance +0.59%
-- RSI 64.9; RVOL 1.17; RS vs Nifty -6.54%; extension 4.12%; 52W-high room 7.2%
-- Reference entry ₹4895.50; reference stop ₹4741.19; risk 3.15%
+### 6. ICICIGI — score 77.0
+- Price ₹1740.00; resistance ₹1774.80; breakout distance -1.96%
+- RSI 64.6; RVOL 0.69; RS vs Nifty +2.59%; extension 3.73%; 52W-high room 15.7%
+- Reference entry ₹1740.00; reference stop ₹1677.06; risk 3.62%
 - 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
 
-### 4. ABSLAMC — score 67.0
-- Price ₹958.70; resistance ₹943.85; breakout distance +1.57%
-- RSI 58.9; RVOL 2.31; RS vs Nifty -13.89%; extension 4.62%; 52W-high room 24.6%
-- Reference entry ₹958.70; reference stop ₹908.60; risk 5.23%
+### 7. PTCIL — score 76.0
+- Price ₹24875.00; resistance ₹25415.00; breakout distance -2.12%
+- RSI 58.8; RVOL 1.42; RS vs Nifty +13.18%; extension 2.77%; 52W-high room 4.9%
+- Reference entry ₹24875.00; reference stop ₹23603.27; risk 5.11%
 - 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
 
-## 🚀 Pre-Breakout (9)
-
-### 1. DRREDDY — score 83.0
-- Price ₹1398.00; resistance ₹1406.10; breakout distance -0.58%
-- RSI 68.4; RVOL 1.25; RS vs Nifty +11.62%; extension 2.76%; 52W-high room 0.7%
-- Reference entry ₹1398.00; reference stop ₹1368.70; risk 2.10%
+### 8. ITCHOTELS — score 72.0
+- Price ₹186.10; resistance ₹190.19; breakout distance -2.15%
+- RSI 70.3; RVOL 0.82; RS vs Nifty +5.92%; extension 5.43%; 52W-high room 13.3%
+- Reference entry ₹186.10; reference stop ₹178.34; risk 4.17%
 - 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
 
-### 2. GRAPHITE — score 83.0
-- Price ₹794.45; resistance ₹807.70; breakout distance -1.64%
-- RSI 56.0; RVOL 0.83; RS vs Nifty +8.63%; extension 2.58%; 52W-high room 10.1%
-- Reference entry ₹794.45; reference stop ₹760.00; risk 4.34%
+### 9. HCLTECH — score 70.0
+- Price ₹1468.60; resistance ₹1469.00; breakout distance -0.03%
+- RSI 67.4; RVOL 1.66; RS vs Nifty +8.13%; extension 6.36%; 52W-high room 16.7%
+- Reference entry ₹1468.60; reference stop ₹1407.82; risk 4.14%
 - 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
 
-### 3. ANANDRATHI — score 83.0
-- Price ₹2380.00; resistance ₹2410.00; breakout distance -1.24%
-- RSI 68.1; RVOL 0.98; RS vs Nifty +2.75%; extension 2.03%; 52W-high room 1.3%
-- Reference entry ₹2380.00; reference stop ₹2344.30; risk 1.50%
+### 10. BSE — score 66.0
+- Price ₹3990.40; resistance ₹4003.30; breakout distance -0.32%
+- RSI 69.7; RVOL 1.67; RS vs Nifty +12.46%; extension 6.86%; 52W-high room 11.1%
+- Reference entry ₹3990.40; reference stop ₹3810.06; risk 4.52%
 - 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
 
-### 4. ZYDUSLIFE — score 80.0
-- Price ₹1236.00; resistance ₹1266.60; breakout distance -2.42%
-- RSI 63.7; RVOL 0.78; RS vs Nifty +0.82%; extension 3.29%; 52W-high room 2.5%
-- Reference entry ₹1236.00; reference stop ₹1193.27; risk 3.46%
+## 👀 Early Watch (15)
+
+### 1. AUROPHARMA — score 83.0
+- Price ₹1811.00; resistance ₹1859.90; breakout distance -2.63%
+- RSI 60.2; RVOL 0.72; RS vs Nifty +3.60%; extension 2.25%; 52W-high room 2.7%
+- Reference entry ₹1811.00; reference stop ₹1778.00; risk 1.82%
 - 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
 
-### 5. ICICIGI — score 78.0
-- Price ₹1736.60; resistance ₹1762.10; breakout distance -1.45%
-- RSI 64.2; RVOL 1.59; RS vs Nifty +2.56%; extension 3.94%; 52W-high room 15.9%
-- Reference entry ₹1736.60; reference stop ₹1673.87; risk 3.61%
+### 2. ETERNAL — score 82.0
+- Price ₹367.70; resistance ₹378.00; breakout distance -2.72%
+- RSI 61.5; RVOL 1.04; RS vs Nifty +4.49%; extension 2.81%; 52W-high room 2.8%
+- Reference entry ₹367.70; reference stop ₹356.50; risk 3.05%
 - 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
 
-### 6. GAIL — score 78.0
-- Price ₹187.50; resistance ₹192.30; breakout distance -2.50%
-- RSI 60.3; RVOL 1.04; RS vs Nifty +1.11%; extension 2.03%; 52W-high room 2.6%
-- Reference entry ₹187.50; reference stop ₹184.77; risk 1.46%
+### 3. PETRONET — score 80.0
+- Price ₹326.45; resistance ₹336.30; breakout distance -2.93%
+- RSI 64.2; RVOL 0.65; RS vs Nifty +7.29%; extension 3.02%; 52W-high room 3.0%
+- Reference entry ₹326.45; reference stop ₹322.45; risk 1.23%
 - 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
 
-### 7. KOTAKBANK — score 73.0
-- Price ₹509.00; resistance ₹521.50; breakout distance -2.40%
-- RSI 71.1; RVOL 0.71; RS vs Nifty +15.49%; extension 5.39%; 52W-high room 2.5%
-- Reference entry ₹509.00; reference stop ₹492.01; risk 3.34%
-- 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
-
-### 8. LGEINDIA — score 73.0
-- Price ₹1818.40; resistance ₹1836.00; breakout distance -0.96%
-- RSI 63.0; RVOL 2.36; RS vs Nifty +1.88%; extension 4.97%; 52W-high room 1.0%
-- Reference entry ₹1818.40; reference stop ₹1735.20; risk 4.58%
-- 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
-
-### 9. TCS — score 69.0
-- Price ₹2517.30; resistance ₹2565.00; breakout distance -1.86%
-- RSI 62.5; RVOL 1.42; RS vs Nifty +4.83%; extension 3.86%; 52W-high room 29.9%
-- Reference entry ₹2517.30; reference stop ₹2411.87; risk 4.19%
+### 4. ZENSARTECH — score 75.0
+- Price ₹554.50; resistance ₹582.00; breakout distance -4.73%
+- RSI 62.0; RVOL 0.62; RS vs Nifty +12.12%; extension 4.39%; 52W-high room 33.1%
+- Reference entry ₹554.50; reference stop ₹523.12; risk 5.66%
 - 25% potential screen: YES (historical 52-week high distance; not a forecast)
 
-## 👀 Early Watch (17)
-
-### 1. BHARTIARTL — score 85.0
-- Price ₹2117.50; resistance ₹2172.90; breakout distance -2.55%
-- RSI 62.6; RVOL 0.80; RS vs Nifty +4.67%; extension 2.24%; 52W-high room 2.6%
-- Reference entry ₹2117.50; reference stop ₹2070.50; risk 2.22%
+### 5. INDIANB — score 75.0
+- Price ₹933.00; resistance ₹964.45; breakout distance -3.26%
+- RSI 63.0; RVOL 0.74; RS vs Nifty -1.95%; extension 2.24%; 52W-high room 5.0%
+- Reference entry ₹933.00; reference stop ₹920.15; risk 1.38%
 - 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
 
-### 2. ADANIPORTS — score 80.0
-- Price ₹1926.30; resistance ₹1979.00; breakout distance -2.66%
-- RSI 61.3; RVOL 1.56; RS vs Nifty +7.22%; extension 2.25%; 52W-high room 2.7%
-- Reference entry ₹1926.30; reference stop ₹1875.60; risk 2.63%
+### 6. PERSISTENT — score 74.0
+- Price ₹6200.00; resistance ₹6420.50; breakout distance -3.43%
+- RSI 61.3; RVOL 0.79; RS vs Nifty +2.21%; extension 3.26%; 52W-high room 5.7%
+- Reference entry ₹6200.00; reference stop ₹5925.01; risk 4.44%
 - 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
 
-### 3. LTTS — score 79.0
-- Price ₹4178.00; resistance ₹4347.40; breakout distance -3.90%
-- RSI 58.3; RVOL 0.64; RS vs Nifty +11.85%; extension 1.95%; 52W-high room 11.3%
-- Reference entry ₹4178.00; reference stop ₹4001.00; risk 4.24%
+### 7. NUVAMA — score 73.0
+- Price ₹1854.80; resistance ₹1964.30; breakout distance -5.57%
+- RSI 55.0; RVOL 0.97; RS vs Nifty -3.48%; extension 2.01%; 52W-high room 11.4%
+- Reference entry ₹1854.80; reference stop ₹1747.20; risk 5.80%
 - 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
 
-### 4. PTCIL — score 79.0
-- Price ₹24380.00; resistance ₹25415.00; breakout distance -4.07%
-- RSI 53.9; RVOL 1.12; RS vs Nifty +9.89%; extension 1.02%; 52W-high room 7.0%
-- Reference entry ₹24380.00; reference stop ₹23220.00; risk 4.76%
+### 8. AXISBANK — score 72.0
+- Price ₹1408.00; resistance ₹1458.90; breakout distance -3.49%
+- RSI 65.0; RVOL 1.17; RS vs Nifty +4.66%; extension 5.12%; 52W-high room 3.6%
+- Reference entry ₹1408.00; reference stop ₹1353.51; risk 3.87%
 - 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
 
-### 5. TECHM — score 78.0
-- Price ₹1801.20; resistance ₹1860.00; breakout distance -3.16%
-- RSI 60.6; RVOL 0.65; RS vs Nifty +8.94%; extension 2.43%; 52W-high room 3.3%
-- Reference entry ₹1801.20; reference stop ₹1730.87; risk 3.90%
-- 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
-
-### 6. NYKAA — score 78.0
-- Price ₹358.00; resistance ₹368.30; breakout distance -2.80%
-- RSI 55.4; RVOL 1.04; RS vs Nifty -1.36%; extension 1.19%; 52W-high room 2.9%
-- Reference entry ₹358.00; reference stop ₹351.60; risk 1.79%
-- 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
-
-### 7. PERSISTENT — score 77.0
-- Price ₹6120.00; resistance ₹6339.50; breakout distance -3.46%
-- RSI 58.4; RVOL 0.78; RS vs Nifty +2.81%; extension 2.27%; 52W-high room 7.1%
-- Reference entry ₹6120.00; reference stop ₹5844.91; risk 4.49%
-- 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
-
-### 8. ACMESOLAR — score 73.0
-- Price ₹416.70; resistance ₹432.00; breakout distance -3.54%
-- RSI 53.0; RVOL 1.06; RS vs Nifty -1.42%; extension 1.51%; 52W-high room 14.4%
-- Reference entry ₹416.70; reference stop ₹398.65; risk 4.33%
-- 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
-
-### 9. COFORGE — score 72.0
-- Price ₹2060.00; resistance ₹2177.80; breakout distance -5.41%
-- RSI 55.8; RVOL 1.31; RS vs Nifty +2.92%; extension 1.31%; 52W-high room 6.1%
-- Reference entry ₹2060.00; reference stop ₹1977.10; risk 4.02%
-- 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
-
-### 10. PWL — score 72.0
-- Price ₹135.66; resistance ₹141.10; breakout distance -3.86%
-- RSI 55.5; RVOL 0.97; RS vs Nifty +0.90%; extension 2.71%; 52W-high room 17.5%
-- Reference entry ₹135.66; reference stop ₹126.63; risk 6.66%
-- 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
-
-### 11. TATACAP — score 72.0
-- Price ₹351.60; resistance ₹362.00; breakout distance -2.87%
-- RSI 59.1; RVOL 0.89; RS vs Nifty -11.80%; extension 2.93%; 52W-high room 11.0%
-- Reference entry ₹351.60; reference stop ₹339.00; risk 3.58%
-- 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
-
-### 12. BAJAJHLDNG — score 71.0
-- Price ₹11426.00; resistance ₹11769.00; breakout distance -2.91%
-- RSI 57.4; RVOL 1.19; RS vs Nifty -7.07%; extension 2.41%; 52W-high room 3.7%
-- Reference entry ₹11426.00; reference stop ₹10943.00; risk 4.23%
-- 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
-
-### 13. AXISBANK — score 70.0
-- Price ₹1418.10; resistance ₹1458.90; breakout distance -2.80%
-- RSI 67.2; RVOL 1.31; RS vs Nifty +6.34%; extension 6.45%; 52W-high room 2.9%
-- Reference entry ₹1418.10; reference stop ₹1364.46; risk 3.78%
-- 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
-
-### 14. IOC — score 70.0
-- Price ₹147.79; resistance ₹151.84; breakout distance -2.67%
-- RSI 61.8; RVOL 0.65; RS vs Nifty -0.70%; extension 3.59%; 52W-high room 25.1%
-- Reference entry ₹147.79; reference stop ₹142.43; risk 3.62%
+### 9. WIPRO — score 72.0
+- Price ₹196.54; resistance ₹202.00; breakout distance -2.70%
+- RSI 61.7; RVOL 1.79; RS vs Nifty +3.97%; extension 3.63%; 52W-high room 33.9%
+- Reference entry ₹196.54; reference stop ₹188.71; risk 3.98%
 - 25% potential screen: YES (historical 52-week high distance; not a forecast)
 
-### 15. INDIANB — score 69.0
-- Price ₹930.00; resistance ₹964.45; breakout distance -3.57%
-- RSI 62.1; RVOL 1.07; RS vs Nifty -2.05%; extension 2.15%; 52W-high room 5.4%
-- Reference entry ₹930.00; reference stop ₹920.15; risk 1.06%
+### 10. MOTHERSON — score 71.0
+- Price ₹164.61; resistance ₹169.69; breakout distance -2.99%
+- RSI 52.8; RVOL 0.92; RS vs Nifty -8.28%; extension 0.95%; 52W-high room 5.3%
+- Reference entry ₹164.61; reference stop ₹156.34; risk 5.02%
 - 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
 
-### 16. ADANIPOWER — score 69.0
-- Price ₹206.00; resistance ₹216.16; breakout distance -4.70%
-- RSI 55.0; RVOL 0.87; RS vs Nifty -7.24%; extension 1.23%; 52W-high room 23.4%
-- Reference entry ₹206.00; reference stop ₹203.55; risk 1.19%
+### 11. BALKRISIND — score 71.0
+- Price ₹2327.80; resistance ₹2419.86; breakout distance -3.80%
+- RSI 58.5; RVOL 0.75; RS vs Nifty -8.31%; extension 2.22%; 52W-high room 18.6%
+- Reference entry ₹2327.80; reference stop ₹2251.20; risk 3.29%
 - 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
 
-### 17. BAJAJ-AUTO — score 69.0
-- Price ₹10868.00; resistance ₹11173.00; breakout distance -2.73%
-- RSI 55.5; RVOL 1.08; RS vs Nifty -13.96%; extension 1.64%; 52W-high room 14.7%
-- Reference entry ₹10868.00; reference stop ₹10501.47; risk 3.37%
+### 12. HDFCLIFE — score 70.0
+- Price ₹594.40; resistance ₹609.75; breakout distance -2.52%
+- RSI 60.6; RVOL 1.57; RS vs Nifty +1.02%; extension 3.92%; 52W-high room 32.2%
+- Reference entry ₹594.40; reference stop ₹568.85; risk 4.30%
+- 25% potential screen: YES (historical 52-week high distance; not a forecast)
+
+### 13. SONACOMS — score 70.0
+- Price ₹881.50; resistance ₹934.90; breakout distance -5.71%
+- RSI 52.3; RVOL 1.11; RS vs Nifty +0.19%; extension -0.23%; 52W-high room 6.1%
+- Reference entry ₹881.50; reference stop ₹846.75; risk 3.94%
+- 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
+
+### 14. FEDERALBNK — score 69.0
+- Price ₹356.85; resistance ₹376.20; breakout distance -5.14%
+- RSI 54.4; RVOL 1.19; RS vs Nifty -3.95%; extension 0.77%; 52W-high room 5.4%
+- Reference entry ₹356.85; reference stop ₹353.60; risk 0.91%
+- 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
+
+### 15. RBLBANK — score 69.0
+- Price ₹389.25; resistance ₹403.05; breakout distance -3.42%
+- RSI 54.6; RVOL 0.78; RS vs Nifty -6.45%; extension 1.48%; 52W-high room 10.4%
+- Reference entry ₹389.25; reference stop ₹380.00; risk 2.38%
 - 25% potential screen: NOT CONFIRMED (historical 52-week high distance; not a forecast)
 
